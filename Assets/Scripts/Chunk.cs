@@ -2,23 +2,61 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Chunk : MonoBehaviour
+public class ChunkCoord
 {
-    public MeshRenderer meshRenderer;
-    public MeshFilter meshFilter;
+    public int x;
+    public int z;
+
+    public ChunkCoord(int x, int z)
+    {
+        this.x = x;
+        this.z = z;
+    }
+}
+
+public class Chunk
+{
+    public ChunkCoord coord;
+
+    //메쉬 필터와 메쉬 렌더러를 얻기 위함이다.
+    GameObject chunkObject;
+    MeshRenderer meshRenderer;
+    MeshFilter meshFilter;
 
     int vertexIndex = 0;
     List<Vector3> vertices = new List<Vector3>();
     List<int> triangles = new List<int>();
     List<Vector2> uvs = new List<Vector2>();
 
-    //bool 값으로 구성된 맵, 블럭의 유무만 저장한다.
-    bool[,,] voxelMap = 
-        new bool[VoxelData.ChunkWidth, VoxelData.ChunkHeight, VoxelData.ChunkWidth];
+    //byte 값으로 구성된 맵, 블럭의 코드를 저장한다.
+    byte[,,] voxelMap = 
+        new byte[VoxelData.ChunkWidth, VoxelData.ChunkHeight, VoxelData.ChunkWidth];
 
+    //블럭 타입등의 참조를 위한 World 참조
+    World world;
 
-    void Start()
-    {
+    //World를 인자로 받는다.(find는 비싼(expansive한 작업))
+    public Chunk (ChunkCoord _coord, World _world)
+	{
+        this.world = _world;
+        this.coord = _coord;
+        chunkObject = new GameObject();
+
+        //인스펙터에서 하던걸 코드로 옮긴 것이다.
+        //chunkObject에 메쉬 필터와 메쉬 렌더러를 추가하고 변수에 저장한다.
+        meshFilter = chunkObject.AddComponent<MeshFilter>();
+        meshRenderer = chunkObject.AddComponent<MeshRenderer>();
+
+        //마테리얼을 설정한다.
+        meshRenderer.material = world.material;
+
+        //보기 좋기 위해 부모를 설정하도록 하자.
+        chunkObject.transform.SetParent(world.transform);
+        //상대위치ChunkCoord를 기반으로 실제 위치 반영
+        chunkObject.transform.position
+            = new Vector3(coord.x * VoxelData.ChunkWidth, 0f, coord.z * VoxelData.ChunkWidth);
+        chunkObject.name = string.Format("Chunk {0}, {1}", coord.x, coord.z);
+
         PopulateVoxelMap();
         CreateMeshData();
         CreateChunkMesh();
@@ -35,8 +73,18 @@ public class Chunk : MonoBehaviour
             {
                 for (int z = 0; z < VoxelData.ChunkWidth; z++)
                 {
-                    if(y <= 3)
-                        voxelMap[x, y, z] = true;
+                    if(y < 1)
+					{
+                        voxelMap[x, y, z] = 1;
+					}
+                    else if(y == VoxelData.ChunkHeight - 1)
+					{
+                        voxelMap[x, y, z] = 3;
+					}
+                    else
+					{
+                        voxelMap[x, y, z] = 2;
+					}
                 }
             }
         }
@@ -59,8 +107,8 @@ public class Chunk : MonoBehaviour
             || y < 0 || y >= VoxelData.ChunkHeight
             || z < 0 || z >= VoxelData.ChunkWidth)
             return false;
-
-        return voxelMap[x, y, z];
+        //voxemMap에 저장된 블럭 타입을 참고로 World의 BlockType[]의 isSolid를 참조
+        return world.blockTypes[voxelMap[x, y, z]].isSolid;
 	}
 
     /// <summary>
@@ -96,17 +144,28 @@ public class Chunk : MonoBehaviour
                 //(=즉, 보이는 면일때만 그린다.
                 if (!CheckVoxel(pos + VoxelData.faceChecks[p]))
                 {
-                    //각 면의 삼각형 그리기
-                    for (int i = 0; i < 6; i++, vertexIndex++)
-                    {
-                        //삼각형의 인덱스, 정점을 삼각형 인덱스의 순서에 맞춰서 넣는다.
-                        int triangleIndex = VoxelData.voxelTris[p, i];
+                    //맵에서 인자로 넘어온 pos의 블럭 아이디를 조회한다.
+                    byte blockID = voxelMap[(int)pos.x, (int)pos.y, (int)pos.z];
+                    //개인적으로 보기 편해서 for문은 안썻다.
+                    //정점 4개과 그에 맞는 uv를 넣는다.
+                    vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 0]]);
+                    vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 1]]);
+                    vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 2]]);
+                    vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 3]]);
 
-                        //상대 위치인 정점 좌표에 매개변수의 좌표를 더한다.
-                        vertices.Add(VoxelData.voxelVerts[triangleIndex] + pos);
-                        triangles.Add(vertexIndex);
-                        uvs.Add(VoxelData.voxelUvs[i]);
-                    }
+                    //p의 값은 0 ~ 5로 변화하면 각 면을 그린다.
+                    //그에 따른 순서도 맞추어져 있으므로 faceIndex로 p를 넘긴다.
+                    AddTexture(world.blockTypes[blockID].GetTextureID(p));
+
+                    //삼각형의 각 꼭짓점을 정점 4개에 맞게 정수로 넣는다.
+                    triangles.Add(vertexIndex);
+                    triangles.Add(vertexIndex + 1);
+                    triangles.Add(vertexIndex + 2);
+                    triangles.Add(vertexIndex + 2);
+                    triangles.Add(vertexIndex + 1);
+                    triangles.Add(vertexIndex + 3);
+
+                    vertexIndex += 4;
                 }
             }
         }
@@ -128,4 +187,28 @@ public class Chunk : MonoBehaviour
         meshFilter.mesh = mesh;
     }
 
+    /// <summary>
+    /// 텍스쳐 ID를 받아 uv값을 추가합니다.
+    /// </summary>
+    /// <param name="textureID"></param>
+    void AddTexture(int textureID)
+	{
+        //텍스쳐ID에 따른 x, y좌표
+        float y = textureID / VoxelData.TextureAtlasSizeInBlocks;
+        float x = textureID - (y * VoxelData.TextureAtlasSizeInBlocks);
+     
+        x *= VoxelData.NormalizedBlockTextureSize;
+        y *= VoxelData.NormalizedBlockTextureSize;
+        
+        //좌표를 UV의 배치에 맞게 변경해주는 과정
+        y = 1f - y - VoxelData.NormalizedBlockTextureSize;
+        
+        //미리 설정된 순서에 따라(uv 테이블이 삼각형에 맞춰져 있으므로)
+        uvs.Add(new Vector2(x, y)); //0, 0
+        uvs.Add(new Vector2(x, y + VoxelData.NormalizedBlockTextureSize)); //0, 1
+        uvs.Add(new Vector2(x + VoxelData.NormalizedBlockTextureSize, y)); //1, 0
+        uvs.Add(new Vector2(x + VoxelData.NormalizedBlockTextureSize, y + VoxelData.NormalizedBlockTextureSize)); //1, 1
+    }
+
 }
+
