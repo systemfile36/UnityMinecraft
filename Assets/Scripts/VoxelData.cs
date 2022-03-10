@@ -2,13 +2,27 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-//복셀의 데이터를 쉽게 참조하기 위한 테이블들을 모아놓은 파일
+/// <summary>
+/// 복셀의 생성을 위한 테이블과 청크, 월드 등의 static 정보를 저장하는 클래스
+/// </summary>
 public class VoxelData
 {
 	//청크 하나의 크기
 	public static readonly int ChunkWidth = 5;
 	public static readonly int ChunkHeight = 15;
-	public static readonly int WorldSizeInChunks = 5;
+	public static readonly int WorldSizeInChunks = 100;
+
+	//시야 범위, 이 범위 내의 청크만 로드
+	public static readonly int ViewDistanceInChunks = 5;
+
+	//위의 변수들을 참고해 계산해야하므로 readonly가 불가능
+	public static int WorldSizeInVoxels
+	{
+		get
+		{
+			return WorldSizeInChunks * ChunkWidth;
+		}
+	}
 
 	//텍스쳐 아틀라스의 크기, 한 열(행)에 몇개의 텍스쳐가 있는가
 	public static readonly int TextureAtlasSizeInBlocks = 16;

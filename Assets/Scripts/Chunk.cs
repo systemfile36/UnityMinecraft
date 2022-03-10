@@ -2,6 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// 월드에서의 청크의 좌표
+/// </summary>
 public class ChunkCoord
 {
     public int x;
@@ -12,8 +15,26 @@ public class ChunkCoord
         this.x = x;
         this.z = z;
     }
+	//비교문을 위한 Equals 오버라이딩
+	public override bool Equals(object obj)
+	{
+        ChunkCoord c = obj as ChunkCoord;
+        if (c == null)
+            return false;
+        else if (c.x == x && c.z == z)
+            return true;
+        else
+            return false;
+	}
+	public override int GetHashCode()
+	{
+		return base.GetHashCode();
+	}
 }
 
+/// <summary>
+/// 청크의 기본 틀, 매쉬 정보를 가진 오브젝트와 청크 내의 맵 정보를 가진다.
+/// </summary>
 public class Chunk
 {
     public ChunkCoord coord;
@@ -73,21 +94,28 @@ public class Chunk
             {
                 for (int z = 0; z < VoxelData.ChunkWidth; z++)
                 {
-                    if(y < 1)
-					{
-                        voxelMap[x, y, z] = 1;
-					}
-                    else if(y == VoxelData.ChunkHeight - 1)
-					{
-                        voxelMap[x, y, z] = 3;
-					}
-                    else
-					{
-                        voxelMap[x, y, z] = 2;
-					}
+                    //GetVoxel로 해당 좌표의 블럭 아이디를 받아서 맵에 넣는다.
+                    //이때 월드 기준 좌표를 넣어야 함에 유의하라
+                    voxelMap[x, y, z] = world.GetVoxel(new Vector3(x, y, z) + position);
                 }
             }
         }
+    }
+    /// <summary>
+    /// 복셀이 청크 내부에 있는지 여부 반환
+    /// </summary>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <param name="z"></param>
+    /// <returns></returns>
+    bool IsVoxelInChunk(int x, int y, int z)
+	{
+        if (x < 0 || x >= VoxelData.ChunkWidth
+            || y < 0 || y >= VoxelData.ChunkHeight
+            || z < 0 || z >= VoxelData.ChunkWidth)
+            return false;
+        else
+            return true;
     }
 
     /// <summary>
@@ -102,11 +130,12 @@ public class Chunk
         int y = Mathf.FloorToInt(pos.y);
         int z = Mathf.FloorToInt(pos.z);
 
-        //맵 이탈 체크
-        if (x < 0 || x >= VoxelData.ChunkWidth
-            || y < 0 || y >= VoxelData.ChunkHeight
-            || z < 0 || z >= VoxelData.ChunkWidth)
-            return false;
+        //만약 복셀이 청크 내부에 있지 않으면 
+        //청크의 좌표를 pos에 더해서 블럭 타입의 isSolid 참조
+        //Air는 isSolid가 false 이므로 그려지지 않을 것
+        if (!IsVoxelInChunk(x, y, z))
+            return world.blockTypes[world.GetVoxel(pos + position)].isSolid;
+
         //voxemMap에 저장된 블럭 타입을 참고로 World의 BlockType[]의 isSolid를 참조
         return world.blockTypes[voxelMap[x, y, z]].isSolid;
 	}
@@ -127,10 +156,33 @@ public class Chunk
             }
         }
     }
-
+    /// <summary>
+    /// 청크의 활성화 여부를 가져오거나 설정함
+    /// </summary>
+    public bool IsActive
+	{
+        get
+		{
+            return chunkObject.activeSelf;
+		}
+        set
+		{
+            chunkObject.SetActive(value);
+		}
+	}
+    /// <summary>
+    /// 청크의 좌표 반환
+    /// </summary>
+    public Vector3 position
+	{
+        get
+		{
+            return chunkObject.transform.position;
+		}
+	}
 
     /// <summary>
-    /// 위치값을 받아 복셀 데이터를 메쉬 데이터에 추가합니다.
+    /// 위치값을 받아 복셀 데이터를 메쉬 데이터 리스트에 추가합니다.
     /// </summary>
     /// <param name="pos">복셀 데이터의 위치</param>
     void AddVoxelDataToChunk(Vector3 pos)
