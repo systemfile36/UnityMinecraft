@@ -151,7 +151,9 @@ public class Chunk
             {
                 for (int z = 0; z < VoxelData.ChunkWidth; z++)
                 {
-                    AddVoxelDataToChunk(new Vector3(x, y, z));
+                    //블럭이 Solid 일때만 그림
+                    if(world.blockTypes[voxelMap[x, y, z]].isSolid)
+                        AddVoxelDataToChunk(new Vector3(x, y, z));
                 }
             }
         }

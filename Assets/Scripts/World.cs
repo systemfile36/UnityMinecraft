@@ -52,6 +52,12 @@ public class BlockType
 /// </summary>
 public class World : MonoBehaviour
 {
+    //맵의 시드값
+    public int seed;
+
+    //바이옴을 설정하는 변수
+    public BiomeAttributes biome;
+
     //플레이어의 좌표 참조를 위한 변수
     public Transform player;
     public Vector3 spawnPosition;
@@ -72,6 +78,10 @@ public class World : MonoBehaviour
 
 	void Start()
 	{
+        //시드 값에 따라 난수생성기 초기화
+        //같은 시드는 같은 맵
+        Random.InitState(seed);
+
         //월드 중앙에 스폰
         spawnPosition =
             new Vector3(VoxelData.WorldSizeInVoxels / 2f,
@@ -109,21 +119,59 @@ public class World : MonoBehaviour
 	/// <returns></returns>
 	public byte GetVoxel(Vector3 pos)
 	{
+        //y좌표 정수화
+        int tempY = Mathf.FloorToInt(pos.y);
+
         //복셀이 월드 내부에 있지 않다면 Air(=0)반환
         if (!IsVoxelInWorld(pos))
             return 0;
+        //맵 하부 베드락으로
         if (pos.y < 1)
         {
             return 1;
         }
-        else if (Mathf.RoundToInt(pos.y) == VoxelData.ChunkHeight - 1)
-        {
-            return 3;
-        }
+
+        
+        //0 ~ 1의 값인 펄린노이즈에 높이를 곱해서 범위를 조정
+        int terHeight = 
+            Mathf.FloorToInt(biome.terHeight * Noise.GetPerlin2D(
+                new Vector2(pos.x, pos.z), 0, biome.terScale))
+            + biome.solidHeight;
+
+        //바로 리턴하면 제대로 배치되지 않음
+        byte vValue = 0;
+
+
+        //테스트용 Height 맵
+        if (tempY == terHeight)
+            vValue = 3;
+        else if (tempY < terHeight && tempY > terHeight - 4)
+            vValue = 4;
+        else if (tempY > terHeight)
+            vValue = 0;
         else
-        {
-            return 2;
-        }
+            vValue = 2;
+
+        //테스트용 lode 반영 맵
+        //돌이라면(== 표면의 흙이나 배드락이 아니라면
+        if(vValue == 2)
+		{
+            foreach(Lode lode in biome.lodes)
+			{
+                //범위 내에 있다면
+                if(tempY > lode.minHeight && tempY < lode.maxHeight)
+				{
+                    //노이즈를 체크해서 true가 반환되면
+                    if(Noise.GetPerlin3D(pos, lode.Offset, lode.scale, lode.threshold))
+					{
+                        //vValue를 변형
+                        vValue = lode.blockID;
+					}
+				}
+			}
+		}
+        //그리고 리턴
+        return vValue;
     }
 
     //게임이 처음 실행되었을 때 한번 실행되는 메소드
@@ -136,12 +184,12 @@ public class World : MonoBehaviour
         //각 청크 좌표의 최대 최소, 처음 스폰 지점의 시야 범위 안쪽만 로드
         player.position = spawnPosition;
         
-        for (int x = 45; 
-            x < 55; x++)
+        for (int x = (VoxelData.WorldSizeInChunks / 2) - VoxelData.ViewDistanceInChunks; 
+            x < (VoxelData.WorldSizeInChunks / 2) + VoxelData.ViewDistanceInChunks; x++)
 		{
             
-            for (int z = 45;
-                z < 55; z++)
+            for (int z = (VoxelData.WorldSizeInChunks / 2) - VoxelData.ViewDistanceInChunks;
+                z < (VoxelData.WorldSizeInChunks / 2) + VoxelData.ViewDistanceInChunks; z++)
 			{
                 
                 CreateNewChunk(x, z);
@@ -223,6 +271,7 @@ public class World : MonoBehaviour
     /// <param name="z"></param>
     void CreateNewChunk(int x, int z)
 	{
+        Debug.Log(x + " " + z);
         chunks[x, z] = new Chunk(new ChunkCoord(x, z), this);
         
         //새 청크를 만들면 활성화 된 것에 추가

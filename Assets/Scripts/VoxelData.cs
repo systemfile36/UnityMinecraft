@@ -8,8 +8,8 @@ using UnityEngine;
 public class VoxelData
 {
 	//청크 하나의 크기
-	public static readonly int ChunkWidth = 5;
-	public static readonly int ChunkHeight = 15;
+	public static readonly int ChunkWidth = 16;
+	public static readonly int ChunkHeight = 128;
 	public static readonly int WorldSizeInChunks = 100;
 
 	//시야 범위, 이 범위 내의 청크만 로드
