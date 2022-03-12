@@ -44,13 +44,15 @@ public class Chunk
     MeshRenderer meshRenderer;
     MeshFilter meshFilter;
 
+    //MeshCollider meshCollider;
+
     int vertexIndex = 0;
     List<Vector3> vertices = new List<Vector3>();
     List<int> triangles = new List<int>();
     List<Vector2> uvs = new List<Vector2>();
 
     //byte 값으로 구성된 맵, 블럭의 코드를 저장한다.
-    byte[,,] voxelMap = 
+    public byte[,,] voxelMap = 
         new byte[VoxelData.ChunkWidth, VoxelData.ChunkHeight, VoxelData.ChunkWidth];
 
     //블럭 타입등의 참조를 위한 World 참조
@@ -71,6 +73,8 @@ public class Chunk
         //마테리얼을 설정한다.
         meshRenderer.material = world.material;
 
+        //meshCollider = chunkObject.AddComponent<MeshCollider>();
+
         //보기 좋기 위해 부모를 설정하도록 하자.
         chunkObject.transform.SetParent(world.transform);
         //상대위치ChunkCoord를 기반으로 실제 위치 반영
@@ -81,6 +85,8 @@ public class Chunk
         PopulateVoxelMap();
         CreateMeshData();
         CreateChunkMesh();
+
+        //meshCollider.sharedMesh = meshFilter.mesh;
     }
 
     /// <summary>

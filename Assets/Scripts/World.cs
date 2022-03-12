@@ -109,15 +109,55 @@ public class World : MonoBehaviour
             playerLastChunkCoord = GetChunkCoordFromVector3(player.position);
         }
 	}
+    /// <summary>
+    /// 지정된 좌표에 복셀의 유무를 반환한다.
+    /// </summary>
+    /// <param name="_x"></param>
+    /// <param name="_y"></param>
+    /// <param name="_z"></param>
+    /// <returns></returns>
+    public bool CheckForVoxel(float _x, float _y, float _z)
+	{
+        //복셀의 0번 정점을 가리키는 정수 좌표
+        int xP = Mathf.FloorToInt(_x);
+        int yP = Mathf.FloorToInt(_y);
+        int zP = Mathf.FloorToInt(_z);
 
-	//이 코드는 월드를 만들거나 동굴을 만들거나 하는 등의 알고리즘에 사용될 것
-	//바이옴 등의 동작도 이곳에서 발생함
-	/// <summary>
-	/// 좌표를 받아서 해당 좌표의 블럭 ID를 반환
-	/// </summary>
-	/// <param name="pos"></param>
-	/// <returns></returns>
-	public byte GetVoxel(Vector3 pos)
+        //복셀이 속한 청크의 좌표
+        int xChunk = xP / VoxelData.ChunkWidth;
+        int zChunk = zP / VoxelData.ChunkWidth;
+
+        //절대 좌표를 각 청크의 상대좌표로 변환하는 과정
+        xP -= (xChunk * VoxelData.ChunkWidth);
+        zP -= (zChunk * VoxelData.ChunkWidth);
+
+        if (xP < 0 || xP >= VoxelData.WorldSizeInVoxels
+            || yP < 0 || yP >= VoxelData.ChunkHeight
+            || zP < 0 || zP >= VoxelData.WorldSizeInVoxels)
+        {
+            Debug.Log(string.Format("x : {0} y : {1} z : {2}\n" +
+                "xChunk : {3} zChunk : {4}", xP, yP, zP, xChunk, zChunk));
+            return false;
+        }
+            
+
+        return blockTypes[chunks[xChunk, zChunk].voxelMap[xP, yP, zP]].isSolid;
+        /*
+        정수의 나눗셈은 소수점이 날라가므로 xChunk에는 xP좌표가 속한 청크의 좌표, 
+        즉 ChunkCoord의 x 좌표가 들어갈 것이다. zChunk도 마찬가지. 
+        이것에 청크의 넓이를 곱해서 빼주는 것으로 청크 내에서의 좌표를 얻을 수 있다.
+        */
+
+    }
+
+    //이 코드는 월드를 만들거나 동굴을 만들거나 하는 등의 알고리즘에 사용될 것
+    //바이옴 등의 동작도 이곳에서 발생함
+    /// <summary>
+    /// 좌표를 받아서 해당 좌표의 블럭 ID를 반환
+    /// </summary>
+    /// <param name="pos"></param>
+    /// <returns></returns>
+    public byte GetVoxel(Vector3 pos)
 	{
         //y좌표 정수화
         int tempY = Mathf.FloorToInt(pos.y);
@@ -271,7 +311,6 @@ public class World : MonoBehaviour
     /// <param name="z"></param>
     void CreateNewChunk(int x, int z)
 	{
-        Debug.Log(x + " " + z);
         chunks[x, z] = new Chunk(new ChunkCoord(x, z), this);
         
         //새 청크를 만들면 활성화 된 것에 추가

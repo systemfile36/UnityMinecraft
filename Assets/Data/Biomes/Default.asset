@@ -16,3 +16,18 @@ MonoBehaviour:
   solidHeight: 42
   terHeight: 42
   terScale: 0.25
+  lodes:
+  - nodeName: Bedrock
+    blockID: 1
+    minHeight: 20
+    maxHeight: 50
+    scale: 0.1
+    threshold: 0.5
+    Offset: 0
+  - nodeName: 
+    blockID: 0
+    minHeight: 0
+    maxHeight: 0
+    scale: 0
+    threshold: 0
+    Offset: 0
