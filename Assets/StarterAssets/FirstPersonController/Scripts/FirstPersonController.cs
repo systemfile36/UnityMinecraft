@@ -64,13 +64,12 @@ namespace StarterAssets
 		private float _speed;
 		private float _rotationVelocity;
 		private float _verticalVelocity;
-		private float _terminalVelocity = 53.0f;
+		//private float _terminalVelocity = 53.0f;
 
 		// timeout deltatime
 		private float _jumpTimeoutDelta;
 		private float _fallTimeoutDelta;
 
-		private CharacterController _controller;
 		private StarterAssetsInputs _input;
 		private GameObject _mainCamera;
 
@@ -79,6 +78,16 @@ namespace StarterAssets
 
 		//카메라의 임계치(미세한 움직임을 막기 위함)
 		private const float _threshold = 0.01f;
+
+		//플레이어 판정 범위용 변수
+		[Header("Colliders")]
+		[Tooltip("Width of Player Collision Check")]
+		public float pWidthCol = 0.5f;
+		[Tooltip("Height Offset of Player Collision Check")]
+		public float pHeightCol = 2.0f;
+		[Tooltip("Offset for XZ Collision Check, adding to y")]
+		public float pYOffset = 0.5f;
+
 
 		private void Awake()
 		{
@@ -97,7 +106,6 @@ namespace StarterAssets
 
 		private void Start()
 		{
-			_controller = GetComponent<CharacterController>();
 			_input = GetComponent<StarterAssetsInputs>();
 
 			// reset our timeouts on start
@@ -107,11 +115,23 @@ namespace StarterAssets
 
 		private void Update()
 		{
-			JumpAndGravity();
+			/*
 			GroundedCheck();
+			ApplyGravity();
+			Jump();
+			UpCollision();
 			Move();
+			*/
+			//Debug.Log(_verticalVelocity + " " + Grounded);
+		}
 
-			Debug.Log(_verticalVelocity + " " + Grounded);
+		private void FixedUpdate()
+		{
+			GroundedCheck();
+			ApplyGravity();
+			Jump();
+			UpCollision();
+			Move();
 		}
 
 		private void LateUpdate()
@@ -121,7 +141,6 @@ namespace StarterAssets
 
 		private void GroundedCheck()
 		{
-			Debug.Log("Grounded " + Grounded.ToString());
 			/*
 			// set sphere position, with offset
 			Vector3 spherePosition = new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z);
@@ -129,16 +148,119 @@ namespace StarterAssets
 			*/
 			//착지 자체 구현
 			// 4개의 꼭짓점에서 수선의 발을 내려 그곳에 블럭이 있는지 확인
-			if (world.CheckForVoxel(transform.position.x + GroundedRadius, transform.position.y - GroundedOffset - (Gravity * Time.deltaTime), transform.position.z + GroundedRadius)
-				|| world.CheckForVoxel(transform.position.x - GroundedRadius, transform.position.y - GroundedOffset - (Gravity * Time.deltaTime), transform.position.z - GroundedRadius)
-				|| world.CheckForVoxel(transform.position.x - GroundedRadius, transform.position.y - GroundedOffset - (Gravity * Time.deltaTime), transform.position.z + GroundedRadius)
-				|| world.CheckForVoxel(transform.position.x + GroundedRadius, transform.position.y - GroundedOffset - (Gravity * Time.deltaTime), transform.position.z - GroundedRadius))
+			if (world.CheckForVoxel(transform.position.x + GroundedRadius, transform.position.y + GroundedOffset, transform.position.z + GroundedRadius)
+				|| world.CheckForVoxel(transform.position.x - GroundedRadius, transform.position.y + GroundedOffset, transform.position.z - GroundedRadius)
+				|| world.CheckForVoxel(transform.position.x - GroundedRadius, transform.position.y + GroundedOffset, transform.position.z + GroundedRadius)
+				|| world.CheckForVoxel(transform.position.x + GroundedRadius, transform.position.y + GroundedOffset, transform.position.z - GroundedRadius))
 			{
 				Grounded = true;
 			}
 			else
 				Grounded = false;
 			
+		}
+		/// <summary>
+		/// 머리 부분 충돌 판정, 수직 속도 0으로 리셋
+		/// </summary>
+		private void UpCollision()
+		{
+			if ((world.CheckForVoxel(transform.position.x + pWidthCol, transform.position.y + pHeightCol + 1f, transform.position.z + pWidthCol)
+				|| world.CheckForVoxel(transform.position.x - pWidthCol, transform.position.y + pHeightCol + 1f, transform.position.z - pWidthCol)
+				|| world.CheckForVoxel(transform.position.x - pWidthCol, transform.position.y + pHeightCol + 1f, transform.position.z + pWidthCol)
+				|| world.CheckForVoxel(transform.position.x + pWidthCol, transform.position.y + pHeightCol + 1f, transform.position.z - pWidthCol))
+				&& _verticalVelocity >= 0)
+			{
+				//상승 중일때만 적용
+				_verticalVelocity = 0.0f;
+			}
+		}
+		/// <summary>
+		/// +X방향 충돌 확인
+		/// </summary>
+		private bool PosX
+		{
+			get
+			{
+				if (world.CheckForVoxel(transform.position.x + pWidthCol, transform.position.y + pHeightCol, transform.position.z)
+				|| world.CheckForVoxel(transform.position.x + pWidthCol, transform.position.y + pYOffset, transform.position.z))
+				{
+					return true;
+				}
+				else
+				{
+					return false;
+				}
+					
+			}
+		}
+		/// <summary>
+		/// -X방향 충돌 확인
+		/// </summary>
+		private bool NegX
+		{
+			get
+			{
+				if (world.CheckForVoxel(transform.position.x - pWidthCol, transform.position.y + pHeightCol, transform.position.z)
+				|| world.CheckForVoxel(transform.position.x - pWidthCol, transform.position.y + pYOffset, transform.position.z))
+				{
+					return true;
+
+				}
+				else
+				{
+					return false;
+				}
+			}
+		}
+		/// <summary>
+		/// +Z방향 충돌 확인
+		/// </summary>
+		private bool PosZ
+		{
+			get
+			{
+				if (world.CheckForVoxel(transform.position.x, transform.position.y + pHeightCol, transform.position.z + pWidthCol)
+				|| world.CheckForVoxel(transform.position.x, transform.position.y + pYOffset, transform.position.z + pWidthCol))
+				{
+					return true;
+				}
+				else
+				{
+					return false;
+				}
+					
+			}
+		}
+		/// <summary>
+		/// -Z방향 충돌 확인
+		/// </summary>
+		private bool NegZ
+		{
+			get
+			{
+				if (world.CheckForVoxel(transform.position.x, transform.position.y + pHeightCol, transform.position.z - pWidthCol)
+				|| world.CheckForVoxel(transform.position.x, transform.position.y + pYOffset, transform.position.z - pWidthCol))
+				{
+					return true;
+				}
+				else
+				{
+					return false;
+				}	
+			}
+		}
+
+		private void ApplyGravity()
+		{
+			
+			_verticalVelocity += Gravity * Time.fixedDeltaTime;
+			
+
+			if (Grounded)
+			{
+				_verticalVelocity = 0.0f;
+			}
+
 		}
 
 		private void CameraRotation()
@@ -162,6 +284,7 @@ namespace StarterAssets
 
 		private void Move()
 		{
+			//쓰지 않는 것들을 지운다.
 			// set target speed based on move speed, sprint speed and if sprint is pressed
 			float targetSpeed = _input.sprint ? SprintSpeed : MoveSpeed;
 
@@ -172,11 +295,14 @@ namespace StarterAssets
 			if (_input.move == Vector2.zero) targetSpeed = 0.0f;
 
 			// a reference to the players current horizontal velocity
-			float currentHorizontalSpeed = new Vector3(_controller.velocity.x, 0.0f, _controller.velocity.z).magnitude;
+			//float currentHorizontalSpeed = new Vector3(_controller.velocity.x, 0.0f, _controller.velocity.z).magnitude;
 
-			float speedOffset = 0.1f;
-			float inputMagnitude = _input.analogMovement ? _input.move.magnitude : 1f;
+			//float speedOffset = 0.1f;
+			//float inputMagnitude = _input.analogMovement ? _input.move.magnitude : 1f;
 
+			/*
+			 * 이 마인크래프트에서는 필요가 없다.
+			//가속을 담당하는 코드, 
 			// accelerate or decelerate to target speed
 			if (currentHorizontalSpeed < targetSpeed - speedOffset || currentHorizontalSpeed > targetSpeed + speedOffset)
 			{
@@ -191,23 +317,47 @@ namespace StarterAssets
 			{
 				_speed = targetSpeed;
 			}
+			*/
+
+			_speed = targetSpeed;
 
 			// normalise input direction
 			Vector3 inputDirection = new Vector3(_input.move.x, 0.0f, _input.move.y).normalized;
 
 			// note: Vector2's != operator uses approximation so is not floating point error prone, and is cheaper than magnitude
 			// if there is a move input rotate player when the player is moving
+			
+		
 			if (_input.move != Vector2.zero)
 			{
+				//rotation을 고려해서 x축과 z축 방향을 정함, 즉 세계 기준으로 바꿈
 				// move
 				inputDirection = transform.right * _input.move.x + transform.forward * _input.move.y;
 			}
+			
+			//세계 기준 이동 좌표
+			Vector3 tempVector = inputDirection.normalized * (_speed * Time.fixedDeltaTime) + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.fixedDeltaTime;
 
+			//충돌 확인 후 벡터 조정
+			if((tempVector.x > 0 && PosX) || (tempVector.x < 0 && NegX))
+			{
+				tempVector.x = 0.0f;
+			}
+			if((tempVector.z > 0 && PosZ) || (tempVector.z < 0 && NegZ))
+			{
+				tempVector.z = 0.0f;
+			}
+			
+			
+			//SideCollision(ref tempVector);
 			// move the player
-			_controller.Move(inputDirection.normalized * (_speed * Time.deltaTime) + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
+			//_controller.Move(inputDirection.normalized * (_speed * Time.deltaTime) + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
+			transform.Translate(tempVector, Space.World);
+			//Debug.Log("PosX : " + world.CheckForVoxel(transform.position.x + pWidthCol, transform.position.y + pHeightCol - 0.1f, transform.position.z) + "\n" +
+			//	"PosZ : " + world.CheckForVoxel(transform.position.x, transform.position.y + pHeightCol - 0.1f, transform.position.z + pWidthCol));
 		}
 
-		private void JumpAndGravity()
+		private void Jump()
 		{
 			
 			if (Grounded)
@@ -215,15 +365,14 @@ namespace StarterAssets
 				// reset the fall timeout timer
 				_fallTimeoutDelta = FallTimeout;
 
-				//착지한 상태면 y축 속도 0
-				_verticalVelocity = 0.1f;
-
+				/*
 				// stop our velocity dropping infinitely when grounded
 				if (_verticalVelocity < 0.0f)
 				{
 					//_verticalVelocity = -2f;
-					
+					_verticalVelocity = 0.0f;
 				}
+				*/
 
 				// Jump
 				if (_input.jump && _jumpTimeoutDelta <= 0.0f)
@@ -235,7 +384,7 @@ namespace StarterAssets
 				// jump timeout
 				if (_jumpTimeoutDelta >= 0.0f)
 				{
-					_jumpTimeoutDelta -= Time.deltaTime;
+					_jumpTimeoutDelta -= Time.fixedDeltaTime;
 				}
 			}
 			else
@@ -246,20 +395,27 @@ namespace StarterAssets
 				// fall timeout
 				if (_fallTimeoutDelta >= 0.0f)
 				{
-					_fallTimeoutDelta -= Time.deltaTime;
+					_fallTimeoutDelta -= Time.fixedDeltaTime;
 				}
 
 				// if we are not grounded, do not jump
 				_input.jump = false;
+
+
 			}
 
+			/*
 			// apply gravity over time if under terminal (multiply by delta time twice to linearly speed up over time)
 			//착지한 상황에선 중력을 끈다.
 			if (_verticalVelocity < _terminalVelocity || !Grounded)
 			{
 				_verticalVelocity += Gravity * Time.deltaTime;
 			}
+			*/
+			
 		}
+
+		
 
 		private static float ClampAngle(float lfAngle, float lfMin, float lfMax)
 		{
@@ -276,6 +432,8 @@ namespace StarterAssets
 
 			if (Grounded) Gizmos.color = transparentGreen;
 			else Gizmos.color = transparentRed;
+
+			Gizmos.DrawCube(new Vector3(transform.position.x, transform.position.y + 1f, transform.position.z), new Vector3(pWidthCol, pHeightCol/2.0f, pWidthCol));
 
 			// when selected, draw a gizmo in the position of, and matching radius of, the grounded collider
 			Gizmos.DrawSphere(new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z), GroundedRadius);

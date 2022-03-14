@@ -76,6 +76,7 @@ public class World : MonoBehaviour
     //플레이어가 마지막으로 위치한 청크
     ChunkCoord playerLastChunkCoord;
 
+
 	void Start()
 	{
         //시드 값에 따라 난수생성기 초기화
@@ -135,8 +136,10 @@ public class World : MonoBehaviour
             || yP < 0 || yP >= VoxelData.ChunkHeight
             || zP < 0 || zP >= VoxelData.WorldSizeInVoxels)
         {
+            /*
             Debug.Log(string.Format("x : {0} y : {1} z : {2}\n" +
                 "xChunk : {3} zChunk : {4}", xP, yP, zP, xChunk, zChunk));
+            */
             return false;
         }
             
