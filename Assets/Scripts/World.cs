@@ -76,6 +76,19 @@ public class World : MonoBehaviour
     //플레이어가 마지막으로 위치한 청크
     ChunkCoord playerLastChunkCoord;
 
+    //만들 청크들을 저장하는 큐
+    Queue<ChunkCoord> chunksToCreateQue = new Queue<ChunkCoord>();
+    //코루틴이 이미 실행중인지 여부 판단을 위한 변수
+    private bool IsCreateChunks;
+
+    private IEnumerator m_CreateChunks;
+
+	void Awake()
+	{
+        //코루틴 캐싱
+        m_CreateChunks = CreateChunks();
+
+    }
 
 	void Start()
 	{
@@ -88,7 +101,7 @@ public class World : MonoBehaviour
             new Vector3(VoxelData.WorldSizeInVoxels / 2f,
             VoxelData.ChunkHeight, VoxelData.WorldSizeInVoxels / 2f);
         
-
+        //월드 생성
         GenerateWorld();
 
         //플레이어가 위치한 청크 초기화
@@ -109,7 +122,18 @@ public class World : MonoBehaviour
             //다시 갱신
             playerLastChunkCoord = GetChunkCoordFromVector3(player.position);
         }
+
+        //만약 만들 청크가 하나 이상이고 이미 갱신한 상태가 아니라면
+        if(chunksToCreateQue.Count > 0 && !IsCreateChunks)
+		{
+            m_CreateChunks = CreateChunks();
+            //코루틴을 시작하여 청크를 만든다.
+            StartCoroutine(m_CreateChunks);
+		}
+
+        
 	}
+    
     /// <summary>
     /// 지정된 좌표에 복셀의 유무를 반환한다.
     /// </summary>
@@ -119,44 +143,40 @@ public class World : MonoBehaviour
     /// <returns></returns>
     public bool CheckForVoxel(float _x, float _y, float _z)
 	{
-        //복셀의 0번 정점을 가리키는 정수 좌표
-        int xP = Mathf.FloorToInt(_x);
-        int yP = Mathf.FloorToInt(_y);
-        int zP = Mathf.FloorToInt(_z);
-
-        //복셀이 속한 청크의 좌표
-        int xChunk = xP / VoxelData.ChunkWidth;
-        int zChunk = zP / VoxelData.ChunkWidth;
-
-        //절대 좌표를 각 청크의 상대좌표로 변환하는 과정
-        xP -= (xChunk * VoxelData.ChunkWidth);
-        zP -= (zChunk * VoxelData.ChunkWidth);
-
-        if (xP < 0 || xP >= VoxelData.WorldSizeInVoxels
-            || yP < 0 || yP >= VoxelData.ChunkHeight
-            || zP < 0 || zP >= VoxelData.WorldSizeInVoxels)
-        {
-            /*
-            Debug.Log(string.Format("x : {0} y : {1} z : {2}\n" +
-                "xChunk : {3} zChunk : {4}", xP, yP, zP, xChunk, zChunk));
-            */
-            return false;
-        }
-            
-
-        return blockTypes[chunks[xChunk, zChunk].voxelMap[xP, yP, zP]].isSolid;
-        /*
-        정수의 나눗셈은 소수점이 날라가므로 xChunk에는 xP좌표가 속한 청크의 좌표, 
-        즉 ChunkCoord의 x 좌표가 들어갈 것이다. zChunk도 마찬가지. 
-        이것에 청크의 넓이를 곱해서 빼주는 것으로 청크 내에서의 좌표를 얻을 수 있다.
-        */
-
+        return CheckForVoxel(new Vector3(_x, _y, _z));
     }
+    
+    /// <summary>
+    /// 월드 좌표를 받아서 그 좌표가 속한 청크의 맵을 참조해서
+    /// 블럭의 유무를 반환
+    /// </summary>
+    /// <param name="pos"></param>
+    /// <returns></returns>
+    public bool CheckForVoxel(Vector3 pos)
+	{
+        //pos가 속한 청크 좌표 불러옴
+        ChunkCoord thisChunk = new ChunkCoord(pos);
+
+        //좌표 유효 반환
+        if (!IsVoxelInWorld(pos))
+            return false;
+
+        //지정된 좌표에 청크가 생성되었고, 청크의 맵이 초기화 되었다면
+        if(chunks[thisChunk.x, thisChunk.z] != null && chunks[thisChunk.x, thisChunk.z].IsMapInit)
+		{
+            //지정된 좌표에 있는 블럭의 타입을 받아 isSolid 반환
+            return blockTypes[chunks[thisChunk.x, thisChunk.z].GetVoxelFromGlobalVector3(pos)].isSolid;
+		}
+
+        //만약에 위에 조건에 모두 해당이 없으면 GetVoxel을 호출해서 확인
+        return blockTypes[GetVoxel(pos)].isSolid;
+	}
 
     //이 코드는 월드를 만들거나 동굴을 만들거나 하는 등의 알고리즘에 사용될 것
     //바이옴 등의 동작도 이곳에서 발생함
     /// <summary>
     /// 좌표를 받아서 해당 좌표의 블럭 ID를 반환
+    /// 맵 생성 알고리즘이 포함됨
     /// </summary>
     /// <param name="pos"></param>
     /// <returns></returns>
@@ -199,6 +219,7 @@ public class World : MonoBehaviour
         //돌이라면(== 표면의 흙이나 배드락이 아니라면
         if(vValue == 2)
 		{
+            //Lode에 대해서 반복, 블럭의 생성범위와 임계치, 스케일 체크 해서 vValue값을 변형
             foreach(Lode lode in biome.lodes)
 			{
                 //범위 내에 있다면
@@ -234,10 +255,34 @@ public class World : MonoBehaviour
             for (int z = (VoxelData.WorldSizeInChunks / 2) - VoxelData.ViewDistanceInChunks;
                 z < (VoxelData.WorldSizeInChunks / 2) + VoxelData.ViewDistanceInChunks; z++)
 			{
-                
-                CreateNewChunk(x, z);
+                //처음에는 생성되자마자 초기화 되어야 함
+                chunks[x, z] = new Chunk(new ChunkCoord(x, z), this, true);
+                activeChunks.Add(new ChunkCoord(x, z));
 			}
 		}  
+	}
+
+    /// <summary>
+    /// 청크를 생성하는 코루틴
+    /// </summary>
+    /// <returns></returns>
+    IEnumerator CreateChunks()
+	{
+        //청크 생성중임을 의미하는 플래그
+        IsCreateChunks = true;
+
+        //만들 청크들이 남아 있으면 계속 반복
+        while(chunksToCreateQue.Count > 0)
+		{
+            Debug.Log(chunksToCreateQue.Count);
+            //만들 청크 큐에서 청크를 초기화 시키고 큐에서 삭제
+            chunks[chunksToCreateQue.Peek().x, chunksToCreateQue.Peek().z].Init();
+            chunksToCreateQue.Dequeue();
+            //한 프레임 동안 양보
+            yield return null;
+		}
+
+        IsCreateChunks = false;
 	}
 
     /// <summary>
@@ -279,15 +324,19 @@ public class World : MonoBehaviour
 				{
                     //범위 내에 있는데 만들어지지 않았다면
                     if (chunks[temp.x, temp.z] == null)
-                        //만든다
-                        CreateNewChunk(temp.x, temp.z);
+                    {
+                        //청크를 생성만 하고(초기화는 하지 않은 상태)
+                        //만들 청크 목록에 넣는다.
+                        chunks[x, z] = new Chunk(new ChunkCoord(x, z), this, false);
+                        chunksToCreateQue.Enqueue(temp);
+                    }
                     //범위 내에 있는데 활성화 되어 있지 않다면
-                    else if(!chunks[temp.x, temp.z].IsActive)
-					{
+                    else if (!chunks[temp.x, temp.z].IsActive)
+                    {
                         //활성화 시키고 활성화된 목록에 올린다.
                         chunks[temp.x, temp.z].IsActive = true;
                         activeChunks.Add(temp);
-					}
+                    }
 				}
                 //이전 활성 목록에서 현재 시야에 있는 것들을 뺀다
                 for(int i = 0; i < prevActiveChunks.Count; i++)
@@ -306,19 +355,6 @@ public class World : MonoBehaviour
             chunks[c.x, c.z].IsActive = false;
 		}
 	}
-
-    /// <summary>
-    /// 청크 좌표를 기반으로 청크 생성
-    /// </summary>
-    /// <param name="x"></param>
-    /// <param name="z"></param>
-    void CreateNewChunk(int x, int z)
-	{
-        chunks[x, z] = new Chunk(new ChunkCoord(x, z), this);
-        
-        //새 청크를 만들면 활성화 된 것에 추가
-        activeChunks.Add(new ChunkCoord(x, z));
-    }
 
     /// <summary>
     /// 지정된 청크 좌표에 있는 청크가 월드 범위 내에 있는지 여부 반환

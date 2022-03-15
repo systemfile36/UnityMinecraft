@@ -10,11 +10,29 @@ public class ChunkCoord
     public int x;
     public int z;
 
+    public ChunkCoord()
+	{
+        x = 0;
+        z = 0;
+	}
+
     public ChunkCoord(int x, int z)
     {
         this.x = x;
         this.z = z;
     }
+    /// <summary>
+    /// 좌표를 받아 그 좌표가 속한 청크의 좌표로 초기화
+    /// </summary>
+    /// <param name="pos"></param>
+    public ChunkCoord(Vector3 pos)
+	{
+        int xP = Mathf.FloorToInt(pos.x);
+        int zP = Mathf.FloorToInt(pos.z);
+
+        x = xP / VoxelData.ChunkWidth;
+        z = zP / VoxelData.ChunkWidth;
+	}
 	//비교문을 위한 Equals 오버라이딩
 	public override bool Equals(object obj)
 	{
@@ -58,11 +76,36 @@ public class Chunk
     //블럭 타입등의 참조를 위한 World 참조
     World world;
 
+    private bool _IsActive;
+
+    //voxelMap이 초기화 되었는지 여부
+    public bool IsMapInit = false;
+
     //World를 인자로 받는다.(find는 비싼(expansive한 작업))
-    public Chunk (ChunkCoord _coord, World _world)
+    /// <summary>
+    /// 청크의 생성자, 즉시 초기화할지 여부를 결정가능
+    /// </summary>
+    /// <param name="_coord">생성될 청크의 좌표</param>
+    /// <param name="_world">World에 대한 참조</param>
+    /// <param name="genOnLoad">생성되자마자 Init을 호출 할지 여부</param>
+    public Chunk (ChunkCoord _coord, World _world, bool genOnLoad)
 	{
         this.world = _world;
         this.coord = _coord;
+        IsActive = true;
+
+        if(genOnLoad)
+		{
+            Init();
+		}
+
+    }
+
+    /// <summary>
+    /// 청크를 초기화. 맵을 세팅하고 메쉬를 만들어서 추가하는 과정
+    /// </summary>
+    public void Init()
+	{
         chunkObject = new GameObject();
 
         //인스펙터에서 하던걸 코드로 옮긴 것이다.
@@ -106,6 +149,7 @@ public class Chunk
                 }
             }
         }
+        IsMapInit = true;
     }
     /// <summary>
     /// 복셀이 청크 내부에 있는지 여부 반환
@@ -138,13 +182,37 @@ public class Chunk
 
         //만약 복셀이 청크 내부에 있지 않으면 
         //청크의 좌표를 pos에 더해서 블럭 타입의 isSolid 참조
+        //즉, 다른 청크의 블럭 여부를 확인하기 위함이다.
+        //바깥면 여부를 판단할 때 필요함
         //Air는 isSolid가 false 이므로 그려지지 않을 것
         if (!IsVoxelInChunk(x, y, z))
-            return world.blockTypes[world.GetVoxel(pos + position)].isSolid;
+            //월드 좌표로 변환함에 유의
+            return world.CheckForVoxel(pos + position);
 
         //voxemMap에 저장된 블럭 타입을 참고로 World의 BlockType[]의 isSolid를 참조
         return world.blockTypes[voxelMap[x, y, z]].isSolid;
 	}
+
+    /// <summary>
+    /// 월드 기준 좌표를 받아서 자신의 맵 참조, 그 위치의 블럭 타입 반환
+    /// </summary>
+    /// <param name="pos"></param>
+    /// <returns></returns>
+    public byte GetVoxelFromGlobalVector3(Vector3 pos)
+	{
+        //좌표값 정수로
+        int xP = Mathf.FloorToInt(pos.x);
+        int yP = Mathf.FloorToInt(pos.y);
+        int zP = Mathf.FloorToInt(pos.z);
+
+        //월드 기준 좌표를 이 청크의 맵에 사용되는 좌표로 변환
+        //청크의 절대 좌표를 빼는 것으로 가능함
+        xP -= Mathf.FloorToInt(chunkObject.transform.position.x);
+        zP -= Mathf.FloorToInt(chunkObject.transform.position.z);
+
+        return voxelMap[xP, yP, zP];
+
+    }
 
     /// <summary>
     /// 메쉬 데이터를 만든다.
@@ -171,11 +239,13 @@ public class Chunk
 	{
         get
 		{
-            return chunkObject.activeSelf;
+            return _IsActive;
 		}
         set
 		{
-            chunkObject.SetActive(value);
+            _IsActive = value;
+            if (chunkObject != null)
+                chunkObject.SetActive(value);
 		}
 	}
     /// <summary>
