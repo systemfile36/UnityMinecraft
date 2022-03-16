@@ -6,7 +6,7 @@ using UnityEngine.InputSystem;
 /* Note: animations are called via the controller for both the character and capsule using animator null checks
  */
 
-/* StarterAssets을 변형하였다. 한국어 주석이 붙은 것은 내가 수정한 부분
+/* StarterAssets을 변형하였다. 한국어 주석이 붙은 것은 주로 내가 수정한 부분
  */
 
 namespace StarterAssets
@@ -87,7 +87,6 @@ namespace StarterAssets
 		public float pHeightCol = 2.0f;
 		[Tooltip("Offset for XZ Collision Check, adding to y")]
 		public float pYOffset = 0.5f;
-
 
 		private void Awake()
 		{

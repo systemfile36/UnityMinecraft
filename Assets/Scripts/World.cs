@@ -1,6 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+#if ENABLE_INPUT_SYSTEM && STARTER_ASSETS_PACKAGES_CHECKED
+using UnityEngine.InputSystem;
+#endif
 
 //직렬화 가능한 BlockType 클래스
 [System.Serializable]
@@ -72,7 +75,7 @@ public class World : MonoBehaviour
     List<ChunkCoord> activeChunks = new List<ChunkCoord>();
 
     //플레이어의 현재 위치한 청크 캐싱
-    ChunkCoord playerChunkCoord;
+    public ChunkCoord playerChunkCoord;
     //플레이어가 마지막으로 위치한 청크
     ChunkCoord playerLastChunkCoord;
 
@@ -81,6 +84,7 @@ public class World : MonoBehaviour
     //코루틴이 이미 실행중인지 여부 판단을 위한 변수
     private bool IsCreateChunks;
 
+    //코루틴을 위한 캐싱 변수
     private IEnumerator m_CreateChunks;
 
 	void Awake()
@@ -129,9 +133,7 @@ public class World : MonoBehaviour
             m_CreateChunks = CreateChunks();
             //코루틴을 시작하여 청크를 만든다.
             StartCoroutine(m_CreateChunks);
-		}
-
-        
+		}  
 	}
     
     /// <summary>
