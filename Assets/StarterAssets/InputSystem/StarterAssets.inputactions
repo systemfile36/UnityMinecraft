@@ -44,6 +44,14 @@
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": ""
+                },
+                {
+                    "name": "Scroll",
+                    "type": "Value",
+                    "id": "aeb8b85a-dd62-4121-8033-21f4b4903989",
+                    "expectedControlType": "Axis",
+                    "processors": "",
+                    "interactions": ""
                 }
             ],
             "bindings": [
@@ -231,6 +239,17 @@
                     "processors": "",
                     "groups": "KeyboardMouse",
                     "action": "DebugMenu",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "a139d9c1-6b40-4e0c-aeac-11baa0820ce2",
+                    "path": "<Mouse>/scroll/y",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "KeyboardMouse",
+                    "action": "Scroll",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

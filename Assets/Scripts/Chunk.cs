@@ -126,8 +126,7 @@ public class Chunk
         chunkObject.name = string.Format("Chunk {0}, {1}", coord.x, coord.z);
 
         PopulateVoxelMap();
-        CreateMeshData();
-        CreateChunkMesh();
+        RefreshChunkMeshData();
 
         //meshCollider.sharedMesh = meshFilter.mesh;
     }
@@ -215,10 +214,11 @@ public class Chunk
     }
 
     /// <summary>
-    /// 메쉬 데이터를 만든다.
+    /// 메쉬 데이터를 갱신한다.
     /// </summary>
-    void CreateMeshData()
+    void RefreshChunkMeshData()
 	{
+        ClearMeshData();
         for (int y = 0; y < VoxelData.ChunkHeight; y++)
         {
             for (int x = 0; x < VoxelData.ChunkWidth; x++)
@@ -231,7 +231,20 @@ public class Chunk
                 }
             }
         }
+        ApplyChunkMesh();
     }
+
+    /// <summary>
+    /// 메쉬 데이터를 초기화 한다. 갱신을 위함
+    /// </summary>
+    void ClearMeshData()
+	{
+        vertexIndex = 0;
+        vertices.Clear();
+        triangles.Clear();
+        uvs.Clear();
+	}
+
     /// <summary>
     /// 청크의 활성화 여부를 가져오거나 설정함
     /// </summary>
@@ -304,7 +317,7 @@ public class Chunk
     /// <summary>
     /// 청크의 메쉬를 만듭니다.(메쉬 데이터 반영)
     /// </summary>
-    void CreateChunkMesh()
+    void ApplyChunkMesh()
 	{
         Mesh mesh = new Mesh();
         mesh.vertices = vertices.ToArray();

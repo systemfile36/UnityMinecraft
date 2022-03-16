@@ -302,6 +302,18 @@ public class World : MonoBehaviour
 
     }
     /// <summary>
+    /// 좌표를 받아서 그 좌표가 속한 청크 객체를 반환
+    /// </summary>
+    /// <param name="pos"></param>
+    /// <returns></returns>
+    public Chunk GetChunkFromVector3(Vector3 pos)
+	{
+        //좌표값 정수로
+        int x = Mathf.FloorToInt(pos.x / VoxelData.ChunkWidth);
+        int z = Mathf.FloorToInt(pos.z / VoxelData.ChunkWidth);
+        return chunks[x, z];
+    }
+    /// <summary>
     /// 플레이어의 좌표를 참조, 시야 범위내의 청크를 생성
     /// </summary>
     void CheckViewDistance()

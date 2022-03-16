@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 #if ENABLE_INPUT_SYSTEM && STARTER_ASSETS_PACKAGES_CHECKED
 using UnityEngine.InputSystem;
 #endif
@@ -88,6 +89,28 @@ namespace StarterAssets
 		[Tooltip("Offset for XZ Collision Check, adding to y")]
 		public float pYOffset = 0.5f;
 
+		//가이드 블럭 참조
+		[Header("Guide Reference")]
+		[Tooltip("This represents Selected Block")]
+		public Transform selectGuide;
+		[Tooltip("This represents Block that will be Placed")]
+		public Transform placeGuide;
+
+		//레이 캐스트 구현을 위한 변수
+		//checkInterval : 체크하는 간격, 이 값만큼 좌표를 더하면서 체크
+		//reach : 손이 닿는 범위
+		[Header("Value to Pseudo Raycast")]
+		[Tooltip("Interval of Check")]
+		public float checkInterval = 0.1f;
+		[Tooltip("Reach of Player")]
+		public float reach = 8f;
+
+		//들고있는 블럭의 인덱스
+		public byte HoldingBlockIndex = 1;
+
+		//가지고 있는 블럭 표시
+		public Text HoldingBlockTxt;
+
 		private void Awake()
 		{
 			// get a reference to our main camera
@@ -122,6 +145,33 @@ namespace StarterAssets
 			Move();
 			*/
 			//Debug.Log(_verticalVelocity + " " + Grounded);
+
+			SetGuideBlock();
+
+			//스크롤로 블럭을 선택하는 로직
+			if(_input.ScrollAxis != 0)
+			{
+				Debug.Log(_input.ScrollAxis);
+				//스크롤 값에 따라 인덱스 증감
+				if (_input.ScrollAxis > _input.ScrollThreshold)
+					HoldingBlockIndex++;
+				else if(_input.ScrollAxis < -_input.ScrollThreshold)
+					HoldingBlockIndex--;
+
+				//범위 체크해서 순회하게 만듬
+				if(HoldingBlockIndex > (byte)(world.blockTypes.Length - 1))
+				{
+					HoldingBlockIndex = 1;
+				}
+
+				if(HoldingBlockIndex < 1)
+				{
+					HoldingBlockIndex = (byte)(world.blockTypes.Length - 1);
+				}
+
+				HoldingBlockTxt.text = "Holding " + world.blockTypes[HoldingBlockIndex].blockName + " block now";
+			}
+
 		}
 
 		private void FixedUpdate()
@@ -136,6 +186,55 @@ namespace StarterAssets
 		private void LateUpdate()
 		{
 			CameraRotation();
+		}
+
+		//여기서 부터 이동을 제외한 로직
+
+		
+		/// <summary>
+		/// 블럭을 선택하고 그에 맞게 가이드 블럭을 배치하는 메소드
+		/// 의사 레이캐스트로 구현
+		/// </summary>
+		private void SetGuideBlock()
+		{
+			float step = checkInterval;
+
+			//마지막 위치를 저장한다.
+			//놓을 위치를 정할 때 사용하기 위함이다.
+			Vector3 lastP = new Vector3();
+
+			//step이 reach가 될때까지 반복
+			while (step < reach)
+			{
+				//메인 카메라의 좌표에 바라보는 방향 벡터를 계속해서 더한다.
+				//step은 늘어날 예정
+				Vector3 pos = _mainCamera.transform.position + (_mainCamera.transform.forward * step);
+
+				//만약 pos에 블럭이 있다면
+				if(world.CheckForVoxel(pos))
+				{
+					//SelectGuide를 현재 pos 좌표로 옮긴다. 
+					//다시한번 기록하지만, 어떤 좌표의 값을 정수로 내림하면 그 좌표가 속한 블럭의 좌표이다.
+					selectGuide.position = new Vector3(Mathf.FloorToInt(pos.x), Mathf.FloorToInt(pos.y), Mathf.FloorToInt(pos.y));
+
+					//PlaceGuide를 이전 pos 좌표로 옮긴다. 그래야 선택된 블럭 바로 전에 놓일 것
+					placeGuide.position = lastP;
+
+					//활성화 시킨다.
+					selectGuide.gameObject.SetActive(true);
+					placeGuide.gameObject.SetActive(true);
+
+					return;
+				}
+				
+				//이번 pos에 블럭이 없었다면 마지막 위치를 갱신하고 step을 올린다.
+				lastP = new Vector3(Mathf.FloorToInt(pos.x), Mathf.FloorToInt(pos.y), Mathf.FloorToInt(pos.y));
+				step += checkInterval;
+			}
+
+			//만약 reach에 닿을 때까지 블럭을 발견하지 못했다면 가이드 비활성화
+			selectGuide.gameObject.SetActive(false);
+			placeGuide.gameObject.SetActive(false);
 		}
 
 		private void GroundedCheck()

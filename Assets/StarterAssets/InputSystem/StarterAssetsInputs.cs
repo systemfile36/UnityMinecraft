@@ -19,6 +19,10 @@ namespace StarterAssets
 		[Header("DebugMenu Set")]
 		public GameObject DebugText;
 
+		[Header("Scroll Value")]
+		public float ScrollAxis;
+		public float ScrollThreshold = 1f;
+
 #if !UNITY_IOS || !UNITY_ANDROID
 		[Header("Mouse Cursor Settings")]
 		public bool cursorLocked = true;
@@ -59,6 +63,14 @@ namespace StarterAssets
 			Debug.Log("OnDebugMenu Called");
 			if (DebugText != null)
 				DebugText.SetActive(!DebugText.activeSelf);
+		}
+		/// <summary>
+		/// 스크롤의 축 값을 float로 저장하는 이벤트
+		/// </summary>
+		/// <param name="value"></param>
+		public void OnScroll(InputValue value)
+		{
+			ScrollAxis = value.Get<float>();
 		}
 
 #else
