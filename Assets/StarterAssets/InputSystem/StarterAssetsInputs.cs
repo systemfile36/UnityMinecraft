@@ -23,6 +23,10 @@ namespace StarterAssets
 		public float ScrollAxis;
 		public float ScrollThreshold = 1f;
 
+		[Header("Click Value")]
+		public bool IsLeftClicked = false;
+		public bool IsRightClicked = false;
+
 #if !UNITY_IOS || !UNITY_ANDROID
 		[Header("Mouse Cursor Settings")]
 		public bool cursorLocked = true;
@@ -73,6 +77,15 @@ namespace StarterAssets
 			ScrollAxis = value.Get<float>();
 		}
 
+		//클릭 상태 변수 반환
+		public void OnLeftClick(InputValue value)
+		{
+			IsLeftClicked = value.isPressed;
+		}
+		public void OnRightClick(InputValue value)
+		{
+			IsRightClicked = value.isPressed;
+		}
 #else
 	// old input sys if we do decide to have it (most likely wont)...
 #endif

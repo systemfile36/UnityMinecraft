@@ -168,6 +168,56 @@ public class Chunk
     }
 
     /// <summary>
+    /// 지정된 좌표의 블럭을 id로 바꾼다.
+    /// </summary>
+    /// <param name="pos"></param>
+    /// <param name="id"></param>
+    public void EditVoxel(Vector3 pos, byte id)
+	{
+        //좌표값 정수로
+        int xP = Mathf.FloorToInt(pos.x);
+        int yP = Mathf.FloorToInt(pos.y);
+        int zP = Mathf.FloorToInt(pos.z);
+
+        //월드 기준 좌표를 이 청크의 맵에 사용되는 좌표로 변환
+        //청크의 절대 좌표를 빼는 것으로 가능함
+        xP -= Mathf.FloorToInt(chunkObject.transform.position.x);
+        zP -= Mathf.FloorToInt(chunkObject.transform.position.z);
+
+        voxelMap[xP, yP, zP] = id;
+
+        RefreshChunkMeshData();
+
+        //인접한 청크 조건에 따라 갱신
+        RefreshAdjacentChunk(xP, yP, zP);
+    }
+    /// <summary>
+    /// 수정한 블럭의 좌표를 인자로 받아 그 블럭과 인접한 청크 갱신
+    /// </summary>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <param name="z"></param>
+    private void RefreshAdjacentChunk(int x, int y, int z)
+	{
+        Vector3 tempV = new Vector3(x, y, z);
+
+        //수정된 블럭의 각 면의 방향에 대하여 반복
+        for(int p = 0; p < 6; p++)
+		{
+            //각 면의 방향으로 한칸 이동한 좌표
+            Vector3 temp = tempV + VoxelData.faceChecks[p];
+
+            //수정된 블럭에서 한칸 씩 이동해서 그 블럭이 청크 내부에 있는지 체크한다.
+            if (!IsVoxelInChunk((int)temp.x, (int)temp.y, (int)temp.z))
+			{
+                //만약 내부에 없다면, 다른 청크에 있고, 수정된 블럭과 접해있다는 뜻
+                //따라서 그 청크를 갱신한다.
+                world.GetChunkFromVector3(temp + position).RefreshChunkMeshData();
+			}
+		}
+	}
+
+    /// <summary>
     /// 지정 좌표의 블록 유무를 반환
     /// </summary>
     /// <param name="pos">좌표</param>

@@ -36,7 +36,7 @@ namespace StarterAssets
 
 		[Space(10)]
 		[Tooltip("Time required to pass before being able to jump again. Set to 0f to instantly jump again")]
-		public float JumpTimeout = 0.1f;
+		public float JumpTimeout = 0.0f;
 		[Tooltip("Time required to pass before entering the fall state. Useful for walking down stairs")]
 		public float FallTimeout = 0.15f;
 
@@ -111,6 +111,16 @@ namespace StarterAssets
 		//가지고 있는 블럭 표시
 		public Text HoldingBlockTxt;
 
+		//블럭 설치, 파괴 딜레이를 위한 델타 타임
+		private float _PlaceTimeOut;
+		private float _DestroyTimeOut;
+
+		[Header("Place/Destroy Delay")]
+		[Tooltip("Place Delay")]
+		public float PlaceDelay = 0.125f;
+		[Tooltip("Destroy Delay")]
+		public float DestroyDelay = 0.125f;
+
 		private void Awake()
 		{
 			// get a reference to our main camera
@@ -133,6 +143,10 @@ namespace StarterAssets
 			// reset our timeouts on start
 			_jumpTimeoutDelta = JumpTimeout;
 			_fallTimeoutDelta = FallTimeout;
+
+			//설치, 파괴 딜레이 초기화
+			_PlaceTimeOut = PlaceDelay;
+			_DestroyTimeOut = DestroyDelay;
 		}
 
 		private void Update()
@@ -144,12 +158,14 @@ namespace StarterAssets
 			UpCollision();
 			Move();
 			*/
-			//Debug.Log(_verticalVelocity + " " + Grounded);
-
+			//가이드 블럭 생신
 			SetGuideBlock();
 
+			PlaceAndDestroyBlock();
+
+
 			//스크롤로 블럭을 선택하는 로직
-			if(_input.ScrollAxis != 0)
+			if (_input.ScrollAxis != 0)
 			{
 				Debug.Log(_input.ScrollAxis);
 				//스크롤 값에 따라 인덱스 증감
@@ -171,7 +187,6 @@ namespace StarterAssets
 
 				HoldingBlockTxt.text = "Holding " + world.blockTypes[HoldingBlockIndex].blockName + " block now";
 			}
-
 		}
 
 		private void FixedUpdate()
@@ -188,8 +203,54 @@ namespace StarterAssets
 			CameraRotation();
 		}
 
-		//여기서 부터 이동을 제외한 로직
+		//여기서 부터 --End-- 까지 이동을 제외한 로직
 
+		/// <summary>
+		/// 마우스 입력에 따라 블럭 설치와 파괴
+		/// </summary>
+		public void PlaceAndDestroyBlock()
+		{
+			//선택 가이드가 활성화 되어 있다면
+			if (selectGuide.gameObject.activeSelf)
+			{
+				//왼쪽 클릭시 블럭 파괴, 시간 체크
+				if (_input.IsLeftClicked && _PlaceTimeOut <= 0.0f)
+				{
+					//선택 가이드의 좌표의 청크를 받아서 그 좌표의 블럭을 Air로 만든다.
+					//즉 파괴한다.
+					world.GetChunkFromVector3(selectGuide.position).EditVoxel(selectGuide.position, 0);
+					_input.IsLeftClicked = false;
+
+					//델타 타임 초기화
+					_PlaceTimeOut = PlaceDelay;
+				}
+				//델타 타임 감소
+				if (_PlaceTimeOut >= 0.0f)
+				{
+					_PlaceTimeOut -= Time.deltaTime;
+				}
+			}
+
+			//놓을 위치 가이드가 활성화 되어있다면
+			if(placeGuide.gameObject.activeSelf)
+			{
+				//오른쪽 클릭시 들고 있는 블럭 설치
+				if (_input.IsRightClicked && _DestroyTimeOut <= 0.0f)
+				{
+					//놓을 위치 가이드의 위치에 들고있는 블럭을 넣는다.
+					world.GetChunkFromVector3(placeGuide.position).EditVoxel(placeGuide.position, HoldingBlockIndex);
+					_input.IsRightClicked = false;
+
+					_DestroyTimeOut = DestroyDelay;
+				}
+
+				//델타 타임 감소
+				if (_DestroyTimeOut >= 0.0f)
+				{
+					_DestroyTimeOut -= Time.deltaTime;
+				}
+			}
+		}
 		
 		/// <summary>
 		/// 블럭을 선택하고 그에 맞게 가이드 블럭을 배치하는 메소드
@@ -215,7 +276,7 @@ namespace StarterAssets
 				{
 					//SelectGuide를 현재 pos 좌표로 옮긴다. 
 					//다시한번 기록하지만, 어떤 좌표의 값을 정수로 내림하면 그 좌표가 속한 블럭의 좌표이다.
-					selectGuide.position = new Vector3(Mathf.FloorToInt(pos.x), Mathf.FloorToInt(pos.y), Mathf.FloorToInt(pos.y));
+					selectGuide.position = new Vector3(Mathf.FloorToInt(pos.x), Mathf.FloorToInt(pos.y), Mathf.FloorToInt(pos.z));
 
 					//PlaceGuide를 이전 pos 좌표로 옮긴다. 그래야 선택된 블럭 바로 전에 놓일 것
 					placeGuide.position = lastP;
@@ -228,7 +289,7 @@ namespace StarterAssets
 				}
 				
 				//이번 pos에 블럭이 없었다면 마지막 위치를 갱신하고 step을 올린다.
-				lastP = new Vector3(Mathf.FloorToInt(pos.x), Mathf.FloorToInt(pos.y), Mathf.FloorToInt(pos.y));
+				lastP = new Vector3(Mathf.FloorToInt(pos.x), Mathf.FloorToInt(pos.y), Mathf.FloorToInt(pos.z));
 				step += checkInterval;
 			}
 
@@ -236,6 +297,8 @@ namespace StarterAssets
 			selectGuide.gameObject.SetActive(false);
 			placeGuide.gameObject.SetActive(false);
 		}
+
+		//--End--
 
 		private void GroundedCheck()
 		{

@@ -133,7 +133,9 @@ public class World : MonoBehaviour
             m_CreateChunks = CreateChunks();
             //코루틴을 시작하여 청크를 만든다.
             StartCoroutine(m_CreateChunks);
-		}  
+		}
+
+        
 	}
     
     /// <summary>
@@ -276,7 +278,7 @@ public class World : MonoBehaviour
         //만들 청크들이 남아 있으면 계속 반복
         while(chunksToCreateQue.Count > 0)
 		{
-            Debug.Log(chunksToCreateQue.Count);
+            
             //만들 청크 큐에서 청크를 초기화 시키고 큐에서 삭제
             chunks[chunksToCreateQue.Peek().x, chunksToCreateQue.Peek().z].Init();
             chunksToCreateQue.Dequeue();
@@ -294,10 +296,11 @@ public class World : MonoBehaviour
     /// <returns></returns>
     ChunkCoord GetChunkCoordFromVector3(Vector3 pos)
 	{
+
         //좌표값 정수로
         int x = Mathf.FloorToInt(pos.x / VoxelData.ChunkWidth);
         int z = Mathf.FloorToInt(pos.z / VoxelData.ChunkWidth);
-
+        
         return new ChunkCoord(x, z);
 
     }
@@ -311,8 +314,10 @@ public class World : MonoBehaviour
         //좌표값 정수로
         int x = Mathf.FloorToInt(pos.x / VoxelData.ChunkWidth);
         int z = Mathf.FloorToInt(pos.z / VoxelData.ChunkWidth);
-        return chunks[x, z];
+        
+        return chunks[x,z];
     }
+
     /// <summary>
     /// 플레이어의 좌표를 참조, 시야 범위내의 청크를 생성
     /// </summary>
