@@ -12,6 +12,9 @@ public class BlockType
     public string blockName;
     public bool isSolid;
 
+    //인벤토리 등에서 사용될 아이콘
+    public Sprite icon;
+
     [Header("Texture Values")]
     public int backFaceTexture;
     public int frontFaceTexture;

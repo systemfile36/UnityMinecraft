@@ -108,8 +108,6 @@ namespace StarterAssets
 		//들고있는 블럭의 인덱스
 		public byte HoldingBlockIndex = 1;
 
-		//가지고 있는 블럭 표시
-		public Text HoldingBlockTxt;
 
 		//블럭 설치, 파괴 딜레이를 위한 델타 타임
 		private float _PlaceTimeOut;
@@ -163,7 +161,7 @@ namespace StarterAssets
 
 			PlaceAndDestroyBlock();
 
-
+			/*
 			//스크롤로 블럭을 선택하는 로직
 			if (_input.ScrollAxis != 0)
 			{
@@ -185,8 +183,9 @@ namespace StarterAssets
 					HoldingBlockIndex = (byte)(world.blockTypes.Length - 1);
 				}
 
-				HoldingBlockTxt.text = "Holding " + world.blockTypes[HoldingBlockIndex].blockName + " block now";
+				
 			}
+			*/
 		}
 
 		private void FixedUpdate()
