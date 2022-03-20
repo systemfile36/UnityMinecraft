@@ -85,4 +85,25 @@ public class VoxelData
 		new Vector2(1.0f, 0.0f), //1
 		new Vector2(1.0f, 1.0f)  //2
 	};
+	/// <summary>
+	/// 벡터 두개를 정수로 내림한 후 일치 여부 반환
+	/// </summary>
+	/// <param name="a"></param>
+	/// <param name="b"></param>
+	/// <returns></returns>
+	public static bool CompareVector3ByInteger(Vector3 a, Vector3 b)
+	{
+		int aX = Mathf.FloorToInt(a.x);
+		int aY = Mathf.FloorToInt(a.y);
+		int aZ = Mathf.FloorToInt(a.z);
+
+		int bX = Mathf.FloorToInt(b.x);
+		int bY = Mathf.FloorToInt(b.y);
+		int bZ = Mathf.FloorToInt(b.z);
+
+		if (aX == bX && aY == bY && aZ == bZ)
+			return true;
+		else
+			return false;
+	}
 }

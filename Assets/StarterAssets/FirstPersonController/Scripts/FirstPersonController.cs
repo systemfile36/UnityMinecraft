@@ -46,7 +46,7 @@ namespace StarterAssets
 		[Tooltip("Useful for rough ground")]
 		public float GroundedOffset = -0.14f;
 		[Tooltip("The radius of the grounded check. Should match the radius of the CharacterController")]
-		public float GroundedRadius = 0.5f;
+		public float GroundedRadius = 0.2f;
 		[Tooltip("What layers the character uses as ground")]
 		public LayerMask GroundLayers;
 
@@ -83,11 +83,13 @@ namespace StarterAssets
 		//플레이어 판정 범위용 변수
 		[Header("Colliders")]
 		[Tooltip("Width of Player Collision Check")]
-		public float pWidthCol = 0.5f;
+		public float pWidthCol = 0.2f;
 		[Tooltip("Height Offset of Player Collision Check")]
-		public float pHeightCol = 2.0f;
+		public float pHeightCol = 1.5f;
 		[Tooltip("Offset for XZ Collision Check, adding to y")]
 		public float pYOffset = 0.5f;
+		[Tooltip("Offset for Side Collision Check, adding to pWidth")]
+		public float pWidthSideOffset = 0.2f;
 
 		//가이드 블럭 참조
 		[Header("Guide Reference")]
@@ -106,7 +108,7 @@ namespace StarterAssets
 		public float reach = 8f;
 
 		//들고있는 블럭의 인덱스
-		public byte HoldingBlockIndex = 1;
+		public byte HoldingBlockId = 0;
 
 
 		//블럭 설치, 파괴 딜레이를 위한 델타 타임
@@ -233,11 +235,13 @@ namespace StarterAssets
 			//놓을 위치 가이드가 활성화 되어있다면
 			if(placeGuide.gameObject.activeSelf)
 			{
-				//오른쪽 클릭시 들고 있는 블럭 설치
-				if (_input.IsRightClicked && _DestroyTimeOut <= 0.0f)
+				//오른쪽 클릭시 들고 있는 블럭 설치 (들고 있는 블럭이 0이라면 설치 X)
+				if (_input.IsRightClicked && _DestroyTimeOut <= 0.0f && HoldingBlockId != 0)
 				{
 					//놓을 위치 가이드의 위치에 들고있는 블럭을 넣는다.
-					world.GetChunkFromVector3(placeGuide.position).EditVoxel(placeGuide.position, HoldingBlockIndex);
+					//놓을 위치가 플레이어 위치거나 머리 위치면 놓지 않는다.
+					if (!VoxelData.CompareVector3ByInteger(placeGuide.position, transform.position) && !VoxelData.CompareVector3ByInteger(placeGuide.position, transform.position + Vector3.up))
+						world.GetChunkFromVector3(placeGuide.position).EditVoxel(placeGuide.position, HoldingBlockId);
 					_input.IsRightClicked = false;
 
 					_DestroyTimeOut = DestroyDelay;
@@ -332,8 +336,13 @@ namespace StarterAssets
 			{
 				//상승 중일때만 적용
 				_verticalVelocity = 0.0f;
+				//점프 초기화
+				_input.jump = false;
 			}
 		}
+
+		#region X, Z축 충돌 판정
+
 		/// <summary>
 		/// +X방향 충돌 확인
 		/// </summary>
@@ -341,8 +350,8 @@ namespace StarterAssets
 		{
 			get
 			{
-				if (world.CheckForVoxel(transform.position.x + pWidthCol, transform.position.y + pHeightCol, transform.position.z)
-				|| world.CheckForVoxel(transform.position.x + pWidthCol, transform.position.y + pYOffset, transform.position.z))
+				if (world.CheckForVoxel(transform.position.x + pWidthCol + pWidthSideOffset, transform.position.y + pHeightCol, transform.position.z)
+				|| world.CheckForVoxel(transform.position.x + pWidthCol + pWidthSideOffset, transform.position.y + pYOffset, transform.position.z))
 				{
 					return true;
 				}
@@ -360,8 +369,8 @@ namespace StarterAssets
 		{
 			get
 			{
-				if (world.CheckForVoxel(transform.position.x - pWidthCol, transform.position.y + pHeightCol, transform.position.z)
-				|| world.CheckForVoxel(transform.position.x - pWidthCol, transform.position.y + pYOffset, transform.position.z))
+				if (world.CheckForVoxel(transform.position.x - pWidthCol - pWidthSideOffset, transform.position.y + pHeightCol, transform.position.z)
+				|| world.CheckForVoxel(transform.position.x - pWidthCol - pWidthSideOffset, transform.position.y + pYOffset, transform.position.z))
 				{
 					return true;
 
@@ -379,8 +388,8 @@ namespace StarterAssets
 		{
 			get
 			{
-				if (world.CheckForVoxel(transform.position.x, transform.position.y + pHeightCol, transform.position.z + pWidthCol)
-				|| world.CheckForVoxel(transform.position.x, transform.position.y + pYOffset, transform.position.z + pWidthCol))
+				if (world.CheckForVoxel(transform.position.x, transform.position.y + pHeightCol, transform.position.z + pWidthCol + pWidthSideOffset)
+				|| world.CheckForVoxel(transform.position.x, transform.position.y + pYOffset, transform.position.z + pWidthCol + pWidthSideOffset))
 				{
 					return true;
 				}
@@ -398,8 +407,8 @@ namespace StarterAssets
 		{
 			get
 			{
-				if (world.CheckForVoxel(transform.position.x, transform.position.y + pHeightCol, transform.position.z - pWidthCol)
-				|| world.CheckForVoxel(transform.position.x, transform.position.y + pYOffset, transform.position.z - pWidthCol))
+				if (world.CheckForVoxel(transform.position.x, transform.position.y + pHeightCol, transform.position.z - pWidthCol - pWidthSideOffset)
+				|| world.CheckForVoxel(transform.position.x, transform.position.y + pYOffset, transform.position.z - pWidthCol - pWidthSideOffset))
 				{
 					return true;
 				}
@@ -409,6 +418,10 @@ namespace StarterAssets
 				}	
 			}
 		}
+
+		
+
+		#endregion
 
 		private void ApplyGravity()
 		{

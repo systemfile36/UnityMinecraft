@@ -39,7 +39,8 @@ public class ChunkCoord
         ChunkCoord c = obj as ChunkCoord;
         if (c == null)
             return false;
-        else if (c.x == x && c.z == z)
+
+        if (c.x == x && c.z == z)
             return true;
         else
             return false;
@@ -107,7 +108,7 @@ public class Chunk
     public void Init()
 	{
         chunkObject = new GameObject();
-
+        //IsActive = true;
         //인스펙터에서 하던걸 코드로 옮긴 것이다.
         //chunkObject에 메쉬 필터와 메쉬 렌더러를 추가하고 변수에 저장한다.
         meshFilter = chunkObject.AddComponent<MeshFilter>();
@@ -184,6 +185,8 @@ public class Chunk
         xP -= Mathf.FloorToInt(chunkObject.transform.position.x);
         zP -= Mathf.FloorToInt(chunkObject.transform.position.z);
 
+
+        //맵에 저장된 id를 변경
         voxelMap[xP, yP, zP] = id;
 
         RefreshChunkMeshData();

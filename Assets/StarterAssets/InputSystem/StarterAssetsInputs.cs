@@ -20,7 +20,7 @@ namespace StarterAssets
 		public GameObject DebugText;
 
 		[Header("Scroll Value")]
-		public float ScrollAxis;
+		public float ScrollAxis = 0;
 		public float ScrollThreshold = 1f;
 
 		[Header("Click Value")]

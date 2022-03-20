@@ -328,10 +328,10 @@ public class World : MonoBehaviour
 	{
         //플레이어 위치의 청크 좌표를 구한다.
         ChunkCoord coord = GetChunkCoordFromVector3(player.position);
-
         //뷰 디스텐스를 갱신하기 전 활성화 되어 있던 청크들 저장
         List<ChunkCoord> prevActiveChunks = new List<ChunkCoord>(activeChunks);
-
+        //저장 후 activeChunks 클리어
+        activeChunks.Clear();
         //플레이어 시야 범위 내의 청크들로 반복
         for(int x = coord.x - VoxelData.ViewDistanceInChunks; 
             x < coord.x + VoxelData.ViewDistanceInChunks; x++)
@@ -357,25 +357,33 @@ public class World : MonoBehaviour
                     {
                         //활성화 시키고 활성화된 목록에 올린다.
                         chunks[temp.x, temp.z].IsActive = true;
-                        activeChunks.Add(temp);
+                        
                     }
-				}
+                    activeChunks.Add(temp);
+                }
                 //이전 활성 목록에서 현재 시야에 있는 것들을 뺀다
                 for(int i = 0; i < prevActiveChunks.Count; i++)
 				{
                     if(prevActiveChunks[i].Equals(temp))
 					{
+                        //Debug.Log(prevActiveChunks[i].x + " " + prevActiveChunks[i].z);
                         prevActiveChunks.RemoveAt(i);
 					}
 				}
             }
         }
+        
+
         //위의 반복 후 남은 것들은 전에는 시야에 있었지만 현재엔 없는 것들이다.
         //따라서 비활성화 시킨다.
-        foreach(ChunkCoord c in prevActiveChunks)
+        
+        foreach (ChunkCoord c in prevActiveChunks)
 		{
+        
             chunks[c.x, c.z].IsActive = false;
+            
 		}
+        
 	}
 
     /// <summary>
