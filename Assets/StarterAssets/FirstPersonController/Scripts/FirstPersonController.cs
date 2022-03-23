@@ -275,7 +275,7 @@ namespace StarterAssets
 				Vector3 pos = _mainCamera.transform.position + (_mainCamera.transform.forward * step);
 
 				//만약 pos에 블럭이 있다면
-				if(world.CheckForVoxel(pos))
+				if(world.CheckVoxelSolid(pos))
 				{
 					//SelectGuide를 현재 pos 좌표로 옮긴다. 
 					//다시한번 기록하지만, 어떤 좌표의 값을 정수로 내림하면 그 좌표가 속한 블럭의 좌표이다.

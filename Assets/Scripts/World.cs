@@ -11,6 +11,8 @@ public class BlockType
 {
     public string blockName;
     public bool isSolid;
+    //투명한지 여부
+    public bool isTransparent;
 
     //인벤토리 등에서 사용될 아이콘
     public Sprite icon;
@@ -69,6 +71,7 @@ public class World : MonoBehaviour
     public Vector3 spawnPosition;
 
     public Material material;
+    public Material TransparentMaterial;
     public BlockType[] blockTypes;
 
     //청크들의 배열
@@ -150,16 +153,16 @@ public class World : MonoBehaviour
     /// <returns></returns>
     public bool CheckForVoxel(float _x, float _y, float _z)
 	{
-        return CheckForVoxel(new Vector3(_x, _y, _z));
+        return CheckVoxelSolid(new Vector3(_x, _y, _z));
     }
     
     /// <summary>
     /// 월드 좌표를 받아서 그 좌표가 속한 청크의 맵을 참조해서
-    /// 블럭의 유무를 반환
+    /// 블럭의 isSolid를 반환
     /// </summary>
     /// <param name="pos"></param>
     /// <returns></returns>
-    public bool CheckForVoxel(Vector3 pos)
+    public bool CheckVoxelSolid(Vector3 pos)
 	{
         //pos가 속한 청크 좌표 불러옴
         ChunkCoord thisChunk = new ChunkCoord(pos);
@@ -178,6 +181,32 @@ public class World : MonoBehaviour
         //만약에 위에 조건에 모두 해당이 없으면 GetVoxel을 호출해서 확인
         return blockTypes[GetVoxel(pos)].isSolid;
 	}
+
+    /// <summary>
+    /// 월드 좌표를 받아서 그 좌표가 속한 청크의 맵을 참조,
+    /// 블럭의 투명 여부를 반환
+    /// </summary>
+    /// <param name="pos"></param>
+    /// <returns></returns>
+    public bool CheckVoxelTransparent(Vector3 pos)
+    {
+        //pos가 속한 청크 좌표 불러옴
+        ChunkCoord thisChunk = new ChunkCoord(pos);
+
+        //좌표 유효 반환
+        if (!IsVoxelInWorld(pos))
+            return false;
+
+        //지정된 좌표에 청크가 생성되었고, 청크의 맵이 초기화 되었다면
+        if (chunks[thisChunk.x, thisChunk.z] != null && chunks[thisChunk.x, thisChunk.z].IsMapInit)
+        {
+            //지정된 좌표에 있는 블럭의 타입을 받아 isSolid 반환
+            return blockTypes[chunks[thisChunk.x, thisChunk.z].GetVoxelFromGlobalVector3(pos)].isTransparent;
+        }
+
+        //만약에 위에 조건에 모두 해당이 없으면 GetVoxel을 호출해서 확인
+        return blockTypes[GetVoxel(pos)].isTransparent;
+    }
 
     //이 코드는 월드를 만들거나 동굴을 만들거나 하는 등의 알고리즘에 사용될 것
     //바이옴 등의 동작도 이곳에서 발생함

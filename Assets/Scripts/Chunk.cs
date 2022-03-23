@@ -70,6 +70,12 @@ public class Chunk
     List<int> triangles = new List<int>();
     List<Vector2> uvs = new List<Vector2>();
 
+    //투명블럭의 삼각형 좌표 저장하는 리스트
+    List<int> TransparentTriangles = new List<int>();
+
+    //마테리얼 복수 적용을 위한 마테리얼 배열
+    Material[] materials = new Material[2];
+
     //byte 값으로 구성된 맵, 블럭의 코드를 저장한다.
     public byte[,,] voxelMap = 
         new byte[VoxelData.ChunkWidth, VoxelData.ChunkHeight, VoxelData.ChunkWidth];
@@ -115,7 +121,13 @@ public class Chunk
         meshRenderer = chunkObject.AddComponent<MeshRenderer>();
 
         //마테리얼을 설정한다.
-        meshRenderer.material = world.material;
+        //meshRenderer.material = world.material;
+
+        //투명 블럭 구현을 위한 마테리얼 여러개 설정
+        materials[0] = world.material;
+        materials[1] = world.TransparentMaterial;
+
+        meshRenderer.materials = materials;
 
         //meshCollider = chunkObject.AddComponent<MeshCollider>();
 
@@ -221,7 +233,7 @@ public class Chunk
 	}
 
     /// <summary>
-    /// 지정 좌표의 블록 유무를 반환
+    /// 지정 좌표의 블록 isSolid를 반환
     /// </summary>
     /// <param name="pos">좌표</param>
     /// <returns></returns>
@@ -239,11 +251,35 @@ public class Chunk
         //Air는 isSolid가 false 이므로 그려지지 않을 것
         if (!IsVoxelInChunk(x, y, z))
             //월드 좌표로 변환함에 유의
-            return world.CheckForVoxel(pos + position);
+            return world.CheckVoxelSolid(pos + position);
 
         //voxemMap에 저장된 블럭 타입을 참고로 World의 BlockType[]의 isSolid를 참조
         return world.blockTypes[voxelMap[x, y, z]].isSolid;
 	}
+    /// <summary>
+    /// 지정 좌표의 블록 isTransparent를 반환
+    /// </summary>
+    /// <param name="pos"></param>
+    /// <returns></returns>
+    bool CheckVoxelTransparent(Vector3 pos)
+    {
+        //좌표값 정수로
+        int x = Mathf.FloorToInt(pos.x);
+        int y = Mathf.FloorToInt(pos.y);
+        int z = Mathf.FloorToInt(pos.z);
+
+        //만약 복셀이 청크 내부에 있지 않으면 
+        //청크의 좌표를 pos에 더해서 블럭 타입의 isTransparent 참조
+        //즉, 다른 청크의 블럭 여부를 확인하기 위함이다.
+        //바깥면 여부를 판단할 때 필요함
+        //Air는 isSolid가 false 이므로 그려지지 않을 것
+        if (!IsVoxelInChunk(x, y, z))
+            //월드 좌표로 변환함에 유의
+            return world.CheckVoxelTransparent(pos + position);
+
+        //voxemMap에 저장된 블럭 타입을 참고로 World의 BlockType[]의 isTransprent를 참조
+        return world.blockTypes[voxelMap[x, y, z]].isTransparent;
+    }
 
     /// <summary>
     /// 월드 기준 좌표를 받아서 자신의 맵 참조, 그 위치의 블럭 타입 반환
@@ -331,28 +367,38 @@ public class Chunk
     /// <param name="pos">복셀 데이터의 위치</param>
     void AddVoxelDataToChunk(Vector3 pos)
 	{
-        //블럭이 있을때만 매쉬 데이터에 넣는다.
-        if (CheckVoxel(pos))
+        //맵에서 인자로 넘어온 pos의 블럭 아이디를 조회한다.
+        byte blockID = voxelMap[(int)pos.x, (int)pos.y, (int)pos.z];
+
+        //pos좌표의 투명여부를 확인
+        bool isTransparent = world.blockTypes[blockID].isTransparent;
+
+        for (int p = 0; p < 6; p++)
         {
-            for (int p = 0; p < 6; p++)
+            //각 면의 방향으로 한칸 갔을 때 블럭이 없을 때만
+            //(=즉, 보이는 면일때만 그린다.) 
+            //if (!CheckVoxel(pos + VoxelData.faceChecks[p]))
+
+            //---------수정됨--------------
+            //각 면의 방향으로 한칸 간 곳에 있는 블럭이 투명블럭일때만 그린다.
+            //Air는 투명블록이므로 그려지지 않는다.
+            if(CheckVoxelTransparent(pos + VoxelData.faceChecks[p]))
             {
-                //각 면의 방향으로 한칸 갔을 때 블럭이 없을 때만
-                //(=즉, 보이는 면일때만 그린다.
-                if (!CheckVoxel(pos + VoxelData.faceChecks[p]))
+                
+                //개인적으로 보기 편해서 for문은 안썻다.
+                //정점 4개과 그에 맞는 uv를 넣는다.
+                vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 0]]);
+                vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 1]]);
+                vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 2]]);
+                vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 3]]);
+
+                //p의 값은 0 ~ 5로 변화하면 각 면을 그린다.
+                //그에 따른 순서도 맞추어져 있으므로 faceIndex로 p를 넘긴다.
+                AddTexture(world.blockTypes[blockID].GetTextureID(p));
+
+                //만약 투명하지 않다면, 기본 삼각형 리스트에 넣는다.
+                if (!isTransparent)
                 {
-                    //맵에서 인자로 넘어온 pos의 블럭 아이디를 조회한다.
-                    byte blockID = voxelMap[(int)pos.x, (int)pos.y, (int)pos.z];
-                    //개인적으로 보기 편해서 for문은 안썻다.
-                    //정점 4개과 그에 맞는 uv를 넣는다.
-                    vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 0]]);
-                    vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 1]]);
-                    vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 2]]);
-                    vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 3]]);
-
-                    //p의 값은 0 ~ 5로 변화하면 각 면을 그린다.
-                    //그에 따른 순서도 맞추어져 있으므로 faceIndex로 p를 넘긴다.
-                    AddTexture(world.blockTypes[blockID].GetTextureID(p));
-
                     //삼각형의 각 꼭짓점을 정점 4개에 맞게 정수로 넣는다.
                     triangles.Add(vertexIndex);
                     triangles.Add(vertexIndex + 1);
@@ -360,11 +406,23 @@ public class Chunk
                     triangles.Add(vertexIndex + 2);
                     triangles.Add(vertexIndex + 1);
                     triangles.Add(vertexIndex + 3);
-
-                    vertexIndex += 4;
                 }
+                //투명이 아니면 투명 삼각형 배열에 넣는다.
+                else
+				{
+                    //삼각형의 각 꼭짓점을 정점 4개에 맞게 정수로 넣는다.
+                    TransparentTriangles.Add(vertexIndex);
+                    TransparentTriangles.Add(vertexIndex + 1);
+                    TransparentTriangles.Add(vertexIndex + 2);
+                    TransparentTriangles.Add(vertexIndex + 2);
+                    TransparentTriangles.Add(vertexIndex + 1);
+                    TransparentTriangles.Add(vertexIndex + 3);
+                }
+
+                vertexIndex += 4;
             }
         }
+        
     }
 
     /// <summary>
@@ -374,7 +432,17 @@ public class Chunk
 	{
         Mesh mesh = new Mesh();
         mesh.vertices = vertices.ToArray();
-        mesh.triangles = triangles.ToArray();
+        //mesh.triangles = triangles.ToArray();
+
+        //이 메쉬에 사용할 마테리얼의 개수 설정
+        mesh.subMeshCount = 2;
+        
+        //기본 마테리얼을 사용할 삼각형들
+        mesh.SetTriangles(triangles.ToArray(), 0);
+
+        //투명 마테리얼을 사용할 삼각형들
+        mesh.SetTriangles(TransparentTriangles.ToArray(), 1);
+
         mesh.uv = uvs.ToArray();
 
         //큐브를 깔끔하게 그리기 위해 필요한 연산
