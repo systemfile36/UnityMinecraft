@@ -211,47 +211,52 @@ namespace StarterAssets
 		/// </summary>
 		public void PlaceAndDestroyBlock()
 		{
-			//선택 가이드가 활성화 되어 있다면
-			if (selectGuide.gameObject.activeSelf)
+			
+			//왼쪽 클릭시 블럭 파괴, 시간 체크
+			if (_input.IsLeftClicked && _DestroyTimeOut <= 0.0f)
 			{
-				//왼쪽 클릭시 블럭 파괴, 시간 체크
-				if (_input.IsLeftClicked && _PlaceTimeOut <= 0.0f)
+				//일단 클릭이 되었으면 무조건 토글한다.
+				_input.IsLeftClicked = false;
+
+				//선택 가이드가 활성화 되어 있다면
+				if (selectGuide.gameObject.activeSelf)
 				{
 					//선택 가이드의 좌표의 청크를 받아서 그 좌표의 블럭을 Air로 만든다.
 					//즉 파괴한다.
 					world.GetChunkFromVector3(selectGuide.position).EditVoxel(selectGuide.position, 0);
-					_input.IsLeftClicked = false;
-
 					//델타 타임 초기화
-					_PlaceTimeOut = PlaceDelay;
+					_DestroyTimeOut = DestroyDelay;
 				}
-				//델타 타임 감소
-				if (_PlaceTimeOut >= 0.0f)
-				{
-					_PlaceTimeOut -= Time.deltaTime;
-				}
+			}
+			//클릭 여부등에 관계 없이 델타 타임 감소
+			if (_DestroyTimeOut >= 0.0f)
+			{
+				_DestroyTimeOut -= Time.deltaTime;
 			}
 
 			//놓을 위치 가이드가 활성화 되어있다면
-			if(placeGuide.gameObject.activeSelf)
+			if (_input.IsRightClicked && _PlaceTimeOut <= 0.0f && HoldingBlockId != 0)
 			{
+				//일단 클릭이 되었으면 무조건 토글한다.
+				_input.IsRightClicked = false;
 				//오른쪽 클릭시 들고 있는 블럭 설치 (들고 있는 블럭이 0이라면 설치 X)
-				if (_input.IsRightClicked && _DestroyTimeOut <= 0.0f && HoldingBlockId != 0)
+				if (placeGuide.gameObject.activeSelf)
 				{
 					//놓을 위치 가이드의 위치에 들고있는 블럭을 넣는다.
 					//놓을 위치가 플레이어 위치거나 머리 위치면 놓지 않는다.
 					if (!VoxelData.CompareVector3ByInteger(placeGuide.position, transform.position) && !VoxelData.CompareVector3ByInteger(placeGuide.position, transform.position + Vector3.up))
 						world.GetChunkFromVector3(placeGuide.position).EditVoxel(placeGuide.position, HoldingBlockId);
-					_input.IsRightClicked = false;
+					
 
-					_DestroyTimeOut = DestroyDelay;
+					_PlaceTimeOut = PlaceDelay;
 				}
 
-				//델타 타임 감소
-				if (_DestroyTimeOut >= 0.0f)
-				{
-					_DestroyTimeOut -= Time.deltaTime;
-				}
+				
+			}
+			//클릭 여부등에 관계 없이 델타 타임 감소
+			if (_PlaceTimeOut >= 0.0f)
+			{
+				_PlaceTimeOut -= Time.deltaTime;
 			}
 		}
 		

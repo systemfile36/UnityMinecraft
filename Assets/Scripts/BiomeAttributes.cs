@@ -20,6 +20,20 @@ public class BiomeAttributes : ScriptableObject
     //지형 스케일 값, 굴곡
     public float terScale;
 
+    //나무 관련 변수들
+    //ForestScale은 숲 하나의 크기
+    //ForestThreshold는 그 숲의 출현율에 비례한 값
+    //TreeScale과 TreeThreshold은 숲 내의 나무의 배치
+    [Header("Attributes of Trees")]
+    public float ForestScale = 1.3f;
+    public float ForestThreshold = 0.6f;
+    public float TreeScale = 15f;
+    public float TreeThreshold = 0.8f;
+
+    //나무의 최대 최소 높이
+    public int Max_TreeHeight = 12;
+    public int Min_TreeHeight = 5;
+
     //블럭 생성 정보
     public Lode[] lodes;
 }

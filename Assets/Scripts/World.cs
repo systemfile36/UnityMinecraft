@@ -56,6 +56,27 @@ public class BlockType
 }
 
 /// <summary>
+/// 청크의 경계를 넘나드는 구조물등의 정보를 위한 클래스
+/// </summary>
+public class VoxelMod
+{
+    public Vector3 pos;
+    public byte id;
+
+    public VoxelMod(Vector3 pos, byte id)
+	{
+        this.pos = pos;
+        this.id = id;
+	}
+
+    public VoxelMod()
+	{
+        this.pos = new Vector3();
+        this.id = 0;
+	}
+}
+
+/// <summary>
 /// 전반적인 세계를 다루는 클래스(오브젝트)
 /// </summary>
 public class World : MonoBehaviour
@@ -92,6 +113,13 @@ public class World : MonoBehaviour
 
     //코루틴을 위한 캐싱 변수
     private IEnumerator m_CreateChunks;
+
+    //구조물 생성을 위한 Que
+    public Queue<VoxelMod> modifications = new Queue<VoxelMod>();
+
+    //구조물 생성 후 업데이트를 위한 리스트
+    //업데이트할 청크 객체를 저장함
+    Queue<Chunk> chunksToRefresh = new Queue<Chunk>();
 
 	void Awake()
 	{
@@ -241,7 +269,8 @@ public class World : MonoBehaviour
         byte vValue = 0;
 
 
-        //테스트용 Height 맵
+        //기본적인 맵의 틀
+        //높이에 따라 블럭들 배치
         if (tempY == terHeight)
             vValue = 3;
         else if (tempY < terHeight && tempY > terHeight - 4)
@@ -251,7 +280,7 @@ public class World : MonoBehaviour
         else
             vValue = 2;
 
-        //테스트용 lode 반영 맵
+        //Lode 반영 부분, 내부 블록들 설정
         //돌이라면(== 표면의 흙이나 배드락이 아니라면
         if(vValue == 2)
 		{
@@ -270,6 +299,29 @@ public class World : MonoBehaviour
 				}
 			}
 		}
+
+        //나무 반영 부분
+        //지면에만 생성하기 위한 조건문
+        if(tempY == terHeight)
+		{
+            //나무가 생성되는 범위를 설정
+            if(Noise.GetPerlin2D(new Vector2(pos.x, pos.z), 0, biome.ForestScale) > biome.ForestThreshold)
+			{
+                vValue = 1;
+                //실제 나무가 생성되는 위치
+                //이미 숲으로 설정된 상태에서 다시 Noise를 받아서 vValue를 바꾸었으므로
+                //숲의 범위 안에 다시 분산도와 임계치에 따라 배치됨
+                if (Noise.GetPerlin2D(new Vector2(pos.x, pos.z), 0, biome.TreeScale) > biome.TreeThreshold)
+				{
+                    vValue = 7;
+                    //나무의 위치를 큐에 넣는다. (지면의 좌표가 아닌 그보다 한칸 위)
+                    modifications.Enqueue(new VoxelMod(new Vector3(pos.x, pos.y + 1, pos.z), 9));
+				}
+
+			}
+		}
+
+
         //그리고 리턴
         return vValue;
     }
@@ -295,7 +347,45 @@ public class World : MonoBehaviour
                 chunks[x, z] = new Chunk(new ChunkCoord(x, z), this, true);
                 activeChunks.Add(new ChunkCoord(x, z));
 			}
-		}  
+		}
+
+        //구조물을 세팅하는 부분
+        VoxelMod v;
+        while(modifications.Count > 0)
+		{
+            v = modifications.Dequeue();
+
+            //VoxelMod의 위치가 속한 청크의 좌표 받아옴
+            ChunkCoord c = GetChunkCoordFromVector3(v.pos);
+
+            //아래 코드는 생성할 구조물이 청크에 걸쳐있을 경우
+            //잘리는 것을 방지하기 위함이다.
+            //즉, 구조물이 청크에 걸치면 걸친 청크를 생성한다.
+            //중복체크는 CheckViewDistance에서 한다.
+            //만약 그 위치가 아직 생성되지 않은 청크라면
+            if(chunks[c.x, c.z] == null)
+			{
+                //생성하고 액티브에 추가
+                chunks[c.x, c.z] = new Chunk(c, this, true);
+                activeChunks.Add(c);
+			}
+
+            //World.cs에 있던 modifications들을 
+            //위치에 맞는 청크들의 modifications에 넣어준다.
+            chunks[c.x, c.z].modifications.Enqueue(v);
+
+            //만약 업데이트할 청크 목록에 현재 받아온 청크가 없다면
+            if(!chunksToRefresh.Contains(chunks[c.x, c.z]))
+			{
+                //추가한다.
+                chunksToRefresh.Enqueue(chunks[c.x, c.z]);
+			}
+		}
+        //갱신할 청크 목록들의 청크를 전부 갱신한다.
+        while(chunksToRefresh.Count > 0)
+		{
+            chunksToRefresh.Dequeue().RefreshChunkMeshData();
+		}
 	}
 
     /// <summary>

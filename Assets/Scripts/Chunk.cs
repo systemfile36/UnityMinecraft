@@ -88,6 +88,9 @@ public class Chunk
     //voxelMap이 초기화 되었는지 여부
     public bool IsMapInit = false;
 
+    //World 스크립트에서 직접 추가하기 위해서 public으로 선언
+    public Queue<VoxelMod> modifications = new Queue<VoxelMod>();
+
     //World를 인자로 받는다.(find는 비싼(expansive한 작업))
     /// <summary>
     /// 청크의 생성자, 즉시 초기화할지 여부를 결정가능
@@ -113,6 +116,7 @@ public class Chunk
     /// </summary>
     public void Init()
 	{
+        
         chunkObject = new GameObject();
         //IsActive = true;
         //인스펙터에서 하던걸 코드로 옮긴 것이다.
@@ -305,8 +309,24 @@ public class Chunk
     /// <summary>
     /// 메쉬 데이터를 갱신한다.
     /// </summary>
-    void RefreshChunkMeshData()
+    public void RefreshChunkMeshData()
 	{
+        //구조물 세팅 부분
+        VoxelMod v;
+        //큐가 빌때까지
+        while(modifications.Count > 0)
+		{
+            //큐에서 하나를 꺼낸다.
+            v = modifications.Dequeue();
+
+            //월드 좌표를 청크 내의 좌표로 변환
+            Vector3 pos = v.pos - position;
+
+            //지정된 위치의 id를 세팅
+            voxelMap[(int)pos.x, (int)pos.y, (int)pos.z] = v.id;
+
+
+		}
         ClearMeshData();
         for (int y = 0; y < VoxelData.ChunkHeight; y++)
         {
@@ -331,6 +351,7 @@ public class Chunk
         vertexIndex = 0;
         vertices.Clear();
         triangles.Clear();
+        TransparentTriangles.Clear();
         uvs.Clear();
 	}
 
