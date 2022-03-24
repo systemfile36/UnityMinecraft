@@ -108,24 +108,31 @@ public class World : MonoBehaviour
 
     //만들 청크들을 저장하는 큐
     Queue<ChunkCoord> chunksToCreateQue = new Queue<ChunkCoord>();
+    
     //코루틴이 이미 실행중인지 여부 판단을 위한 변수
-    private bool IsCreateChunks;
+    //private bool IsCreateChunks;
+
+    //구조물과 청크들의 업데이트 코루틴을 위한 변수
+    private bool IsApplyingAll = false;
 
     //코루틴을 위한 캐싱 변수
-    private IEnumerator m_CreateChunks;
+    //private IEnumerator m_CreateChunks;
+
+    //새 코루틴을 위한 캐싱 변수
+    private IEnumerator m_ApplyModifications;
 
     //구조물 생성을 위한 Que
     public Queue<VoxelMod> modifications = new Queue<VoxelMod>();
 
     //구조물 생성 후 업데이트를 위한 리스트
     //업데이트할 청크 객체를 저장함
-    Queue<Chunk> chunksToRefresh = new Queue<Chunk>();
+    List<Chunk> chunksToRefresh = new List<Chunk>();
 
 	void Awake()
 	{
         //코루틴 캐싱
-        m_CreateChunks = CreateChunks();
-
+        //m_CreateChunks = CreateChunks();
+        m_ApplyModifications = ApplyModifications();
     }
 
 	void Start()
@@ -161,6 +168,7 @@ public class World : MonoBehaviour
             playerLastChunkCoord = GetChunkCoordFromVector3(player.position);
         }
 
+        /*
         //만약 만들 청크가 하나 이상이고 이미 갱신한 상태가 아니라면
         if(chunksToCreateQue.Count > 0 && !IsCreateChunks)
 		{
@@ -168,18 +176,35 @@ public class World : MonoBehaviour
             //코루틴을 시작하여 청크를 만든다.
             StartCoroutine(m_CreateChunks);
 		}
+        */
+        Debug.Log(IsApplyingAll);
+        //구조물 생성부
+        //초기화할 modifications가 있고 이미 실행 중이 아니라면
+        if(modifications.Count > 0 && !IsApplyingAll)
+		{
+            m_ApplyModifications = ApplyModifications();
+            //코루틴을 시작한다.
+            StartCoroutine(m_ApplyModifications);
+        }
 
-        
-	}
-    
-    /// <summary>
-    /// 지정된 좌표에 복셀의 유무를 반환한다.
-    /// </summary>
-    /// <param name="_x"></param>
-    /// <param name="_y"></param>
-    /// <param name="_z"></param>
-    /// <returns></returns>
-    public bool CheckForVoxel(float _x, float _y, float _z)
+        //청크 초기화(Init)
+        if (chunksToCreateQue.Count > 0)
+            CreateChunk();
+
+        //청크 갱신
+        if (chunksToRefresh.Count > 0)
+            RefreshChunk();
+
+    }
+
+	/// <summary>
+	/// 지정된 좌표에 복셀의 유무를 반환한다.
+	/// </summary>
+	/// <param name="_x"></param>
+	/// <param name="_y"></param>
+	/// <param name="_z"></param>
+	/// <returns></returns>
+	public bool CheckForVoxel(float _x, float _y, float _z)
 	{
         return CheckVoxelSolid(new Vector3(_x, _y, _z));
     }
@@ -315,7 +340,8 @@ public class World : MonoBehaviour
 				{
                     vValue = 7;
                     //나무의 위치를 큐에 넣는다. (지면의 좌표가 아닌 그보다 한칸 위)
-                    modifications.Enqueue(new VoxelMod(new Vector3(pos.x, pos.y + 1, pos.z), 9));
+                    //modifications.Enqueue(new VoxelMod(new Vector3(pos.x, pos.y + 1, pos.z), 9));
+                    Structure.CreateTree(pos, modifications, biome.Min_TreeHeight, biome.Max_TreeHeight);
 				}
 
 			}
@@ -378,16 +404,121 @@ public class World : MonoBehaviour
             if(!chunksToRefresh.Contains(chunks[c.x, c.z]))
 			{
                 //추가한다.
-                chunksToRefresh.Enqueue(chunks[c.x, c.z]);
+                chunksToRefresh.Add(chunks[c.x, c.z]);
 			}
 		}
         //갱신할 청크 목록들의 청크를 전부 갱신한다.
         while(chunksToRefresh.Count > 0)
 		{
-            chunksToRefresh.Dequeue().RefreshChunkMeshData();
+            chunksToRefresh[0].RefreshChunkMeshData();
+            chunksToRefresh.RemoveAt(0);
 		}
 	}
 
+    /// <summary>
+    /// 만들청크 큐에서 하나씩 꺼내 초기화하는 메소드
+    /// Update에서 호출됨
+    /// </summary>
+    void CreateChunk()
+	{
+        ChunkCoord c = chunksToCreateQue.Dequeue();
+        activeChunks.Add(c);
+        chunks[c.x, c.z].Init();
+	}
+
+    /// <summary>
+    /// 청크를 체크해서 업데이트 한다.
+    /// Update에서 호출됨
+    /// </summary>
+    void RefreshChunk()
+	{
+        //while루프를 제어하기 위해
+        bool refreshed = false;
+        int index = 0;
+
+        while(!refreshed && index < chunksToRefresh.Count - 1)
+		{
+            //만약 업데이트할 청크 목록의 청크가 맵이 세팅 되었다면
+            //즉, GetVoxel을 호출해서 World.cs에 구조물을 추가했다면
+            if(chunksToRefresh[index].IsMapInit)
+			{
+                //청크 업데이트 후 제거
+                chunksToRefresh[index].RefreshChunkMeshData();
+                chunksToRefresh.RemoveAt(index);
+
+                //반복문 탈출
+                refreshed = true;
+			}
+            //청크가 맵이 세팅 되지 않았다면
+            else
+			{
+                //인덱스 증가하고 다시 확인
+                index++;
+			}
+		}
+	}
+
+    /// <summary>
+    /// modifications를 포함한 청크 초기화 코루틴
+    /// </summary>
+    /// <returns></returns>
+    IEnumerator ApplyModifications()
+	{
+        //코루틴 실행중
+        IsApplyingAll = true;
+
+        //한프레임에 생성되는 modifications 제어를 위한 변수
+        int count = 0;
+
+        VoxelMod v;
+        while(modifications.Count > 0)
+		{
+            v = modifications.Dequeue();
+
+            //VoxelMod의 위치가 속한 청크의 좌표 받아옴
+            ChunkCoord c = GetChunkCoordFromVector3(v.pos);
+
+            //아래 코드는 생성할 구조물이 청크에 걸쳐있을 경우
+            //잘리는 것을 방지하기 위함이다.
+            //즉, 구조물이 청크에 걸치면 걸친 청크를 생성한다.
+            //중복체크는 CheckViewDistance에서 한다.
+            //만약 그 위치가 아직 생성되지 않은 청크라면
+            if (chunks[c.x, c.z] == null)
+            {
+                //생성하고 액티브에 추가
+                chunks[c.x, c.z] = new Chunk(c, this, true);
+                activeChunks.Add(c);
+            }
+
+            //World.cs에 있던 modifications들을 
+            //위치에 맞는 청크들의 modifications에 넣어준다.
+            chunks[c.x, c.z].modifications.Enqueue(v);
+
+            //만약 업데이트할 청크 목록에 현재 받아온 청크가 없다면
+            if (!chunksToRefresh.Contains(chunks[c.x, c.z]))
+            {
+                //추가한다.
+                chunksToRefresh.Add(chunks[c.x, c.z]);
+            }
+
+            //modifications를 하나 생성할때마다 늘어남
+            count++;
+            
+            //한 프레임에 200개씩 생성될 것, 조정가능
+            if(count > 200)
+			{
+                //카운트 초기화
+                count = 0;
+
+                //한 프레임 양보
+                yield return null;
+			}
+        }
+        //코루틴 종료됨
+        IsApplyingAll = false;
+    }
+
+    /*
     /// <summary>
     /// 청크를 생성하는 코루틴
     /// </summary>
@@ -410,6 +541,7 @@ public class World : MonoBehaviour
 
         IsCreateChunks = false;
 	}
+    */
 
     /// <summary>
     /// 좌표를 받아서 그에 맞는 청크 좌표를 ChunkCoord로 반환

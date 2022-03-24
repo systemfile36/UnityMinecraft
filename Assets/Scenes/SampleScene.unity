@@ -1368,6 +1368,16 @@ MonoBehaviour:
     bottomFaceTexture: 49
     leftFaceTexture: 49
     rightFaceTexture: 49
+  - blockName: Leaf
+    isSolid: 1
+    isTransparent: 1
+    icon: {fileID: 8028173837567755189, guid: f9c751f4f5819a246a459067c87e3011, type: 3}
+    backFaceTexture: 52
+    frontFaceTexture: 52
+    topFaceTexture: 52
+    bottomFaceTexture: 52
+    leftFaceTexture: 52
+    rightFaceTexture: 52
 --- !u!4 &1275971076
 Transform:
   m_ObjectHideFlags: 0
