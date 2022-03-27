@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Threading;
 
 /// <summary>
 /// 월드에서의 청크의 좌표
@@ -86,10 +87,18 @@ public class Chunk
     private bool _IsActive;
 
     //voxelMap이 초기화 되었는지 여부
-    public bool IsMapInit = false;
+    private bool IsMapInit = false;
+
+    //매쉬데이터를 추가하는 스레드가 작동 중인지 여부
+    public bool IsLockedMeshThread = false;
 
     //World 스크립트에서 직접 추가하기 위해서 public으로 선언
     public Queue<VoxelMod> modifications = new Queue<VoxelMod>();
+
+    /// <summary>
+    /// 청크의 월드 기준 좌표
+    /// </summary>
+    public Vector3 position;
 
     //World를 인자로 받는다.(find는 비싼(expansive한 작업))
     /// <summary>
@@ -142,8 +151,13 @@ public class Chunk
             = new Vector3(coord.x * VoxelData.ChunkWidth, 0f, coord.z * VoxelData.ChunkWidth);
         chunkObject.name = string.Format("Chunk {0}, {1}", coord.x, coord.z);
 
-        PopulateVoxelMap();
-        RefreshChunkMeshData();
+        //청크의 월드 위치 초기화
+        position = chunkObject.transform.position;
+
+        //스레드 풀에 복셀 맵 세팅 메소드를 넣는다.
+        ThreadPool.QueueUserWorkItem(PopulateVoxelMap);
+
+        //RefreshChunkMeshData();
 
         //meshCollider.sharedMesh = meshFilter.mesh;
     }
@@ -151,7 +165,7 @@ public class Chunk
     /// <summary>
     /// 복셀맵을 세팅한다.
     /// </summary>
-    void PopulateVoxelMap()
+    void PopulateVoxelMap(object obj)
 	{
         for (int y = 0; y < VoxelData.ChunkHeight; y++)
         {
@@ -165,6 +179,7 @@ public class Chunk
                 }
             }
         }
+        _RefreshChunkMeshData(null);
         IsMapInit = true;
     }
     /// <summary>
@@ -299,21 +314,34 @@ public class Chunk
 
         //월드 기준 좌표를 이 청크의 맵에 사용되는 좌표로 변환
         //청크의 절대 좌표를 빼는 것으로 가능함
-        xP -= Mathf.FloorToInt(chunkObject.transform.position.x);
-        zP -= Mathf.FloorToInt(chunkObject.transform.position.z);
+        xP -= Mathf.FloorToInt(position.x);
+        zP -= Mathf.FloorToInt(position.z);
 
         return voxelMap[xP, yP, zP];
 
     }
-
     /// <summary>
-    /// 메쉬 데이터를 갱신한다.
+    /// 외부에서 참조할 예정
     /// </summary>
     public void RefreshChunkMeshData()
 	{
+        ThreadPool.QueueUserWorkItem(_RefreshChunkMeshData);
+       
+	}
+    /// <summary>
+    /// 메쉬 데이터를 갱신한다.
+    /// WaitCallback()형식에 맞추기 위해 object 받음
+    /// 데이터 세팅 후 chunksToDraw에 자신을 Enqueue
+    /// </summary>
+    public void _RefreshChunkMeshData(object obj)
+	{
+        //스레드가 작동중임을 알려 맵 수정을 잠근다.
+        IsLockedMeshThread = true;
+
         //구조물 세팅 부분
         VoxelMod v;
         //큐가 빌때까지
+        
         while(modifications.Count > 0)
 		{
             //큐에서 하나를 꺼낸다.
@@ -327,6 +355,7 @@ public class Chunk
 
 
 		}
+        
         ClearMeshData();
         for (int y = 0; y < VoxelData.ChunkHeight; y++)
         {
@@ -340,7 +369,18 @@ public class Chunk
                 }
             }
         }
-        ApplyChunkMesh();
+
+        //갱신을 완료한 뒤 그려낼 청크 목록에 추가한다.
+        //한번에 한 스레드만 이 코드에 접근할 수 있다.
+        lock(world.lockObject)
+		{
+            world.chunksToDraw.Enqueue(this);
+        }
+
+        //플래그 리셋
+        IsLockedMeshThread = false;
+
+        //ApplyChunkMesh();
     }
 
     /// <summary>
@@ -371,14 +411,25 @@ public class Chunk
                 chunkObject.SetActive(value);
 		}
 	}
+    
     /// <summary>
-    /// 청크의 좌표 반환
+    /// 맵이 세팅되었는지 여부와 메쉬 데이터가 스레드에 의해
+    /// 수정중인지 여부를 체크하여 반환
     /// </summary>
-    public Vector3 position
+    public bool IsEditable
 	{
         get
 		{
-            return chunkObject.transform.position;
+            //만약 맵이 세팅되지 않았거나
+            //스레드에 의해 간섭중이라면
+            if(!IsMapInit || IsLockedMeshThread)
+			{
+                return false;
+			}
+            else
+			{
+                return true;
+			}
 		}
 	}
 
@@ -448,8 +499,9 @@ public class Chunk
 
     /// <summary>
     /// 청크의 메쉬를 만듭니다.(메쉬 데이터 반영)
+    /// 스레딩을 위해 World.cs에서 참조 예정
     /// </summary>
-    void ApplyChunkMesh()
+    public void ApplyChunkMesh()
 	{
         Mesh mesh = new Mesh();
         mesh.vertices = vertices.ToArray();
