@@ -13,3 +13,9 @@
 후에 영상과 pdf등으로 요약본 작성 예정...
 
 https://blog.naver.com/loliisjinri
+
+--------------------------------------------
+
+플로우 차트 요약본 (로직의 흐름을 draw.io 플로우차트로 정리함)
+
+https://blog.naver.com/loliisjinri/222687497165
