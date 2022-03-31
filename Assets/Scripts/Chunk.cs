@@ -220,7 +220,8 @@ public class Chunk
         //맵에 저장된 id를 변경
         voxelMap[xP, yP, zP] = id;
 
-        RefreshChunkMeshData();
+        //EditVoxel은, 특별히 병렬 처리 안해도 됨
+        _RefreshChunkMeshData(null);
 
         //인접한 청크 조건에 따라 갱신
         RefreshAdjacentChunk(xP, yP, zP);

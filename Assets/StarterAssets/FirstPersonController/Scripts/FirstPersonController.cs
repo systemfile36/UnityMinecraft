@@ -8,6 +8,7 @@ using UnityEngine.InputSystem;
  */
 
 /* StarterAssets을 변형하였다. 한국어 주석이 붙은 것은 주로 내가 수정한 부분
+ * 기존의 에셋 스크립트에 내가 정의한 Player 기능이 들어가 있다.
  */
 
 namespace StarterAssets

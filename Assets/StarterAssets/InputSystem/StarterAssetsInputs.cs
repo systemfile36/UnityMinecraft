@@ -3,6 +3,8 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 #endif
 
+//StarterAssets 스크립트를 수정하여 나에게 맞는 것으로 변형하였음!
+
 namespace StarterAssets
 {
 	public class StarterAssetsInputs : MonoBehaviour
@@ -27,6 +29,12 @@ namespace StarterAssets
 		public bool IsLeftClicked = false;
 		public bool IsRightClicked = false;
 
+		[Header("Value for UI")]
+		public bool IsOnUI = false;
+
+		[Header("Reference of PlayerInput Component")]
+		private PlayerInput playerInput;
+
 #if !UNITY_IOS || !UNITY_ANDROID
 		[Header("Mouse Cursor Settings")]
 		public bool cursorLocked = true;
@@ -34,6 +42,13 @@ namespace StarterAssets
 #endif
 
 #if ENABLE_INPUT_SYSTEM && STARTER_ASSETS_PACKAGES_CHECKED
+
+		void Awake()
+		{
+			//PlayerInput 컴포넌트를 받아서 참조를 저장한다.
+			playerInput = transform.GetComponent<PlayerInput>();
+		}
+
 		public void OnMove(InputValue value)
 		{
 			MoveInput(value.Get<Vector2>());
@@ -86,6 +101,30 @@ namespace StarterAssets
 		{
 			IsRightClicked = value.isPressed;
 		}
+
+		/// <summary>
+		/// 인벤토리키가 눌렸을 때의 동작
+		/// </summary>
+		/// <param name="value"></param>
+		public void OnInventoryToggle(InputValue value)
+		{
+			Debug.Log("OnInventoryToggle Called | IsOnUI =" + IsOnUI);
+			IsOnUI = !IsOnUI;
+
+			//ActionMap을 UI on/off 여부에 따라 전환
+			if(IsOnUI)
+			{
+				playerInput.SwitchCurrentActionMap("UI");
+			}
+			else
+			{
+				playerInput.SwitchCurrentActionMap("Player");
+			}
+
+			//현재 ActionMap을 출력한다.
+			Debug.Log(playerInput.currentActionMap);
+		}
+
 #else
 	// old input sys if we do decide to have it (most likely wont)...
 #endif
