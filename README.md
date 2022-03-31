@@ -18,4 +18,10 @@ https://blog.naver.com/loliisjinri
 
 플로우 차트 요약본 (로직의 흐름을 draw.io 플로우차트로 정리함)
 
+초기 지형 생성
+->
 https://blog.naver.com/loliisjinri/222687497165
+
+인벤토리 구조
+->
+https://blog.naver.com/loliisjinri/222688480758
