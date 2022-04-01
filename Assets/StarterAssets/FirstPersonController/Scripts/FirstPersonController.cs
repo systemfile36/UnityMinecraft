@@ -122,6 +122,9 @@ namespace StarterAssets
 		[Tooltip("Destroy Delay")]
 		public float DestroyDelay = 0.125f;
 
+		[Header("Reference of ToolbarControl")]
+		public ToolbarControl toolbar;
+
 		private void Awake()
 		{
 			// get a reference to our main camera
@@ -235,8 +238,10 @@ namespace StarterAssets
 				_DestroyTimeOut -= Time.deltaTime;
 			}
 
+			
+
 			//놓을 위치 가이드가 활성화 되어있다면
-			if (_input.IsRightClicked && _PlaceTimeOut <= 0.0f && HoldingBlockId != 0)
+			if (_input.IsRightClicked && _PlaceTimeOut <= 0.0f)
 			{
 				//일단 클릭이 되었으면 무조건 토글한다.
 				_input.IsRightClicked = false;
@@ -245,8 +250,25 @@ namespace StarterAssets
 				{
 					//놓을 위치 가이드의 위치에 들고있는 블럭을 넣는다.
 					//놓을 위치가 플레이어 위치거나 머리 위치면 놓지 않는다.
-					if (!VoxelData.CompareVector3ByInteger(placeGuide.position, transform.position) && !VoxelData.CompareVector3ByInteger(placeGuide.position, transform.position + Vector3.up))
-						world.GetChunkFromVector3(placeGuide.position).EditVoxel(placeGuide.position, HoldingBlockId);
+					if (!VoxelData.CompareVector3ByInteger(placeGuide.position, transform.position) 
+						&& !VoxelData.CompareVector3ByInteger(placeGuide.position, transform.position + Vector3.up))
+					{
+						//선택된 아이템 슬롯의 정보를 받아온다.
+						ItemSlot SelectedSlot = toolbar.SelectedItemSlot;
+
+						//아이템이 존재하는지 확인한다.
+						if (SelectedSlot != null && SelectedSlot.IsHasItem)
+						{
+							//슬롯의 아이템 스택 참조하여 블럭 설치
+							world.GetChunkFromVector3(placeGuide.position).EditVoxel(placeGuide.position, SelectedSlot.itemStack.id);
+
+							//블럭 개수 감소
+							SelectedSlot.TakeItem(1);
+						}
+						
+
+					}
+						
 					
 
 					_PlaceTimeOut = PlaceDelay;

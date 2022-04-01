@@ -175,7 +175,39 @@ public class ItemSlot
 	}
 
     /// <summary>
-    /// 아이템 슬롯의 내용 비움
+    /// 이 슬롯의 아이템에 감소시킬 개수를 받아서
+    /// 슬롯에 반영하고 감소시킨 개수를 반환한다.
+    /// </summary>
+    /// <param name="amount">감소시킬 개수</param>
+    /// <returns>감소시킨 개수</returns>
+    public int TakeItem(int amount)
+    {
+        //감소하는 개수를 0에서 현재의 개수로 Clamp함
+        int reduce_value = Mathf.Clamp(amount, 0, itemStack.amount);
+
+        //감소
+        itemStack.amount -= reduce_value;
+
+        //만약 감소한 후 남은 개수가 0이라면
+        if (itemStack.amount == 0)
+        {
+            //스택 비움, 이때 itemStack이 null이 되므로 주의
+            ClearSlot();
+            return reduce_value;
+        }
+        else
+		{
+            if (uItemSlot != null)
+            {
+                uItemSlot.RefreshSlot();
+            }
+            return reduce_value;
+		}
+	}
+
+
+    /// <summary>
+    /// 아이템 스택의 내용 비움
     /// </summary>
     public void ClearSlot()
 	{
