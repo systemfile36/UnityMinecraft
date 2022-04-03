@@ -111,13 +111,19 @@ namespace StarterAssets
 			Debug.Log("OnInventoryToggle Called | IsOnUI =" + IsOnUI);
 			IsOnUI = !IsOnUI;
 
+			
+
 			//ActionMap을 UI on/off 여부에 따라 전환
 			if(IsOnUI)
 			{
+				//커서 잠금을 해제
+				SetCursorState(false);
 				playerInput.SwitchCurrentActionMap("UI");
 			}
 			else
 			{
+				//커서 잠금
+				SetCursorState(true);
 				playerInput.SwitchCurrentActionMap("Player");
 			}
 

@@ -76,7 +76,7 @@ public class UI_ItemSlot : MonoBehaviour
     /// </summary>
     public void RefreshSlot()
     {
-        Debug.Log(itemSlot.IsHasItem);
+        //Debug.Log(itemSlot.IsHasItem);
         //이 UI 슬롯의 아이템 슬롯에 아이템이 있다면
         if (itemSlot != null && itemSlot.IsHasItem)
         {
