@@ -160,7 +160,9 @@ namespace StarterAssets
 
 		private void OnApplicationFocus(bool hasFocus)
 		{
-			SetCursorState(cursorLocked);
+			//UI모드가 아닐때만, 어플리케이션으로 커서가 옮겨졌을 때 커서잠금
+			if(!IsOnUI)
+				SetCursorState(cursorLocked);
 		}
 
 		private void SetCursorState(bool newState)

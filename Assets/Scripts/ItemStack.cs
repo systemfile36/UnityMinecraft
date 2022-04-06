@@ -12,4 +12,6 @@ public class ItemStack
         this.id = id;
         this.amount = amount;
 	}
+    
+
 }

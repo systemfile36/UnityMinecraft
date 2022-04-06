@@ -205,6 +205,60 @@ public class ItemSlot
 		}
 	}
 
+    /// <summary>
+    /// 현재 슬롯의 ItemStack을 반환하고 
+    /// 슬롯을 비움
+    /// </summary>
+    /// <returns></returns>
+    public ItemStack TakeItemAll()
+	{
+        ItemStack temp = new ItemStack(itemStack.id, itemStack.amount);
+        ClearSlot();
+        return temp;
+	}
+
+    /// <summary>
+    /// itemStack을 설정한 후 UI 슬롯 갱신하는 메소드
+    /// </summary>
+    /// <param name="itemStack"></param>
+    public void SetItemStack(ItemStack itemStack)
+	{
+        this.itemStack = itemStack;
+        uItemSlot.RefreshSlot();
+	}
+
+    /// <summary>
+    /// 개수와 최대사이즈를 받아서 자신의 ItemSlot의 amount에 더한다.
+    /// 최대 사이즈를 넘길 경우 넘은 개수를 반환, 아니면 0을 반환
+    /// -1은 예외
+    /// </summary>
+    /// <param name="amount"></param>
+    /// <param name="MaxSize"></param>
+    /// <returns></returns>
+    public int AddStackAmount(int amount, byte MaxSize)
+	{
+        if (itemStack == null || amount < 0)
+            return -1;
+
+        //itemStack의 amount에 더한다.
+        itemStack.amount += amount;
+
+        //넘치는 양을 미리 저장
+        int temp = itemStack.amount - MaxSize;
+
+        //이 값이 음수이거나 0이면 넘치지 않았다는 말이므로
+        //0으로 세팅한다.
+        if (temp <= 0)
+            temp = 0;
+
+        //넘친 만큼 빼준다.
+        itemStack.amount -= temp;
+
+        uItemSlot.RefreshSlot();
+
+        return temp;
+
+	}
 
     /// <summary>
     /// 아이템 스택의 내용 비움

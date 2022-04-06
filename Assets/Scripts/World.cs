@@ -14,6 +14,8 @@ public class BlockType
     //투명한지 여부
     public bool isTransparent;
 
+    public byte MaxStackSize = 64;
+
     //인벤토리 등에서 사용될 아이콘
     public Sprite icon;
 

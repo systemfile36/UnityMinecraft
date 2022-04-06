@@ -36,12 +36,12 @@ public class ToolbarControl : MonoBehaviour
 		//스크롤 간격 변수 초기화
 		scrollTimeOut = scrollDelay;
 
-		byte i = 1;
+		byte i = 2;
 		foreach(UI_ItemSlot uSlot in toolbarSlots)
 		{
 			ItemStack stack = new ItemStack(i, Random.Range(2, 65));
 			ItemSlot slot = new ItemSlot(uSlot, stack);
-			i++;
+			
 		}
 
 		//모바일 환경이 아닐때에만
