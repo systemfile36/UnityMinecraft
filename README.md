@@ -25,3 +25,7 @@ https://blog.naver.com/loliisjinri/222687497165
 인벤토리 구조
 ->
 https://blog.naver.com/loliisjinri/222688480758
+
+인벤토리 구현 과정 상세
+->
+https://blog.naver.com/loliisjinri/222688478045
