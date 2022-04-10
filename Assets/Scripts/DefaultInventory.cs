@@ -9,6 +9,16 @@ public class DefaultInventory : MonoBehaviour
     /// GridInv에 대한 참조
     /// </summary>
     private GameObject gridInv;
+	
+	/// <summary>
+	/// UnderBar에 대한 참조
+	/// </summary>
+	private GameObject underBar;
+
+	/// <summary>
+	/// ToolbarControl에 대한 참조
+	/// </summary>
+	private ToolbarControl toolbar;
 
 	/// <summary>
 	/// World에 대한 참조
@@ -21,6 +31,8 @@ public class DefaultInventory : MonoBehaviour
 	/// </summary>
 	List<ItemSlot> gridInvSlots = new List<ItemSlot>();
 
+	private bool IsToolbarInit = false;
+
 	void Awake()
 	{
 		//World에 대한 참조 초기화
@@ -29,13 +41,21 @@ public class DefaultInventory : MonoBehaviour
 		//GridInv에 대한 참조 초기화
 		gridInv = transform.GetChild(0).gameObject;
 
+		//UnserBar에 대한 참조 초기화
+		underBar = transform.GetChild(1).gameObject;
+
+		//툴바에 대한 참조
+		toolbar = GameObject.Find("Toolbar").GetComponent<ToolbarControl>();
+
 		gridInvSlots.Capacity = 27;
 	}
 
 	void Start()
 	{
+
+		#region GridInv 초기화
 		//테스트를 위한 아이템 슬롯들을 GridInv의 자식들에 연결한다.
-		for(int i = 1; i < world.blockTypes.Length; i++)
+		for (int i = 1; i < world.blockTypes.Length; i++)
 		{
 			ItemStack temp = new ItemStack((byte)i, 64);
 
@@ -59,6 +79,55 @@ public class DefaultInventory : MonoBehaviour
 				gridInvSlots.Add(slotTemp);
 			}
 		}
+		#endregion
 
+	}
+
+	void Update()
+	{
+		
+	}
+
+	//DefaultInv가 활성화 되면 툴바 끔
+	void OnEnable()
+	{
+		//코루틴 실행하여 한 프레임 뒤, ItemSlot 링크
+		StartCoroutine(ToolbarItemSlotLink());
+		toolbar.gameObject.SetActive(false);
+	}
+
+	
+	//DefaultInv가 비활성화 되면 툴바 켬
+	void OnDisable()
+	{
+		//다시 toolbar의 UI_ItemSlot에 링크해준다.
+		for(int i = 0; i < 9; i++)
+		{
+			ItemSlot temp = toolbar.toolbarItemSlots[i];
+			toolbar.toolbarSlots[i].Link(temp);
+		}
+		toolbar.gameObject.SetActive(true);
+	}
+
+
+	/// <summary>
+	/// toolbar의 ItemSlot을 UnderBar로 Link한다.
+	/// 활성화 타이밍 조절을 위해 한프레임 지연한다.
+	/// </summary>
+	/// <returns></returns>
+	IEnumerator ToolbarItemSlotLink()
+	{
+		//한프레임 지연한다.
+		yield return null;
+
+		//툴바의 UI_ItemSlot에 연결된 ItemSlot의 링크를 해제하고
+		//UnderBar의 자식들로 변경한다.
+		for (int i = 0; i < 9; i++)
+		{
+			ItemSlot temp = toolbar.toolbarItemSlots[i];
+			UI_ItemSlot UI_temp = underBar.transform.GetChild(i).GetComponent<UI_ItemSlot>();
+			UI_temp.Link(temp);
+
+		}
 	}
 }

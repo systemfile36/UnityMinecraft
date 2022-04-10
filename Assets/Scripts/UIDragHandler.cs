@@ -54,6 +54,9 @@ public class UIDragHandler : MonoBehaviour
 		{
             //클릭 핸들러에 현재 위치의 슬롯을 넘긴다.
             HandleClickSlot(CheckSlot());
+
+            //커서 슬롯에 아이템이 있으면 아이템을 홀딩중이라 표시한다.
+            _input.IsHoldingCursor = cursorSlot.IsHasItem;
 		}
 	}
 

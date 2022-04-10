@@ -21,28 +21,44 @@ public class ToolbarControl : MonoBehaviour
 	[Header("Reference of Player")]
 	public StarterAssets.FirstPersonController player;
 
-
 	private float scrollTimeOut;
 
 
 	//선택중인 블럭, 디폴트 == 0
 	private int slotIndex = 0;
 
+
+	[Header("Reference of DefaultInv_UnderBar")]
+	public Transform underBar;
+
+	/// <summary>
+	/// Toolbar의 UI_ItemSlot들과 연결된 ItemSlot들의 리스트
+	/// </summary>
+	public List<ItemSlot> toolbarItemSlots = new List<ItemSlot>();
+
+	void Awake()
+	{
+		_input = GameObject.FindGameObjectWithTag("Player").GetComponent<StarterAssets.StarterAssetsInputs>();
+
+	}
+
 	void Start()
 	{
-
-		_input = GameObject.FindGameObjectWithTag("Player").GetComponent<StarterAssets.StarterAssetsInputs>();
 
 		//스크롤 간격 변수 초기화
 		scrollTimeOut = scrollDelay;
 
-		byte i = 2;
+		//툴바에 초기 아이템 설정
 		foreach(UI_ItemSlot uSlot in toolbarSlots)
 		{
-			ItemStack stack = new ItemStack(i, Random.Range(2, 65));
+			ItemStack stack = new ItemStack(2, Random.Range(2, 65));
+
 			ItemSlot slot = new ItemSlot(uSlot, stack);
-			
+
+			//아이템 슬롯 목록에 추가
+			toolbarItemSlots.Add(slot);
 		}
+
 
 		//모바일 환경이 아닐때에만
 #if !UNITY_ANDROID || !UNITY_IOS

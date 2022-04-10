@@ -29,8 +29,47 @@ namespace StarterAssets
 		public bool IsLeftClicked = false;
 		public bool IsRightClicked = false;
 
-		[Header("Value for UI")]
-		public bool IsOnUI = false;
+		[Header("UI Mode On/Off")]
+		[SerializeField] private bool _IsOnUI = false;
+
+		[Header("Is Holding Block In Cursor")]
+		[SerializeField] private bool _IsHoldingCursor = false;
+
+		public bool IsOnUI
+		{
+			get
+			{
+				return _IsOnUI;
+			}
+
+			set
+			{
+				//커서에 홀딩중인 블럭이 있으면
+				//무조건 UI를 켠 상태로 유지한다.
+				if(_IsHoldingCursor)
+				{
+					_IsOnUI = true;
+				}
+				else
+				{
+					_IsOnUI = value;
+				}
+			}
+		}
+
+		public bool IsHoldingCursor
+		{
+			get
+			{
+				return _IsHoldingCursor;
+			}
+
+			set
+			{
+				_IsHoldingCursor = value;
+			}
+
+		}
 
 		[Header("Reference of PlayerInput Component")]
 		private PlayerInput playerInput;
@@ -108,13 +147,13 @@ namespace StarterAssets
 		/// <param name="value"></param>
 		public void OnInventoryToggle(InputValue value)
 		{
-			Debug.Log("OnInventoryToggle Called | IsOnUI =" + IsOnUI);
+			Debug.Log("OnInventoryToggle Called | IsOnUI =" + _IsOnUI);
+
+			//인벤토리 토글
 			IsOnUI = !IsOnUI;
 
-			
-
 			//ActionMap을 UI on/off 여부에 따라 전환
-			if(IsOnUI)
+			if(_IsOnUI)
 			{
 				//커서 잠금을 해제
 				SetCursorState(false);
@@ -158,10 +197,11 @@ namespace StarterAssets
 
 #if !UNITY_IOS || !UNITY_ANDROID
 
+		//포커스가 이 프로그램으로 옮겨 졌을 때 발생하는 이벤트
 		private void OnApplicationFocus(bool hasFocus)
 		{
 			//UI모드가 아닐때만, 어플리케이션으로 커서가 옮겨졌을 때 커서잠금
-			if(!IsOnUI)
+			if(!_IsOnUI)
 				SetCursorState(cursorLocked);
 		}
 

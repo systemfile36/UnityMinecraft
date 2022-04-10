@@ -70,4 +70,8 @@ public class DebugControl : MonoBehaviour
 		StartCoroutine(SetFpsCount());
 	}
 
+	void OnDisable()
+	{
+		StopCoroutine(SetFpsCount());
+	}
 }

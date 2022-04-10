@@ -77,6 +77,15 @@ public class VoxelMod
         this.id = 0;
 	}
 }
+/// <summary>
+/// 게임 모드의 열거형
+/// </summary>
+public enum GameMode
+{
+    Creative,
+    Survival,
+    Debug
+}
 
 /// <summary>
 /// 전반적인 세계를 다루는 클래스(오브젝트)
@@ -140,6 +149,11 @@ public class World : MonoBehaviour
     /// 잠금을 위한 오브젝트
     /// </summary>
     public Object lockObject = new Object();
+
+    /// <summary>
+    /// 현재 게임 모드를 나타내는 정적 변수
+    /// </summary>
+    public static readonly GameMode gameMode = GameMode.Debug;
 
 	void Awake()
 	{

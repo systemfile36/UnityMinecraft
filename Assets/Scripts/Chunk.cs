@@ -342,14 +342,16 @@ public class Chunk
         //구조물 세팅 부분
         VoxelMod v;
         //큐가 빌때까지
-        
+
+        Vector3 pos;
+
         while(modifications.Count > 0)
 		{
             //큐에서 하나를 꺼낸다.
             v = modifications.Dequeue();
 
             //월드 좌표를 청크 내의 좌표로 변환
-            Vector3 pos = v.pos - position;
+            pos = v.pos - position;
 
             //지정된 위치의 id를 세팅
             voxelMap[(int)pos.x, (int)pos.y, (int)pos.z] = v.id;
@@ -358,6 +360,7 @@ public class Chunk
 		}
         
         ClearMeshData();
+        Vector3 temp = new Vector3();
         for (int y = 0; y < VoxelData.ChunkHeight; y++)
         {
             for (int x = 0; x < VoxelData.ChunkWidth; x++)
@@ -366,7 +369,12 @@ public class Chunk
                 {
                     //블럭이 Solid 일때만 그림
                     if(world.blockTypes[voxelMap[x, y, z]].isSolid)
-                        AddVoxelDataToChunk(new Vector3(x, y, z));
+					{
+                        temp.x = x; temp.y = y; temp.z = z;
+                        //AddVoxelDataToChunk(new Vector3(x, y, z));
+                        AddVoxelDataToChunk(temp);
+                    }
+                        
                 }
             }
         }

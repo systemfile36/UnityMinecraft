@@ -80,6 +80,7 @@ public class UI_ItemSlot : MonoBehaviour
         //이 UI 슬롯의 아이템 슬롯에 아이템이 있다면
         if (itemSlot != null && itemSlot.IsHasItem)
         {
+        
             //아이템에 대한 정보들 받아서 설정함
             sIcon.sprite = world.blockTypes[itemSlot.itemStack.id].icon;
             sAmount.text = itemSlot.itemStack.amount.ToString();
@@ -155,6 +156,7 @@ public class ItemSlot
         uItemSlot.Link(this);
     }
 
+
     /// <summary>
     /// UI 슬롯과 연결
     /// 상호간의 참조 확보
@@ -169,7 +171,7 @@ public class ItemSlot
     /// UI 슬롯과 분리
     /// </summary>
     /// <param name="uSlot"></param>
-    public void UnLink_UI_Slot()
+    public virtual void UnLink_UI_Slot()
 	{
         uItemSlot = null;
 	}
@@ -197,10 +199,7 @@ public class ItemSlot
         }
         else
 		{
-            if (uItemSlot != null)
-            {
-                uItemSlot.RefreshSlot();
-            }
+            RefreshUI_Slot();
             return reduce_value;
 		}
 	}
@@ -224,7 +223,7 @@ public class ItemSlot
     public void SetItemStack(ItemStack itemStack)
 	{
         this.itemStack = itemStack;
-        uItemSlot.RefreshSlot();
+        RefreshUI_Slot();
 	}
 
     /// <summary>
@@ -254,7 +253,7 @@ public class ItemSlot
         //넘친 만큼 빼준다.
         itemStack.amount -= temp;
 
-        uItemSlot.RefreshSlot();
+        RefreshUI_Slot();
 
         return temp;
 
@@ -266,6 +265,14 @@ public class ItemSlot
     public void ClearSlot()
 	{
         itemStack = null;
+        RefreshUI_Slot();
+	}
+
+    /// <summary>
+    /// ItemSlot과 연결된 UI_ItemSlot을 갱신한다.
+    /// </summary>
+    public virtual void RefreshUI_Slot()
+	{
         if(uItemSlot != null)
 		{
             uItemSlot.RefreshSlot();
