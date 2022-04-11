@@ -98,6 +98,14 @@ public class World : MonoBehaviour
     //바이옴을 설정하는 변수
     public BiomeAttributes biome;
 
+    //전역 밝기 조정
+    [Range(0f, 0.93f)]
+    public float globalLightLevel;
+
+    //낮과 밤에 따른 배경 색
+    public Color dayColor;
+    public Color nightColor;
+
     //플레이어의 좌표 참조를 위한 변수
     public Transform player;
     public Vector3 spawnPosition;
@@ -187,8 +195,19 @@ public class World : MonoBehaviour
         //플레이어 현재 청크 갱신
         playerChunkCoord = GetChunkCoordFromVector3(player.position);
 
-        //플레이어의 현재 위치한 청크가 마지막으로 위치한 청크와 다르다면
-        if (!playerChunkCoord.Equals(playerLastChunkCoord))
+		#region 테스트용 코드
+		//"GlobalLightLevel"라는 변수에 globalLightLevel을 세팅한다.
+		//모든 셰이더에 이 이름을 가진 변수를 찾는다.
+		Shader.SetGlobalFloat("GlobalLightLevel", globalLightLevel);
+
+        //카메라의 배경색을 변경, 
+        //낮의 색과 밤의 색 사이를 전역 밝기 만큼 선형 보간함
+        //Camera.main.backgroundColor = Color.Lerp(dayColor, nightColor, globalLightLevel);
+		#endregion
+
+
+		//플레이어의 현재 위치한 청크가 마지막으로 위치한 청크와 다르다면
+		if (!playerChunkCoord.Equals(playerLastChunkCoord))
         { 
             CheckViewDistance();
             //다시 갱신

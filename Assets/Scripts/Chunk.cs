@@ -137,10 +137,11 @@ public class Chunk
         //meshRenderer.material = world.material;
 
         //투명 블럭 구현을 위한 마테리얼 여러개 설정
-        materials[0] = world.material;
-        materials[1] = world.TransparentMaterial;
+        //materials[0] = world.material;
+        //materials[1] = world.TransparentMaterial;
 
-        meshRenderer.materials = materials;
+        //일단은, 하나의 마테리얼로
+        meshRenderer.material = world.material;
 
         //meshCollider = chunkObject.AddComponent<MeshCollider>();
 
@@ -478,7 +479,7 @@ public class Chunk
                 AddTexture(world.blockTypes[blockID].GetTextureID(p));
 
                 //만약 투명하지 않다면, 기본 삼각형 리스트에 넣는다.
-                if (!isTransparent)
+                //if (!isTransparent)
                 {
                     //삼각형의 각 꼭짓점을 정점 4개에 맞게 정수로 넣는다.
                     triangles.Add(vertexIndex);
@@ -489,6 +490,7 @@ public class Chunk
                     triangles.Add(vertexIndex + 3);
                 }
                 //투명이 아니면 투명 삼각형 배열에 넣는다.
+                /*
                 else
 				{
                     //삼각형의 각 꼭짓점을 정점 4개에 맞게 정수로 넣는다.
@@ -499,7 +501,7 @@ public class Chunk
                     TransparentTriangles.Add(vertexIndex + 1);
                     TransparentTriangles.Add(vertexIndex + 3);
                 }
-
+                */
                 vertexIndex += 4;
             }
         }
@@ -517,13 +519,15 @@ public class Chunk
         //mesh.triangles = triangles.ToArray();
 
         //이 메쉬에 사용할 마테리얼의 개수 설정
-        mesh.subMeshCount = 2;
-        
+        //mesh.subMeshCount = 2;
+
         //기본 마테리얼을 사용할 삼각형들
-        mesh.SetTriangles(triangles.ToArray(), 0);
+        //mesh.SetTriangles(triangles.ToArray(), 0);
 
         //투명 마테리얼을 사용할 삼각형들
-        mesh.SetTriangles(TransparentTriangles.ToArray(), 1);
+        //mesh.SetTriangles(TransparentTriangles.ToArray(), 1);
+
+        mesh.triangles = triangles.ToArray();
 
         mesh.uv = uvs.ToArray();
 
