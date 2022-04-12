@@ -198,7 +198,7 @@ public class World : MonoBehaviour
 		#region 테스트용 코드
 		//"GlobalLightLevel"라는 변수에 globalLightLevel을 세팅한다.
 		//모든 셰이더에 이 이름을 가진 변수를 찾는다.
-		Shader.SetGlobalFloat("GlobalLightLevel", globalLightLevel);
+		//Shader.SetGlobalFloat("GlobalLightLevel", globalLightLevel);
 
         //카메라의 배경색을 변경, 
         //낮의 색과 밤의 색 사이를 전역 밝기 만큼 선형 보간함

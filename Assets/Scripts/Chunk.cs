@@ -71,6 +71,9 @@ public class Chunk
     List<int> triangles = new List<int>();
     List<Vector2> uvs = new List<Vector2>();
 
+    //정점의 색을 저장, 셰이더에 넘겨줄 것이다.
+    List<Color> colors = new List<Color>();
+
     //투명블럭의 삼각형 좌표 저장하는 리스트
     List<int> TransparentTriangles = new List<int>();
 
@@ -323,7 +326,7 @@ public class Chunk
 
     }
     /// <summary>
-    /// 외부에서 참조할 예정
+    /// 외부에서 참조할 예정, 스레드 큐에 청크 메쉬 데이터 업데이트를 맡김
     /// </summary>
     public void RefreshChunkMeshData()
 	{
@@ -403,6 +406,8 @@ public class Chunk
         triangles.Clear();
         TransparentTriangles.Clear();
         uvs.Clear();
+
+        colors.Clear();
 	}
 
     /// <summary>
@@ -445,6 +450,7 @@ public class Chunk
 
     /// <summary>
     /// 위치값을 받아 복셀 데이터를 메쉬 데이터 리스트에 추가합니다.
+    /// 실제 Mesh를 구성하는 정점과 폴리곤, uv, color등의 정보가 추가되는 곳
     /// </summary>
     /// <param name="pos">복셀 데이터의 위치</param>
     void AddVoxelDataToChunk(Vector3 pos)
@@ -454,6 +460,10 @@ public class Chunk
 
         //pos좌표의 투명여부를 확인
         bool isTransparent = world.blockTypes[blockID].isTransparent;
+
+        //각 정점의 밝기 값
+        float lightLevel = 0;
+        Vector3 ShadeTemp = new Vector3(pos.x, pos.y, pos.z);
 
         for (int p = 0; p < 6; p++)
         {
@@ -477,6 +487,40 @@ public class Chunk
                 //p의 값은 0 ~ 5로 변화하면 각 면을 그린다.
                 //그에 따른 순서도 맞추어져 있으므로 faceIndex로 p를 넘긴다.
                 AddTexture(world.blockTypes[blockID].GetTextureID(p));
+
+                //현재 그리는 면이 +Y축 방향 면이고, 불투명한 블럭일때만 그림자 그림
+                //각 면의 p인덱스는 VoxelData.cs의 voxelTris 배열을 참고하라
+                if (p == 2 && !isTransparent)
+                {
+                    //단순히 위로 한칸씩 가보면서 불투명 블럭이 있는지 체크하고
+                    //있으면 그림자를 그리고 아니면 그리지 않는다.
+                    float yPos = pos.y + 1;
+                    bool IsShade = false;
+
+                    //맵의 한계 y까지 체크한다.
+                    while (yPos < VoxelData.ChunkHeight)
+                    {
+                        ShadeTemp.y = yPos;
+                        //위에 불투명한 블럭이나, 나뭇잎(11번)이 있으면 그림자를 그림
+                        if (!CheckVoxelTransparent(ShadeTemp) 
+                            || voxelMap[(int)pos.x, (int)yPos, (int)pos.z] == 11)
+                        {
+                            IsShade = true;
+                            break;
+                        }
+                        yPos++;
+                    }
+                    if (IsShade)
+                        lightLevel = 0.5f;
+                    else
+                        lightLevel = 0.0f;
+                }
+
+                colors.Add(new Color(0, 0, 0, lightLevel));
+                colors.Add(new Color(0, 0, 0, lightLevel));
+                colors.Add(new Color(0, 0, 0, lightLevel));
+                colors.Add(new Color(0, 0, 0, lightLevel));
+
 
                 //만약 투명하지 않다면, 기본 삼각형 리스트에 넣는다.
                 //if (!isTransparent)
@@ -530,6 +574,9 @@ public class Chunk
         mesh.triangles = triangles.ToArray();
 
         mesh.uv = uvs.ToArray();
+
+        //정점의 색을 지정
+        mesh.colors = colors.ToArray();
 
         //큐브를 깔끔하게 그리기 위해 필요한 연산
         mesh.RecalculateNormals();

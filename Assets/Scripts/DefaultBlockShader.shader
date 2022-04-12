@@ -46,16 +46,19 @@ Shader "UnityMinecraft/Blocks" {
 
 				//필요한 정점과 UV 정보들이 자동으로
 				//이 appdata 구조체에 들어간다.
+				//color는 정점의 색을 의미한다.
 				struct appdata {
 					
 					float4 vertex : POSITION;
 					float2 uv : TEXCOORD0;
+					float4 color : COLOR;
 				};
 				
 				//appdata를 화면에 맞게 변환한 것이 담길 것
 				struct v2f {
 					float4 vertex : SV_POSITION;
 					float2 uv : TEXCOORD0;
+					float4 color : COLOR;
 				};
 				
 				//텍스쳐
@@ -73,6 +76,7 @@ Shader "UnityMinecraft/Blocks" {
 					//스크린 좌표(카메라에 보이는)로 변환하여 넣는다.
 					o.vertex = UnityObjectToClipPos(v.vertex);
 					o.uv = v.uv;
+					o.color = v.color;
 
 					return o;
 				}
@@ -84,6 +88,10 @@ Shader "UnityMinecraft/Blocks" {
 					//tex2D는 TextureLookup을 수행한다.
 					//즉, 해당 위치의 텍스쳐를 조회한다.
 					fixed4 col = tex2D(_MainTex, i.uv);
+
+					//전역광 밝기에 정점의 색의 Alpha값을 더한 뒤 0 과 1사이로 clamp 한다.
+					//즉, 정점 하나하나가 자신의 밝기를 가진다.
+					float localLightLevel = clamp(GlobalLightLevel + i.color.a, 0, 1);
 
 					//tex2D()를 통해 받아온 색 정보를 수정한 뒤 반환한다.
 					
@@ -97,8 +105,9 @@ Shader "UnityMinecraft/Blocks" {
 					//col과 RGBA(0 0 0 1)(검은색)을 선형 보간해서 반환
 					//맨 마지막 인수는 weight로, 
 					//이 값에 따라 검은 정도가 달라질것
-					//즉, 이 부분은 블럭 텍스쳐 전체의 밝기를 weight에 따라 결정함
-					col = lerp(col, float4(0, 0, 0, 1), GlobalLightLevel);
+					//즉, 이 부분은 그 위치의 텍스쳐 색을 weight에 따라 결정함
+					//weight가 1에 가까울 수록 두번째 인자에 가까워짐
+					col = lerp(col, float4(0, 0, 0, 1), localLightLevel);
 					
 					return col;
 				}
