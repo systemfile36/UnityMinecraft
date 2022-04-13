@@ -11,8 +11,12 @@ public class BlockType
 {
     public string blockName;
     public bool isSolid;
-    //투명한지 여부
-    public bool isTransparent;
+
+    //인접한 면을 그려야하는 지 여부
+    public bool drawNearPlane;
+
+    //투명도
+    public float trnasparency;
 
     public byte MaxStackSize = 64;
 
@@ -77,6 +81,7 @@ public class VoxelMod
         this.id = 0;
 	}
 }
+
 /// <summary>
 /// 게임 모드의 열거형
 /// </summary>
@@ -176,6 +181,11 @@ public class World : MonoBehaviour
         //같은 시드는 같은 맵
         Random.InitState(seed);
 
+        //Global Light Level의 최대 최소값을 셰이더에 넘긴다.
+        Shader.SetGlobalFloat("minGlobalLight", VoxelData.minLight);
+        Shader.SetGlobalFloat("maxGlobalLight", VoxelData.maxLight);
+
+
         //월드 중앙에 스폰
         spawnPosition =
             new Vector3(VoxelData.WorldSizeInVoxels / 2f,
@@ -198,7 +208,7 @@ public class World : MonoBehaviour
 		#region 테스트용 코드
 		//"GlobalLightLevel"라는 변수에 globalLightLevel을 세팅한다.
 		//모든 셰이더에 이 이름을 가진 변수를 찾는다.
-		//Shader.SetGlobalFloat("GlobalLightLevel", globalLightLevel);
+		Shader.SetGlobalFloat("GlobalLightLevel", globalLightLevel);
 
         //카메라의 배경색을 변경, 
         //낮의 색과 밤의 색 사이를 전역 밝기 만큼 선형 보간함
@@ -291,7 +301,7 @@ public class World : MonoBehaviour
         if(chunks[thisChunk.x, thisChunk.z] != null && chunks[thisChunk.x, thisChunk.z].IsEditable)
 		{
             //지정된 좌표에 있는 블럭의 타입을 받아 isSolid 반환
-            return blockTypes[chunks[thisChunk.x, thisChunk.z].GetVoxelFromGlobalVector3(pos)].isSolid;
+            return blockTypes[chunks[thisChunk.x, thisChunk.z].GetVoxelFromGlobalVector3(pos).id].isSolid;
 		}
 
         //만약에 위에 조건에 모두 해당이 없으면 GetVoxel을 호출해서 확인
@@ -300,7 +310,7 @@ public class World : MonoBehaviour
 
     /// <summary>
     /// 월드 좌표를 받아서 그 좌표가 속한 청크의 맵을 참조,
-    /// 블럭의 투명 여부를 반환
+    /// 이 블럭이 건너편이 비치는 블럭인지 여부를 반환
     /// </summary>
     /// <param name="pos"></param>
     /// <returns></returns>
@@ -316,12 +326,37 @@ public class World : MonoBehaviour
         //지정된 좌표에 청크가 생성되었고, 청크의 맵이 초기화 되었다면
         if (chunks[thisChunk.x, thisChunk.z] != null && chunks[thisChunk.x, thisChunk.z].IsEditable)
         {
-            //지정된 좌표에 있는 블럭의 타입을 받아 isSolid 반환
-            return blockTypes[chunks[thisChunk.x, thisChunk.z].GetVoxelFromGlobalVector3(pos)].isTransparent;
+            //지정된 좌표에 있는 블럭의 타입을 받아 건너편이 비치는 지 반환
+            return blockTypes[chunks[thisChunk.x, thisChunk.z].GetVoxelFromGlobalVector3(pos).id].drawNearPlane;
         }
 
         //만약에 위에 조건에 모두 해당이 없으면 GetVoxel을 호출해서 확인
-        return blockTypes[GetVoxel(pos)].isTransparent;
+        return blockTypes[GetVoxel(pos)].drawNearPlane;
+    }
+
+    /// <summary>
+    /// 지정된 자표의 VoxelState 반환
+    /// </summary>
+    /// <param name="pos"></param>
+    /// <returns></returns>
+    public VoxelState GetVoxelState(Vector3 pos)
+	{
+        //pos가 속한 청크 좌표 불러옴
+        ChunkCoord thisChunk = new ChunkCoord(pos);
+
+        //좌표 유효하지 않으면 null 반환
+        if (!IsVoxelInWorld(pos))
+            return null;
+
+        //지정된 좌표에 청크가 생성되었고, 청크의 맵이 초기화 되었다면
+        if (chunks[thisChunk.x, thisChunk.z] != null && chunks[thisChunk.x, thisChunk.z].IsEditable)
+        {
+            //지정된 좌표에 있는 VoxelState 반환
+            return chunks[thisChunk.x, thisChunk.z].GetVoxelFromGlobalVector3(pos);
+        }
+
+        //만약에 위에 조건에 모두 해당이 없으면 GetVoxel을 호출해서 생성한 뒤 반환
+        return new VoxelState(GetVoxel(pos));
     }
 
     //이 코드는 월드를 만들거나 동굴을 만들거나 하는 등의 알고리즘에 사용될 것
@@ -441,8 +476,8 @@ public class World : MonoBehaviour
 			}
 		}
 
-		#region 구조물 세팅부
-		/*
+        #region 구조물 세팅부 (삭제됨)
+        /*
         //구조물을 세팅하는 부분
         VoxelMod v;
         while(modifications.Count > 0)
@@ -482,8 +517,8 @@ public class World : MonoBehaviour
             chunksToRefresh.RemoveAt(0);
 		}
         */
-		#endregion
-	}
+        #endregion
+    }
 
 	/// <summary>
 	/// 만들청크 큐에서 하나씩 꺼내 초기화하는 메소드
@@ -583,7 +618,8 @@ public class World : MonoBehaviour
         IsApplyingAll = false;
     }
 
-    /*
+	#region 청크 생성 코루틴 (삭제됨)
+	/*
     /// <summary>
     /// 청크를 생성하는 코루틴
     /// </summary>
@@ -607,13 +643,14 @@ public class World : MonoBehaviour
         IsCreateChunks = false;
 	}
     */
+	#endregion
 
-    /// <summary>
-    /// 좌표를 받아서 그에 맞는 청크 좌표를 ChunkCoord로 반환
-    /// </summary>
-    /// <param name="pos"></param>
-    /// <returns></returns>
-    ChunkCoord GetChunkCoordFromVector3(Vector3 pos)
+	/// <summary>
+	/// 좌표를 받아서 그에 맞는 청크 좌표를 ChunkCoord로 반환
+	/// </summary>
+	/// <param name="pos"></param>
+	/// <returns></returns>
+	ChunkCoord GetChunkCoordFromVector3(Vector3 pos)
 	{
 
         //좌표값 정수로

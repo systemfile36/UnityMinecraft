@@ -1,10 +1,10 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Threading;
 
 /// <summary>
-/// ¿ùµå¿¡¼­ÀÇ Ã»Å©ÀÇ ÁÂÇ¥
+/// ì›”ë“œì—ì„œì˜ ì²­í¬ì˜ ì¢Œí‘œ
 /// </summary>
 public class ChunkCoord
 {
@@ -23,7 +23,7 @@ public class ChunkCoord
         this.z = z;
     }
     /// <summary>
-    /// ÁÂÇ¥¸¦ ¹Ş¾Æ ±× ÁÂÇ¥°¡ ¼ÓÇÑ Ã»Å©ÀÇ ÁÂÇ¥·Î ÃÊ±âÈ­
+    /// ì¢Œí‘œë¥¼ ë°›ì•„ ê·¸ ì¢Œí‘œê°€ ì†í•œ ì²­í¬ì˜ ì¢Œí‘œë¡œ ì´ˆê¸°í™”
     /// </summary>
     /// <param name="pos"></param>
     public ChunkCoord(Vector3 pos)
@@ -34,7 +34,7 @@ public class ChunkCoord
         x = xP / VoxelData.ChunkWidth;
         z = zP / VoxelData.ChunkWidth;
 	}
-	//ºñ±³¹®À» À§ÇÑ Equals ¿À¹ö¶óÀÌµù
+	//ë¹„êµë¬¸ì„ ìœ„í•œ Equals ì˜¤ë²„ë¼ì´ë”©
 	public override bool Equals(object obj)
 	{
         ChunkCoord c = obj as ChunkCoord;
@@ -53,13 +53,37 @@ public class ChunkCoord
 }
 
 /// <summary>
-/// Ã»Å©ÀÇ ±âº» Æ², ¸Å½¬ Á¤º¸¸¦ °¡Áø ¿ÀºêÁ§Æ®¿Í Ã»Å© ³»ÀÇ ¸Ê Á¤º¸¸¦ °¡Áø´Ù.
+/// ê° ë¸”ëŸ­ì˜ ìƒíƒœë¥¼ ì €ì¥í•œë‹¤.
+/// ë§µì— ì €ì¥ë  íƒ€ì…
+/// </summary>
+public class VoxelState
+{
+    public byte id;
+
+    //ì´ ë¸”ëŸ­ì´ ë°›ëŠ” ë¹›ì˜ ì–‘
+    public float globalLightWeight;
+
+    public VoxelState()
+	{
+        id = 0;
+        globalLightWeight = 0f;
+	}
+
+    public VoxelState(byte id)
+	{
+        this.id = id;
+        globalLightWeight = 0f;
+	}
+}
+
+/// <summary>
+/// ì²­í¬ì˜ ê¸°ë³¸ í‹€, ë§¤ì‰¬ ì •ë³´ë¥¼ ê°€ì§„ ì˜¤ë¸Œì íŠ¸ì™€ ì²­í¬ ë‚´ì˜ ë§µ ì •ë³´ë¥¼ ê°€ì§„ë‹¤.
 /// </summary>
 public class Chunk
 {
     public ChunkCoord coord;
 
-    //¸Ş½¬ ÇÊÅÍ¿Í ¸Ş½¬ ·»´õ·¯¸¦ ¾ò±â À§ÇÔÀÌ´Ù.
+    //ë©”ì‰¬ í•„í„°ì™€ ë©”ì‰¬ ë Œë”ëŸ¬ë¥¼ ì–»ê¸° ìœ„í•¨ì´ë‹¤.
     GameObject chunkObject;
     MeshRenderer meshRenderer;
     MeshFilter meshFilter;
@@ -71,45 +95,45 @@ public class Chunk
     List<int> triangles = new List<int>();
     List<Vector2> uvs = new List<Vector2>();
 
-    //Á¤Á¡ÀÇ »öÀ» ÀúÀå, ¼ÎÀÌ´õ¿¡ ³Ñ°ÜÁÙ °ÍÀÌ´Ù.
+    //ì •ì ì˜ ìƒ‰ì„ ì €ì¥, ì…°ì´ë”ì— ë„˜ê²¨ì¤„ ê²ƒì´ë‹¤.
     List<Color> colors = new List<Color>();
 
-    //Åõ¸íºí·°ÀÇ »ï°¢Çü ÁÂÇ¥ ÀúÀåÇÏ´Â ¸®½ºÆ®
+    //íˆ¬ëª…ë¸”ëŸ­ì˜ ì‚¼ê°í˜• ì¢Œí‘œ ì €ì¥í•˜ëŠ” ë¦¬ìŠ¤íŠ¸
     List<int> TransparentTriangles = new List<int>();
 
-    //¸¶Å×¸®¾ó º¹¼ö Àû¿ëÀ» À§ÇÑ ¸¶Å×¸®¾ó ¹è¿­
+    //ë§ˆí…Œë¦¬ì–¼ ë³µìˆ˜ ì ìš©ì„ ìœ„í•œ ë§ˆí…Œë¦¬ì–¼ ë°°ì—´
     Material[] materials = new Material[2];
 
-    //byte °ªÀ¸·Î ±¸¼ºµÈ ¸Ê, ºí·°ÀÇ ÄÚµå¸¦ ÀúÀåÇÑ´Ù.
-    public byte[,,] voxelMap = 
-        new byte[VoxelData.ChunkWidth, VoxelData.ChunkHeight, VoxelData.ChunkWidth];
+    //byte ê°’ìœ¼ë¡œ êµ¬ì„±ëœ ë§µ, ë¸”ëŸ­ì˜ VoxelStateë¥¼ ì €ì¥í•œë‹¤.
+    public VoxelState[,,] voxelMap = 
+        new VoxelState[VoxelData.ChunkWidth, VoxelData.ChunkHeight, VoxelData.ChunkWidth];
 
-    //ºí·° Å¸ÀÔµîÀÇ ÂüÁ¶¸¦ À§ÇÑ World ÂüÁ¶
+    //ë¸”ëŸ­ íƒ€ì…ë“±ì˜ ì°¸ì¡°ë¥¼ ìœ„í•œ World ì°¸ì¡°
     World world;
 
     private bool _IsActive;
 
-    //voxelMapÀÌ ÃÊ±âÈ­ µÇ¾ú´ÂÁö ¿©ºÎ
+    //voxelMapì´ ì´ˆê¸°í™” ë˜ì—ˆëŠ”ì§€ ì—¬ë¶€
     private bool IsMapInit = false;
 
-    //¸Å½¬µ¥ÀÌÅÍ¸¦ Ãß°¡ÇÏ´Â ½º·¹µå°¡ ÀÛµ¿ ÁßÀÎÁö ¿©ºÎ
+    //ë§¤ì‰¬ë°ì´í„°ë¥¼ ì¶”ê°€í•˜ëŠ” ìŠ¤ë ˆë“œê°€ ì‘ë™ ì¤‘ì¸ì§€ ì—¬ë¶€
     public bool IsLockedMeshThread = false;
 
-    //World ½ºÅ©¸³Æ®¿¡¼­ Á÷Á¢ Ãß°¡ÇÏ±â À§ÇØ¼­ publicÀ¸·Î ¼±¾ğ
+    //World ìŠ¤í¬ë¦½íŠ¸ì—ì„œ ì§ì ‘ ì¶”ê°€í•˜ê¸° ìœ„í•´ì„œ publicìœ¼ë¡œ ì„ ì–¸
     public Queue<VoxelMod> modifications = new Queue<VoxelMod>();
 
     /// <summary>
-    /// Ã»Å©ÀÇ ¿ùµå ±âÁØ ÁÂÇ¥
+    /// ì²­í¬ì˜ ì›”ë“œ ê¸°ì¤€ ì¢Œí‘œ
     /// </summary>
     public Vector3 position;
 
-    //World¸¦ ÀÎÀÚ·Î ¹Ş´Â´Ù.(find´Â ºñ½Ñ(expansiveÇÑ ÀÛ¾÷))
+    //Worldë¥¼ ì¸ìë¡œ ë°›ëŠ”ë‹¤.(findëŠ” ë¹„ì‹¼(expansiveí•œ ì‘ì—…))
     /// <summary>
-    /// Ã»Å©ÀÇ »ı¼ºÀÚ, Áï½Ã ÃÊ±âÈ­ÇÒÁö ¿©ºÎ¸¦ °áÁ¤°¡´É
+    /// ì²­í¬ì˜ ìƒì„±ì, ì¦‰ì‹œ ì´ˆê¸°í™”í• ì§€ ì—¬ë¶€ë¥¼ ê²°ì •ê°€ëŠ¥
     /// </summary>
-    /// <param name="_coord">»ı¼ºµÉ Ã»Å©ÀÇ ÁÂÇ¥</param>
-    /// <param name="_world">World¿¡ ´ëÇÑ ÂüÁ¶</param>
-    /// <param name="genOnLoad">»ı¼ºµÇÀÚ¸¶ÀÚ InitÀ» È£Ãâ ÇÒÁö ¿©ºÎ</param>
+    /// <param name="_coord">ìƒì„±ë  ì²­í¬ì˜ ì¢Œí‘œ</param>
+    /// <param name="_world">Worldì— ëŒ€í•œ ì°¸ì¡°</param>
+    /// <param name="genOnLoad">ìƒì„±ë˜ìë§ˆì Initì„ í˜¸ì¶œ í• ì§€ ì—¬ë¶€</param>
     public Chunk (ChunkCoord _coord, World _world, bool genOnLoad)
 	{
         this.world = _world;
@@ -124,42 +148,44 @@ public class Chunk
     }
 
     /// <summary>
-    /// Ã»Å©¸¦ ÃÊ±âÈ­. ¸ÊÀ» ¼¼ÆÃÇÏ°í ¸Ş½¬¸¦ ¸¸µé¾î¼­ Ãß°¡ÇÏ´Â °úÁ¤
+    /// ì²­í¬ë¥¼ ì´ˆê¸°í™”. ë§µì„ ì„¸íŒ…í•˜ê³  ë©”ì‰¬ë¥¼ ë§Œë“¤ì–´ì„œ ì¶”ê°€í•˜ëŠ” ê³¼ì •
     /// </summary>
     public void Init()
 	{
         
         chunkObject = new GameObject();
         //IsActive = true;
-        //ÀÎ½ºÆåÅÍ¿¡¼­ ÇÏ´ø°É ÄÚµå·Î ¿Å±ä °ÍÀÌ´Ù.
-        //chunkObject¿¡ ¸Ş½¬ ÇÊÅÍ¿Í ¸Ş½¬ ·»´õ·¯¸¦ Ãß°¡ÇÏ°í º¯¼ö¿¡ ÀúÀåÇÑ´Ù.
+        //ì¸ìŠ¤í™í„°ì—ì„œ í•˜ë˜ê±¸ ì½”ë“œë¡œ ì˜®ê¸´ ê²ƒì´ë‹¤.
+        //chunkObjectì— ë©”ì‰¬ í•„í„°ì™€ ë©”ì‰¬ ë Œë”ëŸ¬ë¥¼ ì¶”ê°€í•˜ê³  ë³€ìˆ˜ì— ì €ì¥í•œë‹¤.
         meshFilter = chunkObject.AddComponent<MeshFilter>();
         meshRenderer = chunkObject.AddComponent<MeshRenderer>();
 
-        //¸¶Å×¸®¾óÀ» ¼³Á¤ÇÑ´Ù.
+        //ë§ˆí…Œë¦¬ì–¼ì„ ì„¤ì •í•œë‹¤.
         //meshRenderer.material = world.material;
 
-        //Åõ¸í ºí·° ±¸ÇöÀ» À§ÇÑ ¸¶Å×¸®¾ó ¿©·¯°³ ¼³Á¤
+        //íˆ¬ëª… ë¸”ëŸ­ êµ¬í˜„ì„ ìœ„í•œ ë§ˆí…Œë¦¬ì–¼ ì—¬ëŸ¬ê°œ ì„¤ì •
         //materials[0] = world.material;
         //materials[1] = world.TransparentMaterial;
 
-        //ÀÏ´ÜÀº, ÇÏ³ªÀÇ ¸¶Å×¸®¾ó·Î
+        //ì¼ë‹¨ì€, í•˜ë‚˜ì˜ ë§ˆí…Œë¦¬ì–¼ë¡œ
         meshRenderer.material = world.material;
 
         //meshCollider = chunkObject.AddComponent<MeshCollider>();
 
-        //º¸±â ÁÁ±â À§ÇØ ºÎ¸ğ¸¦ ¼³Á¤ÇÏµµ·Ï ÇÏÀÚ.
+        //ë³´ê¸° ì¢‹ê¸° ìœ„í•´ ë¶€ëª¨ë¥¼ ì„¤ì •í•˜ë„ë¡ í•˜ì.
         chunkObject.transform.SetParent(world.transform);
-        //»ó´ëÀ§Ä¡ChunkCoord¸¦ ±â¹İÀ¸·Î ½ÇÁ¦ À§Ä¡ ¹İ¿µ
+        //ìƒëŒ€ìœ„ì¹˜ChunkCoordë¥¼ ê¸°ë°˜ìœ¼ë¡œ ì‹¤ì œ ìœ„ì¹˜ ë°˜ì˜
         chunkObject.transform.position
             = new Vector3(coord.x * VoxelData.ChunkWidth, 0f, coord.z * VoxelData.ChunkWidth);
         chunkObject.name = string.Format("Chunk {0}, {1}", coord.x, coord.z);
 
-        //Ã»Å©ÀÇ ¿ùµå À§Ä¡ ÃÊ±âÈ­
+        //ì²­í¬ì˜ ì›”ë“œ ìœ„ì¹˜ ì´ˆê¸°í™”
         position = chunkObject.transform.position;
 
-        //½º·¹µå Ç®¿¡ º¹¼¿ ¸Ê ¼¼ÆÃ ¸Ş¼Òµå¸¦ ³Ö´Â´Ù.
+        //ìŠ¤ë ˆë“œ í’€ì— ë³µì…€ ë§µ ì„¸íŒ… ë©”ì†Œë“œë¥¼ ë„£ëŠ”ë‹¤.
         ThreadPool.QueueUserWorkItem(PopulateVoxelMap);
+
+
 
         //RefreshChunkMeshData();
 
@@ -167,19 +193,20 @@ public class Chunk
     }
 
     /// <summary>
-    /// º¹¼¿¸ÊÀ» ¼¼ÆÃÇÑ´Ù.
+    /// ë³µì…€ë§µì„ ì„¸íŒ…í•œë‹¤.
     /// </summary>
     void PopulateVoxelMap(object obj)
 	{
+        //y ìˆœë°©í–¥ ë£¨í”„ë¥¼ ë¨¼ì € í•¨ìœ¼ë¡œì„œ ì•„ë˜ë¶€í„° ìœ„ë¡œ ì„¤ì •ë˜ì–´ ê°
         for (int y = 0; y < VoxelData.ChunkHeight; y++)
         {
             for (int x = 0; x < VoxelData.ChunkWidth; x++)
             {
                 for (int z = 0; z < VoxelData.ChunkWidth; z++)
                 {
-                    //GetVoxel·Î ÇØ´ç ÁÂÇ¥ÀÇ ºí·° ¾ÆÀÌµğ¸¦ ¹Ş¾Æ¼­ ¸Ê¿¡ ³Ö´Â´Ù.
-                    //ÀÌ¶§ ¿ùµå ±âÁØ ÁÂÇ¥¸¦ ³Ö¾î¾ß ÇÔ¿¡ À¯ÀÇÇÏ¶ó
-                    voxelMap[x, y, z] = world.GetVoxel(new Vector3(x, y, z) + position);
+                    //GetVoxelë¡œ í•´ë‹¹ ì¢Œí‘œì˜ ë¸”ëŸ­ ì•„ì´ë””ë¥¼ ë°›ì•„ì„œ ë§µì— ë„£ëŠ”ë‹¤.
+                    //ì´ë•Œ ì›”ë“œ ê¸°ì¤€ ì¢Œí‘œë¥¼ ë„£ì–´ì•¼ í•¨ì— ìœ ì˜í•˜ë¼
+                    voxelMap[x, y, z] = new VoxelState(world.GetVoxel(new Vector3(x, y, z) + position));
                 }
             }
         }
@@ -187,7 +214,7 @@ public class Chunk
         IsMapInit = true;
     }
     /// <summary>
-    /// º¹¼¿ÀÌ Ã»Å© ³»ºÎ¿¡ ÀÖ´ÂÁö ¿©ºÎ ¹İÈ¯
+    /// ë³µì…€ì´ ì²­í¬ ë‚´ë¶€ì— ìˆëŠ”ì§€ ì—¬ë¶€ ë°˜í™˜
     /// </summary>
     /// <param name="x"></param>
     /// <param name="y"></param>
@@ -204,34 +231,34 @@ public class Chunk
     }
 
     /// <summary>
-    /// ÁöÁ¤µÈ ÁÂÇ¥ÀÇ ºí·°À» id·Î ¹Ù²Û´Ù.
+    /// ì§€ì •ëœ ì¢Œí‘œì˜ ë¸”ëŸ­ì„ idë¡œ ë°”ê¾¼ë‹¤.
     /// </summary>
     /// <param name="pos"></param>
     /// <param name="id"></param>
     public void EditVoxel(Vector3 pos, byte id)
 	{
-        //ÁÂÇ¥°ª Á¤¼ö·Î
+        //ì¢Œí‘œê°’ ì •ìˆ˜ë¡œ
         int xP = Mathf.FloorToInt(pos.x);
         int yP = Mathf.FloorToInt(pos.y);
         int zP = Mathf.FloorToInt(pos.z);
 
-        //¿ùµå ±âÁØ ÁÂÇ¥¸¦ ÀÌ Ã»Å©ÀÇ ¸Ê¿¡ »ç¿ëµÇ´Â ÁÂÇ¥·Î º¯È¯
-        //Ã»Å©ÀÇ Àı´ë ÁÂÇ¥¸¦ »©´Â °ÍÀ¸·Î °¡´ÉÇÔ
+        //ì›”ë“œ ê¸°ì¤€ ì¢Œí‘œë¥¼ ì´ ì²­í¬ì˜ ë§µì— ì‚¬ìš©ë˜ëŠ” ì¢Œí‘œë¡œ ë³€í™˜
+        //ì²­í¬ì˜ ì ˆëŒ€ ì¢Œí‘œë¥¼ ë¹¼ëŠ” ê²ƒìœ¼ë¡œ ê°€ëŠ¥í•¨
         xP -= Mathf.FloorToInt(chunkObject.transform.position.x);
         zP -= Mathf.FloorToInt(chunkObject.transform.position.z);
 
 
-        //¸Ê¿¡ ÀúÀåµÈ id¸¦ º¯°æ
-        voxelMap[xP, yP, zP] = id;
+        //ë§µì— ì €ì¥ëœ idë¥¼ ë³€ê²½
+        voxelMap[xP, yP, zP].id = id;
 
-        //EditVoxelÀº, Æ¯º°È÷ º´·Ä Ã³¸® ¾ÈÇØµµ µÊ
+        //EditVoxelì€, íŠ¹ë³„íˆ ë³‘ë ¬ ì²˜ë¦¬ ì•ˆí•´ë„ ë¨
         _RefreshChunkMeshData(null);
 
-        //ÀÎÁ¢ÇÑ Ã»Å© Á¶°Ç¿¡ µû¶ó °»½Å
+        //ì¸ì ‘í•œ ì²­í¬ ì¡°ê±´ì— ë”°ë¼ ê°±ì‹ 
         RefreshAdjacentChunk(xP, yP, zP);
     }
     /// <summary>
-    /// ¼öÁ¤ÇÑ ºí·°ÀÇ ÁÂÇ¥¸¦ ÀÎÀÚ·Î ¹Ş¾Æ ±× ºí·°°ú ÀÎÁ¢ÇÑ Ã»Å© °»½Å
+    /// ìˆ˜ì •í•œ ë¸”ëŸ­ì˜ ì¢Œí‘œë¥¼ ì¸ìë¡œ ë°›ì•„ ê·¸ ë¸”ëŸ­ê³¼ ì¸ì ‘í•œ ì²­í¬ ê°±ì‹ 
     /// </summary>
     /// <param name="x"></param>
     /// <param name="y"></param>
@@ -240,85 +267,87 @@ public class Chunk
 	{
         Vector3 tempV = new Vector3(x, y, z);
 
-        //¼öÁ¤µÈ ºí·°ÀÇ °¢ ¸éÀÇ ¹æÇâ¿¡ ´ëÇÏ¿© ¹İº¹
+        //ìˆ˜ì •ëœ ë¸”ëŸ­ì˜ ê° ë©´ì˜ ë°©í–¥ì— ëŒ€í•˜ì—¬ ë°˜ë³µ
         for(int p = 0; p < 6; p++)
 		{
-            //°¢ ¸éÀÇ ¹æÇâÀ¸·Î ÇÑÄ­ ÀÌµ¿ÇÑ ÁÂÇ¥
+            //ê° ë©´ì˜ ë°©í–¥ìœ¼ë¡œ í•œì¹¸ ì´ë™í•œ ì¢Œí‘œ
             Vector3 temp = tempV + VoxelData.faceChecks[p];
 
-            //¼öÁ¤µÈ ºí·°¿¡¼­ ÇÑÄ­ ¾¿ ÀÌµ¿ÇØ¼­ ±× ºí·°ÀÌ Ã»Å© ³»ºÎ¿¡ ÀÖ´ÂÁö Ã¼Å©ÇÑ´Ù.
+            //ìˆ˜ì •ëœ ë¸”ëŸ­ì—ì„œ í•œì¹¸ ì”© ì´ë™í•´ì„œ ê·¸ ë¸”ëŸ­ì´ ì²­í¬ ë‚´ë¶€ì— ìˆëŠ”ì§€ ì²´í¬í•œë‹¤.
             if (!IsVoxelInChunk((int)temp.x, (int)temp.y, (int)temp.z))
 			{
-                //¸¸¾à ³»ºÎ¿¡ ¾ø´Ù¸é, ´Ù¸¥ Ã»Å©¿¡ ÀÖ°í, ¼öÁ¤µÈ ºí·°°ú Á¢ÇØÀÖ´Ù´Â ¶æ
-                //µû¶ó¼­ ±× Ã»Å©¸¦ °»½ÅÇÑ´Ù.
+                //ë§Œì•½ ë‚´ë¶€ì— ì—†ë‹¤ë©´, ë‹¤ë¥¸ ì²­í¬ì— ìˆê³ , ìˆ˜ì •ëœ ë¸”ëŸ­ê³¼ ì ‘í•´ìˆë‹¤ëŠ” ëœ»
+                //ë”°ë¼ì„œ ê·¸ ì²­í¬ë¥¼ ê°±ì‹ í•œë‹¤.
                 world.GetChunkFromVector3(temp + position).RefreshChunkMeshData();
 			}
 		}
 	}
 
     /// <summary>
-    /// ÁöÁ¤ ÁÂÇ¥ÀÇ ºí·Ï isSolid¸¦ ¹İÈ¯
+    /// ì§€ì • ì¢Œí‘œì˜ VoxelState ë°˜í™˜
     /// </summary>
-    /// <param name="pos">ÁÂÇ¥</param>
+    /// <param name="pos">ì¢Œí‘œ</param>
     /// <returns></returns>
-    bool CheckVoxel(Vector3 pos)
+    VoxelState GetVoxelState(Vector3 pos)
 	{
-        //ÁÂÇ¥°ª Á¤¼ö·Î
+        //ì¢Œí‘œê°’ ì •ìˆ˜ë¡œ
         int x = Mathf.FloorToInt(pos.x);
         int y = Mathf.FloorToInt(pos.y);
         int z = Mathf.FloorToInt(pos.z);
 
-        //¸¸¾à º¹¼¿ÀÌ Ã»Å© ³»ºÎ¿¡ ÀÖÁö ¾ÊÀ¸¸é 
-        //Ã»Å©ÀÇ ÁÂÇ¥¸¦ pos¿¡ ´õÇØ¼­ ºí·° Å¸ÀÔÀÇ isSolid ÂüÁ¶
-        //Áï, ´Ù¸¥ Ã»Å©ÀÇ ºí·° ¿©ºÎ¸¦ È®ÀÎÇÏ±â À§ÇÔÀÌ´Ù.
-        //¹Ù±ù¸é ¿©ºÎ¸¦ ÆÇ´ÜÇÒ ¶§ ÇÊ¿äÇÔ
-        //Air´Â isSolid°¡ false ÀÌ¹Ç·Î ±×·ÁÁöÁö ¾ÊÀ» °Í
+        //ë§Œì•½ ë³µì…€ì´ ì²­í¬ ë‚´ë¶€ì— ìˆì§€ ì•Šìœ¼ë©´ 
+        //ì²­í¬ì˜ ì¢Œí‘œë¥¼ posì— ë”í•´ì„œ worldì˜ GetVoxelState í˜¸ì¶œ
+        //ì¦‰, ë‹¤ë¥¸ ì²­í¬ì˜ ë¸”ëŸ­ì´ë©´ Worldë¡œ íŒë‹¨ ìœ ë³´
         if (!IsVoxelInChunk(x, y, z))
-            //¿ùµå ÁÂÇ¥·Î º¯È¯ÇÔ¿¡ À¯ÀÇ
-            return world.CheckVoxelSolid(pos + position);
+            //ì›”ë“œ ì¢Œí‘œë¡œ ë³€í™˜í•¨ì— ìœ ì˜
+            return world.GetVoxelState(pos + position);
 
-        //voxemMap¿¡ ÀúÀåµÈ ºí·° Å¸ÀÔÀ» Âü°í·Î WorldÀÇ BlockType[]ÀÇ isSolid¸¦ ÂüÁ¶
-        return world.blockTypes[voxelMap[x, y, z]].isSolid;
+        //voxemMapì— ì €ì¥ëœ VoxelState ë°˜í™˜
+        return voxelMap[x, y, z];
 	}
+    #region CheckVoxelTransparent (ì‚­ì œë¨)
+    /*
     /// <summary>
-    /// ÁöÁ¤ ÁÂÇ¥ÀÇ ºí·Ï isTransparent¸¦ ¹İÈ¯
+    /// ì§€ì • ì¢Œí‘œì˜ ë¸”ë¡ drawNearPlane ë°˜í™˜
     /// </summary>
     /// <param name="pos"></param>
     /// <returns></returns>
     bool CheckVoxelTransparent(Vector3 pos)
     {
-        //ÁÂÇ¥°ª Á¤¼ö·Î
+        //ì¢Œí‘œê°’ ì •ìˆ˜ë¡œ
         int x = Mathf.FloorToInt(pos.x);
         int y = Mathf.FloorToInt(pos.y);
         int z = Mathf.FloorToInt(pos.z);
 
-        //¸¸¾à º¹¼¿ÀÌ Ã»Å© ³»ºÎ¿¡ ÀÖÁö ¾ÊÀ¸¸é 
-        //Ã»Å©ÀÇ ÁÂÇ¥¸¦ pos¿¡ ´õÇØ¼­ ºí·° Å¸ÀÔÀÇ isTransparent ÂüÁ¶
-        //Áï, ´Ù¸¥ Ã»Å©ÀÇ ºí·° ¿©ºÎ¸¦ È®ÀÎÇÏ±â À§ÇÔÀÌ´Ù.
-        //¹Ù±ù¸é ¿©ºÎ¸¦ ÆÇ´ÜÇÒ ¶§ ÇÊ¿äÇÔ
-        //Air´Â isSolid°¡ false ÀÌ¹Ç·Î ±×·ÁÁöÁö ¾ÊÀ» °Í
+        //ë§Œì•½ ë³µì…€ì´ ì²­í¬ ë‚´ë¶€ì— ìˆì§€ ì•Šìœ¼ë©´ 
+        //ì²­í¬ì˜ ì¢Œí‘œë¥¼ posì— ë”í•´ì„œ ë¸”ëŸ­ íƒ€ì…ì˜ drawNearPlane ì°¸ì¡°
+        //ì¦‰, ë‹¤ë¥¸ ì²­í¬ì˜ ë¸”ëŸ­ì¼ ê²½ìš°ì—” World í´ë˜ìŠ¤ë¡œ íŒë‹¨ì„ ë„˜ê¸´ë‹¤.
+        //ë°”ê¹¥ë©´ ì—¬ë¶€ë¥¼ íŒë‹¨í•  ë•Œ í•„ìš”í•¨
+        //AirëŠ” drawNearPlaneê°€ true ì´ë¯€ë¡œ ê·¸ë ¤ì§€ì§€ ì•Šì„ ê²ƒ
         if (!IsVoxelInChunk(x, y, z))
-            //¿ùµå ÁÂÇ¥·Î º¯È¯ÇÔ¿¡ À¯ÀÇ
+            //ì›”ë“œ ì¢Œí‘œë¡œ ë³€í™˜í•¨ì— ìœ ì˜
             return world.CheckVoxelTransparent(pos + position);
 
-        //voxemMap¿¡ ÀúÀåµÈ ºí·° Å¸ÀÔÀ» Âü°í·Î WorldÀÇ BlockType[]ÀÇ isTransprent¸¦ ÂüÁ¶
-        return world.blockTypes[voxelMap[x, y, z]].isTransparent;
+        //voxemMapì— ì €ì¥ëœ ë¸”ëŸ­ íƒ€ì…ì„ ì°¸ê³ ë¡œ Worldì˜ BlockType[]ì˜ drawNearPlane ì°¸ì¡°
+        return world.blockTypes[voxelMap[x, y, z].id].drawNearPlane;
     }
+    */
+	#endregion
 
-    /// <summary>
-    /// ¿ùµå ±âÁØ ÁÂÇ¥¸¦ ¹Ş¾Æ¼­ ÀÚ½ÅÀÇ ¸Ê ÂüÁ¶, ±× À§Ä¡ÀÇ ºí·° Å¸ÀÔ ¹İÈ¯
-    /// </summary>
-    /// <param name="pos"></param>
-    /// <returns></returns>
-    public byte GetVoxelFromGlobalVector3(Vector3 pos)
+	/// <summary>
+	/// ì›”ë“œ ê¸°ì¤€ ì¢Œí‘œë¥¼ ë°›ì•„ì„œ ìì‹ ì˜ ë§µ ì°¸ì¡°, ê·¸ ìœ„ì¹˜ì˜ VoxelState ë°˜í™˜
+	/// </summary>
+	/// <param name="pos"></param>
+	/// <returns></returns>
+	public VoxelState GetVoxelFromGlobalVector3(Vector3 pos)
 	{
-        //ÁÂÇ¥°ª Á¤¼ö·Î
+        //ì¢Œí‘œê°’ ì •ìˆ˜ë¡œ
         int xP = Mathf.FloorToInt(pos.x);
         int yP = Mathf.FloorToInt(pos.y);
         int zP = Mathf.FloorToInt(pos.z);
 
-        //¿ùµå ±âÁØ ÁÂÇ¥¸¦ ÀÌ Ã»Å©ÀÇ ¸Ê¿¡ »ç¿ëµÇ´Â ÁÂÇ¥·Î º¯È¯
-        //Ã»Å©ÀÇ Àı´ë ÁÂÇ¥¸¦ »©´Â °ÍÀ¸·Î °¡´ÉÇÔ
+        //ì›”ë“œ ê¸°ì¤€ ì¢Œí‘œë¥¼ ì´ ì²­í¬ì˜ ë§µì— ì‚¬ìš©ë˜ëŠ” ì¢Œí‘œë¡œ ë³€í™˜
+        //ì²­í¬ì˜ ì ˆëŒ€ ì¢Œí‘œë¥¼ ë¹¼ëŠ” ê²ƒìœ¼ë¡œ ê°€ëŠ¥í•¨
         xP -= Mathf.FloorToInt(position.x);
         zP -= Mathf.FloorToInt(position.z);
 
@@ -326,7 +355,7 @@ public class Chunk
 
     }
     /// <summary>
-    /// ¿ÜºÎ¿¡¼­ ÂüÁ¶ÇÒ ¿¹Á¤, ½º·¹µå Å¥¿¡ Ã»Å© ¸Ş½¬ µ¥ÀÌÅÍ ¾÷µ¥ÀÌÆ®¸¦ ¸Ã±è
+    /// ì™¸ë¶€ì—ì„œ ì°¸ì¡°í•  ì˜ˆì •, ìŠ¤ë ˆë“œ íì— ì²­í¬ ë©”ì‰¬ ë°ì´í„° ì—…ë°ì´íŠ¸ë¥¼ ë§¡ê¹€
     /// </summary>
     public void RefreshChunkMeshData()
 	{
@@ -334,36 +363,40 @@ public class Chunk
        
 	}
     /// <summary>
-    /// ¸Ş½¬ µ¥ÀÌÅÍ¸¦ °»½ÅÇÑ´Ù.
-    /// WaitCallback()Çü½Ä¿¡ ¸ÂÃß±â À§ÇØ object ¹ŞÀ½
-    /// µ¥ÀÌÅÍ ¼¼ÆÃ ÈÄ chunksToDraw¿¡ ÀÚ½ÅÀ» Enqueue
+    /// ë©”ì‰¬ ë°ì´í„°ë¥¼ ê°±ì‹ í•œë‹¤.
+    /// WaitCallback()í˜•ì‹ì— ë§ì¶”ê¸° ìœ„í•´ object ë°›ìŒ
+    /// ë°ì´í„° ì„¸íŒ… í›„ chunksToDrawì— ìì‹ ì„ Enqueue
     /// </summary>
     public void _RefreshChunkMeshData(object obj)
 	{
-        //½º·¹µå°¡ ÀÛµ¿ÁßÀÓÀ» ¾Ë·Á ¸Ê ¼öÁ¤À» Àá±Ù´Ù.
+        //ìŠ¤ë ˆë“œê°€ ì‘ë™ì¤‘ì„ì„ ì•Œë ¤ ë§µ ìˆ˜ì •ì„ ì ê·¼ë‹¤.
         IsLockedMeshThread = true;
 
-        //±¸Á¶¹° ¼¼ÆÃ ºÎºĞ
+        //êµ¬ì¡°ë¬¼ ì„¸íŒ… ë¶€ë¶„
         VoxelMod v;
-        //Å¥°¡ ºô¶§±îÁö
+        //íê°€ ë¹Œë•Œê¹Œì§€
 
         Vector3 pos;
 
         while(modifications.Count > 0)
 		{
-            //Å¥¿¡¼­ ÇÏ³ª¸¦ ²¨³½´Ù.
+            //íì—ì„œ í•˜ë‚˜ë¥¼ êº¼ë‚¸ë‹¤.
             v = modifications.Dequeue();
 
-            //¿ùµå ÁÂÇ¥¸¦ Ã»Å© ³»ÀÇ ÁÂÇ¥·Î º¯È¯
+            //ì›”ë“œ ì¢Œí‘œë¥¼ ì²­í¬ ë‚´ì˜ ì¢Œí‘œë¡œ ë³€í™˜
             pos = v.pos - position;
 
-            //ÁöÁ¤µÈ À§Ä¡ÀÇ id¸¦ ¼¼ÆÃ
-            voxelMap[(int)pos.x, (int)pos.y, (int)pos.z] = v.id;
+            //ì§€ì •ëœ ìœ„ì¹˜ì˜ idë¥¼ ì„¸íŒ…
+            voxelMap[(int)pos.x, (int)pos.y, (int)pos.z].id = v.id;
 
 
 		}
         
         ClearMeshData();
+
+        //ë¹›ì„ ê³„ì‚°í•˜ì—¬ ì„¸íŒ…í•œë‹¤.
+        CalcLighting();  
+
         Vector3 temp = new Vector3();
         for (int y = 0; y < VoxelData.ChunkHeight; y++)
         {
@@ -371,8 +404,8 @@ public class Chunk
             {
                 for (int z = 0; z < VoxelData.ChunkWidth; z++)
                 {
-                    //ºí·°ÀÌ Solid ÀÏ¶§¸¸ ±×¸²
-                    if(world.blockTypes[voxelMap[x, y, z]].isSolid)
+                    //ë¸”ëŸ­ì´ Solid ì¼ë•Œë§Œ ê·¸ë¦¼
+                    if(world.blockTypes[voxelMap[x, y, z].id].isSolid)
 					{
                         temp.x = x; temp.y = y; temp.z = z;
                         //AddVoxelDataToChunk(new Vector3(x, y, z));
@@ -383,21 +416,21 @@ public class Chunk
             }
         }
 
-        //°»½ÅÀ» ¿Ï·áÇÑ µÚ ±×·Á³¾ Ã»Å© ¸ñ·Ï¿¡ Ãß°¡ÇÑ´Ù.
-        //ÇÑ¹ø¿¡ ÇÑ ½º·¹µå¸¸ ÀÌ ÄÚµå¿¡ Á¢±ÙÇÒ ¼ö ÀÖ´Ù.
+        //ê°±ì‹ ì„ ì™„ë£Œí•œ ë’¤ ê·¸ë ¤ë‚¼ ì²­í¬ ëª©ë¡ì— ì¶”ê°€í•œë‹¤.
+        //í•œë²ˆì— í•œ ìŠ¤ë ˆë“œë§Œ ì´ ì½”ë“œì— ì ‘ê·¼í•  ìˆ˜ ìˆë‹¤.
         lock(world.lockObject)
 		{
             world.chunksToDraw.Enqueue(this);
         }
 
-        //ÇÃ·¡±× ¸®¼Â
+        //í”Œë˜ê·¸ ë¦¬ì…‹
         IsLockedMeshThread = false;
 
         //ApplyChunkMesh();
     }
 
     /// <summary>
-    /// ¸Ş½¬ µ¥ÀÌÅÍ¸¦ ÃÊ±âÈ­ ÇÑ´Ù. °»½ÅÀ» À§ÇÔ
+    /// ë©”ì‰¬ ë°ì´í„°ë¥¼ ì´ˆê¸°í™” í•œë‹¤. ê°±ì‹ ì„ ìœ„í•¨
     /// </summary>
     void ClearMeshData()
 	{
@@ -410,8 +443,70 @@ public class Chunk
         colors.Clear();
 	}
 
+
     /// <summary>
-    /// Ã»Å©ÀÇ È°¼ºÈ­ ¿©ºÎ¸¦ °¡Á®¿À°Å³ª ¼³Á¤ÇÔ
+    /// ê° ë¸”ëŸ­ì˜ íˆ¬ëª…ë„ì— ë”°ë¼ ë¹›ì„ ê³„ì‚°í•˜ì—¬ ë§µì— ì„¸íŒ…í•œë‹¤.
+    /// í›„ì— ìµœì í™” í•„ìš”
+    /// </summary>
+    void CalcLighting()
+    {
+        #region ë¹› ê³„ì‚° ë°©ì‹ ì„¤ëª…
+        /*
+        x = 0, z = 0 ìœ„ì¹˜ì— ìˆëŠ” ë¸”ëŸ­ë“¤ì„ ìœ„ì—ì„œë¶€í„° ìˆœíšŒí•œë‹¤.
+        y = ìµœëŒ€ ë†’ì´ì—ì„œ ë¹›ì„ ìµœëŒ€ì¹˜ë¡œ ì„¤ì •í•˜ê³ ,
+        ì•„ë˜ë¡œ ë‚´ë ¤ê°€ë©´ì„œ ë§Œë‚˜ëŠ” ë¸”ëŸ­ë“¤ì˜ íˆ¬ëª…ë„ì— ë”°ë¼ ë¹›ì„ ì„¤ì •í•œë‹¤.
+        ê·¸ë¦¬ê³  ê° ë¸”ëŸ­ë“¤ì´ ë°›ëŠ” ë¹›ì˜ ì–‘ì„ ì„¤ì •í•œë‹¤.
+        ì˜ˆë¥¼ ë“¤ì–´, y = 100 ìœ„ì¹˜ì— íˆ¬ëª…ë„ê°€ 0ì¸ ë¸”ëŸ­ì´ ìˆë‹¤ë©´
+        ë¹›ì˜ ì–‘ì€ 0ì´ ë˜ì–´, ê·¸ ì•„ë˜ì— ìˆëŠ” ë¸”ëŸ­(y=99)ì´ ë°›ëŠ” ë¹›ì˜ ì–‘ì€ 0ì´ ë ê²ƒì´ë‹¤.
+        ê·¸ë¦¬ê³  y = 0 ê¹Œì§€ ë°˜ë³µì´ ëë‚˜ë©´ x = 1, z = 0ìœ¼ë¡œ ê°„ë‹¤.
+        ì—¬ê¸°ì„œ ë˜ ê°™ì€ ì¼ì„ ë°˜ë³µí•´ì„œ ìµœì¢…ì ìœ¼ë¡œ ëª¨ë“  ë§µì˜ ë¸”ëŸ­ì— ë°›ëŠ” ë¹›ì˜ ì–‘ì„ ì„¤ì •í•˜ê²Œ ëœë‹¤.
+
+        ì´ë•Œ, Airë¸”ëŸ­ì€ ë¹›ì˜ ì–‘ì— ë³€í™”ë¥¼ ì£¼ì§€ ì•ŠìŒì„ ê¸°ì–µí•˜ë¼!
+        ì¦‰, Airë¸”ëŸ­ì€ ìì‹ ì˜ ìœ„ì— ë¸”ëŸ­ì´ ê°–ëŠ” ë¹›ì˜ ì–‘ì„ ìê¸° ìì‹ ì˜ ë¹›ì˜ ì–‘ìœ¼ë¡œ ê°€ì§€ëŠ” ê²ƒì´ë‹¤.
+        ì´ê²ƒì€ ì–´ë‘ìš´ ë¶€ë¶„ì— ìˆëŠ” ë¸”ëŸ­ë“¤ì˜ ë³´ì´ëŠ” ë©´ì— ì „ë¶€ ê·¸ë¦¼ìë¥¼ ì ìš©ì‹œí‚¤ê¸° ìœ„í•¨ì´ë‹¤.
+        ê° ë©´ì˜ ë°©í–¥ìœ¼ë¡œ ë‚˜ì•„ê°„ ê³³ì— ìˆëŠ” Airë¸”ëŸ­ì´ ìŒì§€ì— ìˆë‹¤ë©´ ê·¸ ë©´ ì—­ì‹œ ìŒì§€ì— ìˆë‹¤.
+        ë°˜ëŒ€ë¡œ ì–‘ì§€ì— ìˆë‹¤ë©´, ê·¸ ë©´ ì—­ì‹œ ì–‘ì§€ì— ìˆëŠ” ê²ƒì´ë‹¤.ï»¿
+        */
+        #endregion
+
+        //í˜„ì¬ ìˆœíšŒì¤‘ì¸ ë¸”ëŸ­ ìºì‹±
+        VoxelState currentVoxel;
+
+        for (int x = 0; x < VoxelData.ChunkWidth; x++)
+        {
+            for (int z = 0; z < VoxelData.ChunkWidth; z++)
+            {
+                //ê´‘ì›, í•´ë‹¹ x, z ì¢Œí‘œì˜ y ìˆœíšŒê°€ ëë‚ ë•Œë§ˆë‹¤ ì´ˆê¸°í™” ëœë‹¤.
+                float lightRay = 1f;
+
+                //ìœ„ì—ì„œ ë¶€í„° ìˆœíšŒí•˜ê¸° ìœ„í•œ y ì—­ìˆœ ë£¨í”„ì´ë‹¤.
+                for (int y = VoxelData.ChunkHeight - 1; y >=0 ; y--)
+                {
+                    currentVoxel = voxelMap[x, y, z];
+
+                    //Airë¸”ëŸ­ì´ ì•„ë‹ ê²½ìš°, í˜„ì¬ ë¹›ì„ ë¸”ëŸ­ì˜ íˆ¬ëª…ë„ ë§Œí¼ìœ¼ë¡œ ì„¤ì •í•œë‹¤.
+                    //íˆ¬ëª…í•˜ë©´ 1, ë¶ˆíˆ¬ëª…í•˜ë©´ ë¶ˆíˆ¬ëª…í• ìˆ˜ë¡ 0ì— ê°€ê¹Œì›Œ ì§ˆê²ƒì´ë‹¤.
+                    //ê·¸ë¦¬ê³  ë¹›ì€ ë¬´ì¡°ê±´ ê°ì‡„ë˜ëŠ” ë°©í–¥ìœ¼ë¡œ ë³€í•´ì•¼ í•œë‹¤.
+                    //ì´ë¥¼ ìœ„í•´ íˆ¬ëª…ë„ê°€ í˜„ì¬ ë¹›ì˜ ì–‘ë³´ë‹¤ ë‚®ì„ë•Œë§Œ ê°±ì‹ í•œë‹¤.
+                    if(currentVoxel.id > 0 && world.blockTypes[currentVoxel.id].trnasparency < lightRay)
+					{
+                        lightRay = world.blockTypes[currentVoxel.id].trnasparency;
+					}
+
+                    //í˜„ì¬ ìˆœíšŒì¤‘ì¸ ë¸”ëŸ­ì´ ë°›ëŠ” ë¹›ì˜ ì–‘ì„ ì„¤ì •í•œë‹¤.
+                    currentVoxel.globalLightWeight = lightRay;
+
+                    //ë‹¤ì‹œ ë§µì— ì„¤ì •í•œë‹¤.
+                    voxelMap[x, y, z] = currentVoxel;
+                }
+            }
+
+        }
+
+    }
+
+    /// <summary>
+    /// ì²­í¬ì˜ í™œì„±í™” ì—¬ë¶€ë¥¼ ê°€ì ¸ì˜¤ê±°ë‚˜ ì„¤ì •í•¨
     /// </summary>
     public bool IsActive
 	{
@@ -428,15 +523,15 @@ public class Chunk
 	}
     
     /// <summary>
-    /// ¸ÊÀÌ ¼¼ÆÃµÇ¾ú´ÂÁö ¿©ºÎ¿Í ¸Ş½¬ µ¥ÀÌÅÍ°¡ ½º·¹µå¿¡ ÀÇÇØ
-    /// ¼öÁ¤ÁßÀÎÁö ¿©ºÎ¸¦ Ã¼Å©ÇÏ¿© ¹İÈ¯
+    /// ë§µì´ ì„¸íŒ…ë˜ì—ˆëŠ”ì§€ ì—¬ë¶€ì™€ ë©”ì‰¬ ë°ì´í„°ê°€ ìŠ¤ë ˆë“œì— ì˜í•´
+    /// ìˆ˜ì •ì¤‘ì¸ì§€ ì—¬ë¶€ë¥¼ ì²´í¬í•˜ì—¬ ë°˜í™˜
     /// </summary>
     public bool IsEditable
 	{
         get
 		{
-            //¸¸¾à ¸ÊÀÌ ¼¼ÆÃµÇÁö ¾Ê¾Ò°Å³ª
-            //½º·¹µå¿¡ ÀÇÇØ °£¼·ÁßÀÌ¶ó¸é
+            //ë§Œì•½ ë§µì´ ì„¸íŒ…ë˜ì§€ ì•Šì•˜ê±°ë‚˜
+            //ìŠ¤ë ˆë“œì— ì˜í•´ ê°„ì„­ì¤‘ì´ë¼ë©´
             if(!IsMapInit || IsLockedMeshThread)
 			{
                 return false;
@@ -449,61 +544,73 @@ public class Chunk
 	}
 
     /// <summary>
-    /// À§Ä¡°ªÀ» ¹Ş¾Æ º¹¼¿ µ¥ÀÌÅÍ¸¦ ¸Ş½¬ µ¥ÀÌÅÍ ¸®½ºÆ®¿¡ Ãß°¡ÇÕ´Ï´Ù.
-    /// ½ÇÁ¦ Mesh¸¦ ±¸¼ºÇÏ´Â Á¤Á¡°ú Æú¸®°ï, uv, colorµîÀÇ Á¤º¸°¡ Ãß°¡µÇ´Â °÷
+    /// ìœ„ì¹˜ê°’ì„ ë°›ì•„ ë³µì…€ ë°ì´í„°ë¥¼ ë©”ì‰¬ ë°ì´í„° ë¦¬ìŠ¤íŠ¸ì— ì¶”ê°€í•©ë‹ˆë‹¤.
+    /// ì‹¤ì œ Meshë¥¼ êµ¬ì„±í•˜ëŠ” ì •ì ê³¼ í´ë¦¬ê³¤, uv, colorë“±ì˜ ì •ë³´ê°€ ì¶”ê°€ë˜ëŠ” ê³³
     /// </summary>
-    /// <param name="pos">º¹¼¿ µ¥ÀÌÅÍÀÇ À§Ä¡</param>
+    /// <param name="pos">ë³µì…€ ë°ì´í„°ì˜ ìœ„ì¹˜</param>
     void AddVoxelDataToChunk(Vector3 pos)
 	{
-        //¸Ê¿¡¼­ ÀÎÀÚ·Î ³Ñ¾î¿Â posÀÇ ºí·° ¾ÆÀÌµğ¸¦ Á¶È¸ÇÑ´Ù.
-        byte blockID = voxelMap[(int)pos.x, (int)pos.y, (int)pos.z];
+        int x = Mathf.FloorToInt(pos.x);
+        int y = Mathf.FloorToInt(pos.y);
+        int z = Mathf.FloorToInt(pos.z);
 
-        //posÁÂÇ¥ÀÇ Åõ¸í¿©ºÎ¸¦ È®ÀÎ
-        bool isTransparent = world.blockTypes[blockID].isTransparent;
+        //ë§µì—ì„œ ì¸ìë¡œ ë„˜ì–´ì˜¨ posì˜ ë¸”ëŸ­ ì•„ì´ë””ë¥¼ ì¡°íšŒí•œë‹¤.
+        byte blockID = voxelMap[x, y, z].id;
 
-        //°¢ Á¤Á¡ÀÇ ¹à±â °ª
+        //posì¢Œí‘œì˜ ë¸”ëŸ­ì´ ê±´ë„ˆí¸ì´ ë¹„ì¹˜ëŠ” ì§€ ì—¬ë¶€ë¥¼ í™•ì¸
+        //bool drawNearPlane = world.blockTypes[blockID].drawNearPlane;
+
+        //ê° ì •ì ì˜ ë°ê¸° ê°’
         float lightLevel = 0;
-        Vector3 ShadeTemp = new Vector3(pos.x, pos.y, pos.z);
+        //Vector3 ShadeTemp = new Vector3(pos.x, pos.y, pos.z);
+
+        //ì¸ì ‘ ë¸”ëŸ­ ìºì‹±
+        VoxelState nearVoxel;
 
         for (int p = 0; p < 6; p++)
         {
-            //°¢ ¸éÀÇ ¹æÇâÀ¸·Î ÇÑÄ­ °¬À» ¶§ ºí·°ÀÌ ¾øÀ» ¶§¸¸
-            //(=Áï, º¸ÀÌ´Â ¸éÀÏ¶§¸¸ ±×¸°´Ù.) 
-            //if (!CheckVoxel(pos + VoxelData.faceChecks[p]))
+            //ê° ë©´ì˜ ë°©í–¥ìœ¼ë¡œ í•œì¹¸ ê°„ ê³³ì— ìˆëŠ” ë¸”ëŸ­ì˜ VoxelStateë¥¼ ë°›ì•„ì˜¨ë‹¤.
+            nearVoxel = GetVoxelState(pos + VoxelData.faceChecks[p]);
 
-            //---------¼öÁ¤µÊ--------------
-            //°¢ ¸éÀÇ ¹æÇâÀ¸·Î ÇÑÄ­ °£ °÷¿¡ ÀÖ´Â ºí·°ÀÌ Åõ¸íºí·°ÀÏ¶§¸¸ ±×¸°´Ù.
-            //Air´Â Åõ¸íºí·ÏÀÌ¹Ç·Î ±×·ÁÁöÁö ¾Ê´Â´Ù.
-            if(CheckVoxelTransparent(pos + VoxelData.faceChecks[p]))
+            //---------ìˆ˜ì •ë¨--------------
+            //ê° ë©´ì˜ ë°©í–¥ìœ¼ë¡œ í•œì¹¸ ê°„ ê³³ì— ìˆëŠ” ë¸”ëŸ­ì´ íˆ¬ëª…ë¸”ëŸ­ì¼ë•Œë§Œ ê·¸ë¦°ë‹¤.
+            //AirëŠ” íˆ¬ëª…ë¸”ë¡ì´ë¯€ë¡œ ê·¸ë ¤ì§€ì§€ ì•ŠëŠ”ë‹¤.
+            //if(CheckVoxelTransparent(pos + VoxelData.faceChecks[p]))
+            //------------------------------
+
+            //ì¸ì ‘ ë¸”ëŸ­ì´ ìœ íš¨í•˜ê³ , ì£¼ë³€ì´ ë¹„ì¹˜ëŠ” ë¸”ëŸ­ì¼ë•Œë§Œ ê·¸ ë©´ì„ ê·¸ë¦°ë‹¤.
+            if(nearVoxel != null && world.blockTypes[nearVoxel.id].drawNearPlane)
             {
                 
-                //°³ÀÎÀûÀ¸·Î º¸±â ÆíÇØ¼­ for¹®Àº ¾È›§´Ù.
-                //Á¤Á¡ 4°³°ú ±×¿¡ ¸Â´Â uv¸¦ ³Ö´Â´Ù.
+                //ê°œì¸ì ìœ¼ë¡œ ë³´ê¸° í¸í•´ì„œ forë¬¸ì€ ì•ˆì»ë‹¤.
+                //ì •ì  4ê°œê³¼ ê·¸ì— ë§ëŠ” uvë¥¼ ë„£ëŠ”ë‹¤.
                 vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 0]]);
                 vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 1]]);
                 vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 2]]);
                 vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 3]]);
 
-                //pÀÇ °ªÀº 0 ~ 5·Î º¯È­ÇÏ¸é °¢ ¸éÀ» ±×¸°´Ù.
-                //±×¿¡ µû¸¥ ¼ø¼­µµ ¸ÂÃß¾îÁ® ÀÖÀ¸¹Ç·Î faceIndex·Î p¸¦ ³Ñ±ä´Ù.
+                //pì˜ ê°’ì€ 0 ~ 5ë¡œ ë³€í™”í•˜ë©´ ê° ë©´ì„ ê·¸ë¦°ë‹¤.
+                //ê·¸ì— ë”°ë¥¸ ìˆœì„œë„ ë§ì¶”ì–´ì ¸ ìˆìœ¼ë¯€ë¡œ faceIndexë¡œ pë¥¼ ë„˜ê¸´ë‹¤.
                 AddTexture(world.blockTypes[blockID].GetTextureID(p));
 
-                //ÇöÀç ±×¸®´Â ¸éÀÌ +YÃà ¹æÇâ ¸éÀÌ°í, ºÒÅõ¸íÇÑ ºí·°ÀÏ¶§¸¸ ±×¸²ÀÚ ±×¸²
-                //°¢ ¸éÀÇ pÀÎµ¦½º´Â VoxelData.csÀÇ voxelTris ¹è¿­À» Âü°íÇÏ¶ó
-                if (p == 2 && !isTransparent)
+                #region êµ¬ ê·¸ë¦¼ì ë¶€ë¶„ (ì‚­ì œë¨)
+                /*
+				//í˜„ì¬ ê·¸ë¦¬ëŠ” ë©´ì´ +Yì¶• ë°©í–¥ ë©´ì´ê³ , ë¹„ì¹˜ì§€ ì•ŠëŠ” ë¸”ëŸ­ì¼ë•Œë§Œ ê·¸ë¦¼ì ê·¸ë¦¼
+				//ê° ë©´ì˜ pì¸ë±ìŠ¤ëŠ” VoxelData.csì˜ voxelTris ë°°ì—´ì„ ì°¸ê³ í•˜ë¼
+				if (p == 2 && !drawNearPlane)
                 {
-                    //´Ü¼øÈ÷ À§·Î ÇÑÄ­¾¿ °¡º¸¸é¼­ ºÒÅõ¸í ºí·°ÀÌ ÀÖ´ÂÁö Ã¼Å©ÇÏ°í
-                    //ÀÖÀ¸¸é ±×¸²ÀÚ¸¦ ±×¸®°í ¾Æ´Ï¸é ±×¸®Áö ¾Ê´Â´Ù.
+                    //ë‹¨ìˆœíˆ ìœ„ë¡œ í•œì¹¸ì”© ê°€ë³´ë©´ì„œ ë¹„ì¹˜ì§€ ì•ŠëŠ” ë¸”ëŸ­ì´ ìˆëŠ”ì§€ ì²´í¬í•˜ê³ 
+                    //ìˆìœ¼ë©´ ê·¸ë¦¼ìë¥¼ ê·¸ë¦¬ê³  ì•„ë‹ˆë©´ ê·¸ë¦¬ì§€ ì•ŠëŠ”ë‹¤.
                     float yPos = pos.y + 1;
                     bool IsShade = false;
 
-                    //¸ÊÀÇ ÇÑ°è y±îÁö Ã¼Å©ÇÑ´Ù.
+                    //ë§µì˜ í•œê³„ yê¹Œì§€ ì²´í¬í•œë‹¤.
                     while (yPos < VoxelData.ChunkHeight)
                     {
                         ShadeTemp.y = yPos;
-                        //À§¿¡ ºÒÅõ¸íÇÑ ºí·°ÀÌ³ª, ³ª¹µÀÙ(11¹ø)ÀÌ ÀÖÀ¸¸é ±×¸²ÀÚ¸¦ ±×¸²
+                        //ìœ„ì— ë¶ˆíˆ¬ëª…í•œ ë¸”ëŸ­ì´ë‚˜, ë‚˜ë­‡ì(11ë²ˆ)ì´ ìˆìœ¼ë©´ ê·¸ë¦¼ìë¥¼ ê·¸ë¦¼
                         if (!CheckVoxelTransparent(ShadeTemp) 
-                            || voxelMap[(int)pos.x, (int)yPos, (int)pos.z] == 11)
+                            || voxelMap[x, (int)yPos, z].id == 11)
                         {
                             IsShade = true;
                             break;
@@ -511,10 +618,17 @@ public class Chunk
                         yPos++;
                     }
                     if (IsShade)
-                        lightLevel = 0.5f;
+                        lightLevel = 0.6f;
                     else
                         lightLevel = 0.0f;
                 }
+                */
+                #endregion
+
+
+                //ì´ ë©´ê³¼ ì¸ì ‘í•œ ë¸”ëŸ­ì´ ë°›ëŠ” ë¹›ì˜ ì–‘ì„ í˜„ì¬ ë©´ì˜ ë°ê¸°ë¡œ í•œë‹¤.
+                //ë¹›ì„ ê³„ì‚°í•˜ëŠ” ë¶€ë¶„ì€ CalcLighting ë©”ì†Œë“œ ì°¸ì¡°
+                lightLevel = nearVoxel.globalLightWeight;
 
                 colors.Add(new Color(0, 0, 0, lightLevel));
                 colors.Add(new Color(0, 0, 0, lightLevel));
@@ -522,10 +636,10 @@ public class Chunk
                 colors.Add(new Color(0, 0, 0, lightLevel));
 
 
-                //¸¸¾à Åõ¸íÇÏÁö ¾Ê´Ù¸é, ±âº» »ï°¢Çü ¸®½ºÆ®¿¡ ³Ö´Â´Ù.
+                //ë§Œì•½ íˆ¬ëª…í•˜ì§€ ì•Šë‹¤ë©´, ê¸°ë³¸ ì‚¼ê°í˜• ë¦¬ìŠ¤íŠ¸ì— ë„£ëŠ”ë‹¤.
                 //if (!isTransparent)
                 {
-                    //»ï°¢ÇüÀÇ °¢ ²ÀÁşÁ¡À» Á¤Á¡ 4°³¿¡ ¸Â°Ô Á¤¼ö·Î ³Ö´Â´Ù.
+                    //ì‚¼ê°í˜•ì˜ ê° ê¼­ì§“ì ì„ ì •ì  4ê°œì— ë§ê²Œ ì •ìˆ˜ë¡œ ë„£ëŠ”ë‹¤.
                     triangles.Add(vertexIndex);
                     triangles.Add(vertexIndex + 1);
                     triangles.Add(vertexIndex + 2);
@@ -533,11 +647,11 @@ public class Chunk
                     triangles.Add(vertexIndex + 1);
                     triangles.Add(vertexIndex + 3);
                 }
-                //Åõ¸íÀÌ ¾Æ´Ï¸é Åõ¸í »ï°¢Çü ¹è¿­¿¡ ³Ö´Â´Ù.
+                //íˆ¬ëª…ì´ ì•„ë‹ˆë©´ íˆ¬ëª… ì‚¼ê°í˜• ë°°ì—´ì— ë„£ëŠ”ë‹¤.
                 /*
                 else
 				{
-                    //»ï°¢ÇüÀÇ °¢ ²ÀÁşÁ¡À» Á¤Á¡ 4°³¿¡ ¸Â°Ô Á¤¼ö·Î ³Ö´Â´Ù.
+                    //ì‚¼ê°í˜•ì˜ ê° ê¼­ì§“ì ì„ ì •ì  4ê°œì— ë§ê²Œ ì •ìˆ˜ë¡œ ë„£ëŠ”ë‹¤.
                     TransparentTriangles.Add(vertexIndex);
                     TransparentTriangles.Add(vertexIndex + 1);
                     TransparentTriangles.Add(vertexIndex + 2);
@@ -553,8 +667,8 @@ public class Chunk
     }
 
     /// <summary>
-    /// Ã»Å©ÀÇ ¸Ş½¬¸¦ ¸¸µì´Ï´Ù.(¸Ş½¬ µ¥ÀÌÅÍ ¹İ¿µ)
-    /// ½º·¹µùÀ» À§ÇØ World.cs¿¡¼­ ÂüÁ¶ ¿¹Á¤
+    /// ì²­í¬ì˜ ë©”ì‰¬ë¥¼ ë§Œë“­ë‹ˆë‹¤.(ë©”ì‰¬ ë°ì´í„° ë°˜ì˜)
+    /// ìŠ¤ë ˆë”©ì„ ìœ„í•´ World.csì—ì„œ ì°¸ì¡° ì˜ˆì •
     /// </summary>
     public void ApplyChunkMesh()
 	{
@@ -562,45 +676,45 @@ public class Chunk
         mesh.vertices = vertices.ToArray();
         //mesh.triangles = triangles.ToArray();
 
-        //ÀÌ ¸Ş½¬¿¡ »ç¿ëÇÒ ¸¶Å×¸®¾óÀÇ °³¼ö ¼³Á¤
+        //ì´ ë©”ì‰¬ì— ì‚¬ìš©í•  ë§ˆí…Œë¦¬ì–¼ì˜ ê°œìˆ˜ ì„¤ì •
         //mesh.subMeshCount = 2;
 
-        //±âº» ¸¶Å×¸®¾óÀ» »ç¿ëÇÒ »ï°¢Çüµé
+        //ê¸°ë³¸ ë§ˆí…Œë¦¬ì–¼ì„ ì‚¬ìš©í•  ì‚¼ê°í˜•ë“¤
         //mesh.SetTriangles(triangles.ToArray(), 0);
 
-        //Åõ¸í ¸¶Å×¸®¾óÀ» »ç¿ëÇÒ »ï°¢Çüµé
+        //íˆ¬ëª… ë§ˆí…Œë¦¬ì–¼ì„ ì‚¬ìš©í•  ì‚¼ê°í˜•ë“¤
         //mesh.SetTriangles(TransparentTriangles.ToArray(), 1);
 
         mesh.triangles = triangles.ToArray();
 
         mesh.uv = uvs.ToArray();
 
-        //Á¤Á¡ÀÇ »öÀ» ÁöÁ¤
+        //ì •ì ì˜ ìƒ‰ì„ ì§€ì •
         mesh.colors = colors.ToArray();
 
-        //Å¥ºê¸¦ ±ò²ûÇÏ°Ô ±×¸®±â À§ÇØ ÇÊ¿äÇÑ ¿¬»ê
+        //íë¸Œë¥¼ ê¹”ë”í•˜ê²Œ ê·¸ë¦¬ê¸° ìœ„í•´ í•„ìš”í•œ ì—°ì‚°
         mesh.RecalculateNormals();
 
         meshFilter.mesh = mesh;
     }
 
     /// <summary>
-    /// ÅØ½ºÃÄ ID¸¦ ¹Ş¾Æ uv°ªÀ» Ãß°¡ÇÕ´Ï´Ù.
+    /// í…ìŠ¤ì³ IDë¥¼ ë°›ì•„ uvê°’ì„ ì¶”ê°€í•©ë‹ˆë‹¤.
     /// </summary>
     /// <param name="textureID"></param>
     void AddTexture(int textureID)
 	{
-        //ÅØ½ºÃÄID¿¡ µû¸¥ x, yÁÂÇ¥
+        //í…ìŠ¤ì³IDì— ë”°ë¥¸ x, yì¢Œí‘œ
         float y = textureID / VoxelData.TextureAtlasSizeInBlocks;
         float x = textureID - (y * VoxelData.TextureAtlasSizeInBlocks);
      
         x *= VoxelData.NormalizedBlockTextureSize;
         y *= VoxelData.NormalizedBlockTextureSize;
         
-        //ÁÂÇ¥¸¦ UVÀÇ ¹èÄ¡¿¡ ¸Â°Ô º¯°æÇØÁÖ´Â °úÁ¤
+        //ì¢Œí‘œë¥¼ UVì˜ ë°°ì¹˜ì— ë§ê²Œ ë³€ê²½í•´ì£¼ëŠ” ê³¼ì •
         y = 1f - y - VoxelData.NormalizedBlockTextureSize;
         
-        //¹Ì¸® ¼³Á¤µÈ ¼ø¼­¿¡ µû¶ó(uv Å×ÀÌºíÀÌ »ï°¢Çü¿¡ ¸ÂÃçÁ® ÀÖÀ¸¹Ç·Î)
+        //ë¯¸ë¦¬ ì„¤ì •ëœ ìˆœì„œì— ë”°ë¼(uv í…Œì´ë¸”ì´ ì‚¼ê°í˜•ì— ë§ì¶°ì ¸ ìˆìœ¼ë¯€ë¡œ)
         uvs.Add(new Vector2(x, y)); //0, 0
         uvs.Add(new Vector2(x, y + VoxelData.NormalizedBlockTextureSize)); //0, 1
         uvs.Add(new Vector2(x + VoxelData.NormalizedBlockTextureSize, y)); //1, 0

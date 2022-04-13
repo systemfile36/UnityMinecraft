@@ -1,21 +1,28 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// º¹¼¿ÀÇ »ı¼ºÀ» À§ÇÑ Å×ÀÌºí°ú Ã»Å©, ¿ùµå µîÀÇ static Á¤º¸¸¦ ÀúÀåÇÏ´Â Å¬·¡½º
+/// ë³µì…€ì˜ ìƒì„±ì„ ìœ„í•œ í…Œì´ë¸”ê³¼ ì²­í¬, ì›”ë“œ ë“±ì˜ static ì •ë³´ë¥¼ ì €ì¥í•˜ëŠ” í´ë˜ìŠ¤
 /// </summary>
 public class VoxelData
 {
-	//Ã»Å© ÇÏ³ªÀÇ Å©±â
+	//ì²­í¬ í•˜ë‚˜ì˜ í¬ê¸°
 	public static readonly int ChunkWidth = 16;
 	public static readonly int ChunkHeight = 128;
 	public static readonly int WorldSizeInChunks = 100;
 
-	//½Ã¾ß ¹üÀ§, ÀÌ ¹üÀ§ ³»ÀÇ Ã»Å©¸¸ ·Îµå
+	//ë¹›ê³¼ ê´€ë ¨ëœ ê°’ë“¤
+	public static float minLight = 0.15f;
+
+	public static float maxLight = 0.8f;
+
+	public static float lightFallOff = 0.08f;
+
+	//ì‹œì•¼ ë²”ìœ„, ì´ ë²”ìœ„ ë‚´ì˜ ì²­í¬ë§Œ ë¡œë“œ
 	public static readonly int ViewDistanceInChunks = 5;
 
-	//À§ÀÇ º¯¼öµéÀ» Âü°íÇØ °è»êÇØ¾ßÇÏ¹Ç·Î readonly°¡ ºÒ°¡´É
+	//ìœ„ì˜ ë³€ìˆ˜ë“¤ì„ ì°¸ê³ í•´ ê³„ì‚°í•´ì•¼í•˜ë¯€ë¡œ readonlyê°€ ë¶ˆê°€ëŠ¥
 	public static int WorldSizeInVoxels
 	{
 		get
@@ -24,35 +31,35 @@ public class VoxelData
 		}
 	}
 
-	//ÅØ½ºÃÄ ¾ÆÆ²¶ó½ºÀÇ Å©±â, ÇÑ ¿­(Çà)¿¡ ¸î°³ÀÇ ÅØ½ºÃÄ°¡ ÀÖ´Â°¡
+	//í…ìŠ¤ì³ ì•„í‹€ë¼ìŠ¤ì˜ í¬ê¸°, í•œ ì—´(í–‰)ì— ëª‡ê°œì˜ í…ìŠ¤ì³ê°€ ìˆëŠ”ê°€â€±
 	public static readonly int TextureAtlasSizeInBlocks = 16;
 	
-	//°¢ ÅØ½ºÃÄ°¡ °®´Â »ó´ëÀûÀÎ ºñÀ² 
+	//ê° í…ìŠ¤ì³ê°€ ê°–ëŠ” ìƒëŒ€ì ì¸ ë¹„ìœ¨ 
 	public static float NormalizedBlockTextureSize
 	{
 		get { return 1f / (float)TextureAtlasSizeInBlocks; }
 	}
 
-	//º¹¼¿ÀÇ Á¤Á¡µé »ó´ë ÁÂÇ¥
+	//ë³µì…€ì˜ ì •ì ë“¤ ìƒëŒ€ ì¢Œí‘œ
 	public static readonly Vector3[] voxelVerts = new Vector3[8]
 	{
-		//Àü¸é						   //Á¤Á¡ ¹øÈ£
+		//ì „ë©´						   //ì •ì  ë²ˆí˜¸
 		new Vector3(0.0f, 0.0f, 0.0f), //0
 		new Vector3(1.0f, 0.0f, 0.0f), //1
 		new Vector3(1.0f, 1.0f, 0.0f), //2
 		new Vector3(0.0f, 1.0f, 0.0f), //3
 		
-		//ÈÄ¸é
+		//í›„ë©´
 		new Vector3(0.0f, 0.0f, 1.0f), //4
 		new Vector3(1.0f, 0.0f, 1.0f), //5
 		new Vector3(1.0f, 1.0f, 1.0f), //6
 		new Vector3(0.0f, 1.0f, 1.0f), //7
 	};
 
-	//voxelTris¿Í ¼ø¼­¸¦ ¸ÂÃç¼­ °¢ ¸éÀÇ ¹æÇâÀ¸·Î 1Ä­ ÀÌµ¿ÇÑ °÷ÀÇ »ó´ë ÁÂÇ¥¸¦ ±â·Ï
+	//voxelTrisì™€ ìˆœì„œë¥¼ ë§ì¶°ì„œ ê° ë©´ì˜ ë°©í–¥ìœ¼ë¡œ 1ì¹¸ ì´ë™í•œ ê³³ì˜ ìƒëŒ€ ì¢Œí‘œë¥¼ ê¸°ë¡
 	public static readonly Vector3[] faceChecks = new Vector3[6]
 	{
-		//°¢ ¸éÀÌ ¹Ù¶óº¸´Â ÃàÀÇ ¹æÇâ
+		//ê° ë©´ì´ ë°”ë¼ë³´ëŠ” ì¶•ì˜ ë°©í–¥
 		new Vector3(0.0f, 0.0f, -1.0f), //-Z
 		new Vector3(0.0f, 0.0f, 1.0f), //+Z
 		new Vector3(0.0f, 1.0f, 0.0f), //+Y
@@ -61,32 +68,32 @@ public class VoxelData
 		new Vector3(1.0f, 0.0f, 0.0f) //+X
 	};
 
-	//6°³ÀÇ ¸éÀÇ »ï°¢ÇüµéÀÇ Á¤Á¡ ÀÎµ¦½º ÁÂÇ¥
+	//6ê°œì˜ ë©´ì˜ ì‚¼ê°í˜•ë“¤ì˜ ì •ì  ì¸ë±ìŠ¤ ì¢Œí‘œ
 	public static readonly int[,] voxelTris = new int[6, 4]
 	{
-		//°¢ ¸éÀÇ ±âÁØÀº ¿ŞÂÊ ¾Æ·¡°¡ 0, 0ÀÎ ÂÊÀÌ Àü¸éÀÎ °Í
-		//ÂüÁ¶ ½Ã, 0, 1, 2, 2, 1, 3 ¼øÀ¸·Î ÂüÁ¶ÇÔ
-		//Á¤Á¡ »ğÀÔ½Ã »ç¿ë(»ï°¢ÇüÀÇ Á¤Á¡¿¡ ¸ÂÃß±â À§ÇØ)
-		{ 0, 3, 1, 2 }, //Àü¸é
-		{ 5, 6, 4, 7 }, //ÈÄ¸é
-		{ 3, 7, 2, 6 }, //À­¸é
-		{ 1, 5, 0, 4 }, //¾Æ·§¸é
-		{ 4, 7, 0, 3 }, //ÁÂÃø¸é
-		{ 1, 2, 5, 6 }  //¿ìÃø¸é
+		//ê° ë©´ì˜ ê¸°ì¤€ì€ ì™¼ìª½ ì•„ë˜ê°€ 0, 0ì¸ ìª½ì´ ì „ë©´ì¸ ê²ƒ
+		//ì°¸ì¡° ì‹œ, 0, 1, 2, 2, 1, 3 ìˆœìœ¼ë¡œ ì°¸ì¡°í•¨
+		//ì •ì  ì‚½ì…ì‹œ ì‚¬ìš©(ì‚¼ê°í˜•ì˜ ì •ì ì— ë§ì¶”ê¸° ìœ„í•´)
+		{ 0, 3, 1, 2 }, //ì „ë©´
+		{ 5, 6, 4, 7 }, //í›„ë©´
+		{ 3, 7, 2, 6 }, //ìœ—ë©´
+		{ 1, 5, 0, 4 }, //ì•„ë«ë©´
+		{ 4, 7, 0, 3 }, //ì¢Œì¸¡ë©´
+		{ 1, 2, 5, 6 }  //ìš°ì¸¡ë©´
 	};
 
-	//uv °ªµé, ÅØ½ºÃÄ ³ÖÀ» ¶§ »ç¿ë, voxelTrisÀÇ ¼ø¼­¿¡ ¸ÂÃã
+	//uv ê°’ë“¤, í…ìŠ¤ì³ ë„£ì„ ë•Œ ì‚¬ìš©, voxelTrisì˜ ìˆœì„œì— ë§ì¶¤
 	public static readonly Vector2[] voxelUvs = new Vector2[4]
 	{
-		//»ï°¢ÇõÀÇ ÀÎµ¦½º ¼ø¼­¿¡ ¸ÂÃã, ÁÖ¼®Àº Àü¸éºÎÀÇ ¿¹½Ã
-		//Á¤Á¡¿¡ ¸ÂÃß¾î¼­ uv¼³Á¤½Ã »ç¿ë
+		//ì‚¼ê°í˜ì˜ ì¸ë±ìŠ¤ ìˆœì„œì— ë§ì¶¤, ì£¼ì„ì€ ì „ë©´ë¶€ì˜ ì˜ˆì‹œ
+		//ì •ì ì— ë§ì¶”ì–´ì„œ uvì„¤ì •ì‹œ ì‚¬ìš©
 		new Vector2(0.0f, 0.0f), //0
 		new Vector2(0.0f, 1.0f), //3
 		new Vector2(1.0f, 0.0f), //1
 		new Vector2(1.0f, 1.0f)  //2
 	};
 	/// <summary>
-	/// º¤ÅÍ µÎ°³¸¦ Á¤¼ö·Î ³»¸²ÇÑ ÈÄ ÀÏÄ¡ ¿©ºÎ ¹İÈ¯
+	/// ë²¡í„° ë‘ê°œë¥¼ ì •ìˆ˜ë¡œ ë‚´ë¦¼í•œ í›„ ì¼ì¹˜ ì—¬ë¶€ ë°˜í™˜
 	/// </summary>
 	/// <param name="a"></param>
 	/// <param name="b"></param>
