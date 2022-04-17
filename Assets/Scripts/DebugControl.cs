@@ -10,7 +10,10 @@ public class DebugControl : MonoBehaviour
 {
 
     World world;
+	StarterAssets.FirstPersonController player;
     Text txt;
+
+	VoxelState currentSelected;
 
 	//초당 프레임 레이트
 	float fps;
@@ -31,6 +34,7 @@ public class DebugControl : MonoBehaviour
 	void Awake()
 	{
 		world = GameObject.Find("World").GetComponent<World>();
+		player = GameObject.FindGameObjectWithTag("Player").GetComponent<StarterAssets.FirstPersonController>();
 		txt = GetComponent<Text>();
 	}
 
@@ -39,13 +43,17 @@ public class DebugControl : MonoBehaviour
 		//프레임 레이트를 위한 변수 갱신
 		deltaTime += (Time.unscaledDeltaTime - deltaTime) * 0.1f;
 
+		currentSelected = world.GetVoxelState(player.selectGuide.position);
+
 		string tempTxt = "";
 		tempTxt += "FPS : " + fps + "\n"
 			+ "Frame Interval : " + frameSec + "ms\n"
 			+ "\nX : " + Mathf.FloorToInt(world.player.transform.position.x)
 			+ "\nY : " + Mathf.FloorToInt(world.player.transform.position.y)
 			+ "\nZ : " + Mathf.FloorToInt(world.player.transform.position.z)
-			+ "\nChunk : " + world.playerChunkCoord.x + " " + world.playerChunkCoord.z;
+			+ "\nChunk : " + world.playerChunkCoord.x + " " + world.playerChunkCoord.z
+			+ $"\nSelected position {player.selectGuide.position}"
+			+ $"\nSelected Light {currentSelected.globalLightWeight}";
 
 
 		txt.text = debugTxt + tempTxt;

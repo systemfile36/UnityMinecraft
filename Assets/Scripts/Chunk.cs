@@ -443,6 +443,10 @@ public class Chunk
         colors.Clear();
 	}
 
+    /// <summary>
+    /// 빛의 감쇠를 적용할 블럭들의 좌표들
+    /// </summary>
+    Queue<Vector3Int> lit_Voxels = new Queue<Vector3Int>(VoxelData.ChunkWidth * VoxelData.ChunkWidth);
 
     /// <summary>
     /// 각 블럭의 투명도에 따라 빛을 계산하여 맵에 세팅한다.
@@ -469,6 +473,9 @@ public class Chunk
         */
         #endregion
 
+        //빛이 계산될 때마다 비우고 다시 시작
+        lit_Voxels.Clear();
+
         //현재 순회중인 블럭 캐싱
         VoxelState currentVoxel;
 
@@ -488,9 +495,9 @@ public class Chunk
                     //투명하면 1, 불투명하면 불투명할수록 0에 가까워 질것이다.
                     //그리고 빛은 무조건 감쇄되는 방향으로 변해야 한다.
                     //이를 위해 투명도가 현재 빛의 양보다 낮을때만 갱신한다.
-                    if(currentVoxel.id > 0 && world.blockTypes[currentVoxel.id].trnasparency < lightRay)
+                    if(currentVoxel.id > 0 && world.blockTypes[currentVoxel.id].transparency < lightRay)
 					{
-                        lightRay = world.blockTypes[currentVoxel.id].trnasparency;
+                        lightRay = world.blockTypes[currentVoxel.id].transparency;
 					}
 
                     //현재 순회중인 블럭이 받는 빛의 양을 설정한다.
@@ -498,10 +505,66 @@ public class Chunk
 
                     //다시 맵에 설정한다.
                     voxelMap[x, y, z] = currentVoxel;
+
+                    //빛을 감쇠 시킬 수 있을 만큼 밝은 블럭만 넣는다.
+                    //즉, 감쇠 시킬 필요가 있는 블럭만 넣는다.
+                    if(lightRay > VoxelData.lightFallOff)
+					{
+                        lit_Voxels.Enqueue(new Vector3Int(x, y, z));
+					}
                 }
             }
 
         }
+
+        //빛 감쇠를 적용할 블럭에 대해 순회한다.
+        Vector3Int v;
+        Vector3 currentLitVoxel;
+        Vector3Int nearVoxel;
+        while (lit_Voxels.Count > 0)
+		{
+            //Queue에서 하나를 빼온다.
+            v = lit_Voxels.Dequeue();
+
+            //각 면에 대해 반복
+            for(int p = 0; p < 6; p++)
+			{
+                //불투명한 블럭의 아랫면에 대해서는 빛의 감쇠를 적용하지 않는다.
+                //안그러면 불투명한 블럭의 아래에도 빛이 침투한다.
+                if (p == 3)
+                    continue;
+
+                //각 면에 인접한 블럭의 좌표 받아옴
+                currentLitVoxel = v + VoxelData.faceChecks[p];
+
+                //Vector3를 Vector3Int로 변환
+                nearVoxel = Vector3Int.FloorToInt(currentLitVoxel);
+
+                //인접 블럭이 청크 내에 있을 때만 계산
+                //청크 경계를 넘는 빛은 후에 구현할 예정
+                if(IsVoxelInChunk(nearVoxel.x, nearVoxel.y, nearVoxel.z))
+				{
+                    //자신의 밝기 - 감쇠치 보다 낮은 밝기를 가지는 인접블럭에만
+                    //빛의 감쇠를 적용한다.
+                    //즉, 이미 감소치를 적용한 밝기보다 어두운 블럭에 대해서만 적용한다.
+                    if(voxelMap[nearVoxel.x, nearVoxel.y, nearVoxel.z].globalLightWeight 
+                        < voxelMap[v.x, v.y, v.z].globalLightWeight - VoxelData.lightFallOff)
+					{
+                        //인접 블럭의 밝기를 현재 블럭- 감쇠치만큼으로 만듬
+                        voxelMap[nearVoxel.x, nearVoxel.y, nearVoxel.z].globalLightWeight =
+                            voxelMap[v.x, v.y, v.z].globalLightWeight - VoxelData.lightFallOff;
+
+                        //빛을 한 단계 감쇠시켰음에도 아직 감쇠의 여지가 있다면
+                        //다시 감쇠시킬 목록에 추가한다.
+                        if(voxelMap[nearVoxel.x, nearVoxel.y, nearVoxel.z].globalLightWeight
+                            > VoxelData.lightFallOff)
+						{
+                            lit_Voxels.Enqueue(nearVoxel);
+						}
+                    }
+				}
+			}
+		}
 
     }
 
@@ -627,6 +690,7 @@ public class Chunk
 
 
                 //이 면과 인접한 블럭이 받는 빛의 양을 현재 면의 밝기로 한다.
+                //즉, 맞닿아 있는 Air블럭이 받는 빛이 0이라면, 이 면은 어두운 면이 된다.
                 //빛을 계산하는 부분은 CalcLighting 메소드 참조
                 lightLevel = nearVoxel.globalLightWeight;
 

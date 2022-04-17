@@ -13,11 +13,14 @@ public class VoxelData
 	public static readonly int WorldSizeInChunks = 100;
 
 	//빛과 관련된 값들
+
+	//빛의 최소값, 이 밑으로 내려가지 않음, 즉 완전히 어두워 지지 않음
 	public static float minLight = 0.15f;
 
-	public static float maxLight = 0.8f;
+	public static float maxLight = 0.82f;
 
-	public static float lightFallOff = 0.08f;
+	//한칸당 빛이 감쇠되는 양
+	public static float lightFallOff = 0.1f;
 
 	//시야 범위, 이 범위 내의 청크만 로드
 	public static readonly int ViewDistanceInChunks = 5;

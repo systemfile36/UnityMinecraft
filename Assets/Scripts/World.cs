@@ -16,7 +16,7 @@ public class BlockType
     public bool drawNearPlane;
 
     //≈ı∏Ìµµ
-    public float trnasparency;
+    public float transparency;
 
     public byte MaxStackSize = 64;
 
