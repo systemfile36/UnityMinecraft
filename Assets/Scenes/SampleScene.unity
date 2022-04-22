@@ -4333,7 +4333,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   seed: 65535
   biome: {fileID: 11400000, guid: a94773d102b86b5419f4bc42cb69bebe, type: 2}
-  globalLightLevel: 0
+  globalLightLevel: 0.93
   dayColor: {r: 0.72156864, g: 0.972549, b: 0.9843137, a: 0}
   nightColor: {r: 0, g: 0.028412873, b: 0.1509434, a: 0}
   player: {fileID: 506515130}
@@ -5607,7 +5607,8 @@ PrefabInstance:
       propertyPath: m_Follow
       value: 
       objectReference: {fileID: 373751121}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 8762286024517199035, guid: 9c489a8547f4d9e4387da15a4ff82c81, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: 9c489a8547f4d9e4387da15a4ff82c81, type: 3}
 --- !u!1 &1710597049
 GameObject:

@@ -1,26 +1,28 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using UnityEngine;
+using System.Threading;
 #if ENABLE_INPUT_SYSTEM && STARTER_ASSETS_PACKAGES_CHECKED
 using UnityEngine.InputSystem;
 #endif
 
-//Á÷·ÄÈ­ °¡´ÉÇÑ BlockType Å¬·¡½º
+//ì§ë ¬í™” ê°€ëŠ¥í•œ BlockType í´ë˜ìŠ¤
 [System.Serializable]
 public class BlockType
 {
     public string blockName;
     public bool isSolid;
 
-    //ÀÎÁ¢ÇÑ ¸éÀ» ±×·Á¾ßÇÏ´Â Áö ¿©ºÎ
+    //ì¸ì ‘í•œ ë©´ì„ ê·¸ë ¤ì•¼í•˜ëŠ” ì§€ ì—¬ë¶€
     public bool drawNearPlane;
 
-    //Åõ¸íµµ
+    //íˆ¬ëª…ë„
     public float transparency;
 
     public byte MaxStackSize = 64;
 
-    //ÀÎº¥Åä¸® µî¿¡¼­ »ç¿ëµÉ ¾ÆÀÌÄÜ
+    //ì¸ë²¤í† ë¦¬ ë“±ì—ì„œ ì‚¬ìš©ë  ì•„ì´ì½˜
     public Sprite icon;
 
     [Header("Texture Values")]
@@ -32,9 +34,9 @@ public class BlockType
     public int rightFaceTexture;
 
 
-    //Àü¸é ÈÄ¸é À­¸é ¾Æ·§¸é ÁÂÃø ¿ìÃø ¼ø¼­
+    //ì „ë©´ í›„ë©´ ìœ—ë©´ ì•„ë«ë©´ ì¢Œì¸¡ ìš°ì¸¡ ìˆœì„œ
     /// <summary>
-    /// °¢ ¸éÀÇ ÅØ½ºÃÄ ¾ÆÀÌµğ ¹İÈ¯
+    /// ê° ë©´ì˜ í…ìŠ¤ì³ ì•„ì´ë”” ë°˜í™˜
     /// </summary>
     /// <param name="faceIndex"></param>
     /// <returns></returns>
@@ -62,7 +64,7 @@ public class BlockType
 }
 
 /// <summary>
-/// Ã»Å©ÀÇ °æ°è¸¦ ³Ñ³ªµå´Â ±¸Á¶¹°µîÀÇ Á¤º¸¸¦ À§ÇÑ Å¬·¡½º
+/// ì²­í¬ì˜ ê²½ê³„ë¥¼ ë„˜ë‚˜ë“œëŠ” êµ¬ì¡°ë¬¼ë“±ì˜ ì •ë³´ë¥¼ ìœ„í•œ í´ë˜ìŠ¤
 /// </summary>
 public class VoxelMod
 {
@@ -83,7 +85,7 @@ public class VoxelMod
 }
 
 /// <summary>
-/// °ÔÀÓ ¸ğµåÀÇ ¿­°ÅÇü
+/// ê²Œì„ ëª¨ë“œì˜ ì—´ê±°í˜•
 /// </summary>
 public enum GameMode
 {
@@ -93,25 +95,25 @@ public enum GameMode
 }
 
 /// <summary>
-/// Àü¹İÀûÀÎ ¼¼°è¸¦ ´Ù·ç´Â Å¬·¡½º(¿ÀºêÁ§Æ®)
+/// ì „ë°˜ì ì¸ ì„¸ê³„ë¥¼ ë‹¤ë£¨ëŠ” í´ë˜ìŠ¤(ì˜¤ë¸Œì íŠ¸)
 /// </summary>
 public class World : MonoBehaviour
 {
-    //¸ÊÀÇ ½Ãµå°ª
+    //ë§µì˜ ì‹œë“œê°’
     public int seed;
 
-    //¹ÙÀÌ¿ÈÀ» ¼³Á¤ÇÏ´Â º¯¼ö
+    //ë°”ì´ì˜´ì„ ì„¤ì •í•˜ëŠ” ë³€ìˆ˜
     public BiomeAttributes biome;
 
-    //Àü¿ª ¹à±â Á¶Á¤
+    //ì „ì—­ ë°ê¸° ì¡°ì •
     [Range(0f, 0.93f)]
     public float globalLightLevel;
 
-    //³·°ú ¹ã¿¡ µû¸¥ ¹è°æ »ö
+    //ë‚®ê³¼ ë°¤ì— ë”°ë¥¸ ë°°ê²½ ìƒ‰
     public Color dayColor;
     public Color nightColor;
 
-    //ÇÃ·¹ÀÌ¾îÀÇ ÁÂÇ¥ ÂüÁ¶¸¦ À§ÇÑ º¯¼ö
+    //í”Œë ˆì´ì–´ì˜ ì¢Œí‘œ ì°¸ì¡°ë¥¼ ìœ„í•œ ë³€ìˆ˜
     public Transform player;
     public Vector3 spawnPosition;
 
@@ -119,82 +121,86 @@ public class World : MonoBehaviour
     public Material TransparentMaterial;
     public BlockType[] blockTypes;
 
-    //Ã»Å©µéÀÇ ¹è¿­
+    //ì²­í¬ë“¤ì˜ ë°°ì—´
     Chunk[,] chunks = new Chunk[VoxelData.WorldSizeInChunks, VoxelData.WorldSizeInChunks];
 
-    //È°¼ºÈ­µÈ Ã»Å©µé ÀúÀå
-    List<ChunkCoord> activeChunks = new List<ChunkCoord>();
+    //í™œì„±í™”ëœ ì²­í¬ë“¤ ì €ì¥
+    //ì´ˆê¸° í¬ê¸° (ì‹œì•¼ ë²”ìœ„ * ì‹œì•¼ ë²”ìœ„)
+    List<ChunkCoord> activeChunks = new List<ChunkCoord>(VoxelData.ViewDistanceInChunks * VoxelData.ViewDistanceInChunks);
 
-    //ÇÃ·¹ÀÌ¾îÀÇ ÇöÀç À§Ä¡ÇÑ Ã»Å© Ä³½Ì
+    //í”Œë ˆì´ì–´ì˜ í˜„ì¬ ìœ„ì¹˜í•œ ì²­í¬ ìºì‹±
     public ChunkCoord playerChunkCoord;
-    //ÇÃ·¹ÀÌ¾î°¡ ¸¶Áö¸·À¸·Î À§Ä¡ÇÑ Ã»Å©
+    //í”Œë ˆì´ì–´ê°€ ë§ˆì§€ë§‰ìœ¼ë¡œ ìœ„ì¹˜í•œ ì²­í¬
     ChunkCoord playerLastChunkCoord;
 
-    //¸¸µé Ã»Å©µéÀ» ÀúÀåÇÏ´Â Å¥
-    Queue<ChunkCoord> chunksToCreateQue = new Queue<ChunkCoord>();
+    //ë§Œë“¤ ì²­í¬ë“¤ì„ ì €ì¥í•˜ëŠ” ë¦¬ìŠ¤íŠ¸
+    List<ChunkCoord> chunksToCreate = new List<ChunkCoord>();
     
-    //ÄÚ·çÆ¾ÀÌ ÀÌ¹Ì ½ÇÇàÁßÀÎÁö ¿©ºÎ ÆÇ´ÜÀ» À§ÇÑ º¯¼ö
+    //ì½”ë£¨í‹´ì´ ì´ë¯¸ ì‹¤í–‰ì¤‘ì¸ì§€ ì—¬ë¶€ íŒë‹¨ì„ ìœ„í•œ ë³€ìˆ˜
     //private bool IsCreateChunks;
 
-    //±¸Á¶¹°°ú Ã»Å©µéÀÇ ¾÷µ¥ÀÌÆ® ÄÚ·çÆ¾À» À§ÇÑ º¯¼ö
+    //êµ¬ì¡°ë¬¼ê³¼ ì²­í¬ë“¤ì˜ ì—…ë°ì´íŠ¸ ì½”ë£¨í‹´ì„ ìœ„í•œ ë³€ìˆ˜
     private bool IsApplyingAll = false;
 
-    //ÄÚ·çÆ¾À» À§ÇÑ Ä³½Ì º¯¼ö
+    //ì½”ë£¨í‹´ì„ ìœ„í•œ ìºì‹± ë³€ìˆ˜
     //private IEnumerator m_CreateChunks;
 
-    //»õ ÄÚ·çÆ¾À» À§ÇÑ Ä³½Ì º¯¼ö
-    private IEnumerator m_ApplyModifications;
+    //ìƒˆ ì½”ë£¨í‹´ì„ ìœ„í•œ ìºì‹± ë³€ìˆ˜
+    //private IEnumerator m_ApplyModifications;
 
-    //±¸Á¶¹° »ı¼ºÀ» À§ÇÑ Que
-    //±¸Á¶¹°ÀÇ ÇüÅÂ¸¦ ÀúÀåÇÑ Queue¸¦ ÀúÀåÇÏ´Â Queue
-    public Queue<Queue<VoxelMod>> modifications = new Queue<Queue<VoxelMod>>();
+    //êµ¬ì¡°ë¬¼ ìƒì„±ì„ ìœ„í•œ Que
+    //êµ¬ì¡°ë¬¼ì˜ í˜•íƒœë¥¼ ì €ì¥í•œ Queueë¥¼ ì €ì¥í•˜ëŠ” Queue
+    public ConcurrentQueue<Queue<VoxelMod>> modifications = new ConcurrentQueue<Queue<VoxelMod>>();
 
-    //±¸Á¶¹° »ı¼º ÈÄ ¾÷µ¥ÀÌÆ®¸¦ À§ÇÑ ¸®½ºÆ®
-    //¾÷µ¥ÀÌÆ®ÇÒ Ã»Å© °´Ã¼¸¦ ÀúÀåÇÔ
-    List<Chunk> chunksToRefresh = new List<Chunk>();
+    //êµ¬ì¡°ë¬¼ ìƒì„± í›„ ì—…ë°ì´íŠ¸ë¥¼ ìœ„í•œ ë¦¬ìŠ¤íŠ¸
+    //ì—…ë°ì´íŠ¸í•  ì²­í¬ ê°ì²´ë¥¼ ì €ì¥í•¨
+    public List<Chunk> chunksToRefresh = new List<Chunk>(80);
 
-    //±×·Á³¾ Ã»Å©µé ÀúÀåÇÏ´Â Å¥
-    //´Ù¸¥ ½º·¹µå°¡ ¸Ş½¬ µ¥ÀÌÅÍ¸¦ ¸¸µé°í ¿©±â ³ÖÀ¸¸é
-    //¸ŞÀÎ ½º·¹µå°¡ ÀÌ°ÍÀ» Âü°í·Î È­¸é¿¡ ±×·Á³¿
+    //ì²­í¬ë“¤ì„ ê°±ì‹ í•˜ëŠ” ìŠ¤ë ˆë“œ
+    Thread RefreshChunksThread;
+
+    //ì²­í¬ ê°±ì‹  ìŠ¤ë ˆë“œ ì‘ë™ ì¤‘ ì—¬ë¶€ ê²€ì‚¬
+    private bool RefreshChunksThreadRunning = true;
+
+
+    //ê·¸ë ¤ë‚¼ ì²­í¬ë“¤ ì €ì¥í•˜ëŠ” í
+    //ë‹¤ë¥¸ ìŠ¤ë ˆë“œê°€ ë©”ì‰¬ ë°ì´í„°ë¥¼ ë§Œë“¤ê³  ì—¬ê¸° ë„£ìœ¼ë©´
+    //ë©”ì¸ ìŠ¤ë ˆë“œê°€ ì´ê²ƒì„ ì°¸ê³ ë¡œ í™”ë©´ì— ê·¸ë ¤ëƒ„
     public Queue<Chunk> chunksToDraw = new Queue<Chunk>();
 
     /// <summary>
-    /// Àá±İÀ» À§ÇÑ ¿ÀºêÁ§Æ®
+    /// ì ê¸ˆì„ ìœ„í•œ ì˜¤ë¸Œì íŠ¸
     /// </summary>
-    public Object lockObject = new Object();
+    //public Object lockObject = new Object();
 
     /// <summary>
-    /// ÇöÀç °ÔÀÓ ¸ğµå¸¦ ³ªÅ¸³»´Â Á¤Àû º¯¼ö
+    /// í˜„ì¬ ê²Œì„ ëª¨ë“œë¥¼ ë‚˜íƒ€ë‚´ëŠ” ì •ì  ë³€ìˆ˜
     /// </summary>
     public static readonly GameMode gameMode = GameMode.Debug;
 
-	void Awake()
-	{
-        //ÄÚ·çÆ¾ Ä³½Ì
-        //m_CreateChunks = CreateChunks();
-        //m_ApplyModifications = ApplyModifications();
-    }
-
 	void Start()
 	{
-        //½Ãµå °ª¿¡ µû¶ó ³­¼ö»ı¼º±â ÃÊ±âÈ­
-        //°°Àº ½Ãµå´Â °°Àº ¸Ê
+        //ì‹œë“œ ê°’ì— ë”°ë¼ ë‚œìˆ˜ìƒì„±ê¸° ì´ˆê¸°í™”
+        //ê°™ì€ ì‹œë“œëŠ” ê°™ì€ ë§µ
         Random.InitState(seed);
 
-        //Global Light LevelÀÇ ÃÖ´ë ÃÖ¼Ò°ªÀ» ¼ÎÀÌ´õ¿¡ ³Ñ±ä´Ù.
+        //Global Light Levelì˜ ìµœëŒ€ ìµœì†Œê°’ì„ ì…°ì´ë”ì— ë„˜ê¸´ë‹¤.
         Shader.SetGlobalFloat("minGlobalLight", VoxelData.minLight);
         Shader.SetGlobalFloat("maxGlobalLight", VoxelData.maxLight);
 
+        //ì²­í¬ë“¤ ê°±ì‹  ìŠ¤ë ˆë“œ ì‹œì‘
+        RefreshChunksThread = new Thread(RefreshChunks_ThreadTask);
+        RefreshChunksThread.Start();
 
-        //¿ùµå Áß¾Ó¿¡ ½ºÆù
+        //ì›”ë“œ ì¤‘ì•™ì— ìŠ¤í°
         spawnPosition =
             new Vector3(VoxelData.WorldSizeInVoxels / 2f,
             VoxelData.ChunkHeight, VoxelData.WorldSizeInVoxels / 2f);
         
-        //¿ùµå »ı¼º
+        //ì›”ë“œ ìƒì„±
         GenerateWorld();
 
-        //ÇÃ·¹ÀÌ¾î°¡ À§Ä¡ÇÑ Ã»Å© ÃÊ±âÈ­
+        //í”Œë ˆì´ì–´ê°€ ìœ„ì¹˜í•œ ì²­í¬ ì´ˆê¸°í™”
         playerChunkCoord = GetChunkCoordFromVector3(player.position);
         playerLastChunkCoord = GetChunkCoordFromVector3(player.position);
         
@@ -202,76 +208,59 @@ public class World : MonoBehaviour
 
 	void Update()
 	{
-        //ÇÃ·¹ÀÌ¾î ÇöÀç Ã»Å© °»½Å
+        //í”Œë ˆì´ì–´ í˜„ì¬ ì²­í¬ ê°±ì‹ 
         playerChunkCoord = GetChunkCoordFromVector3(player.position);
 
-		#region Å×½ºÆ®¿ë ÄÚµå
-		//"GlobalLightLevel"¶ó´Â º¯¼ö¿¡ globalLightLevelÀ» ¼¼ÆÃÇÑ´Ù.
-		//¸ğµç ¼ÎÀÌ´õ¿¡ ÀÌ ÀÌ¸§À» °¡Áø º¯¼ö¸¦ Ã£´Â´Ù.
+		#region í…ŒìŠ¤íŠ¸ìš© ì½”ë“œ
+		//"GlobalLightLevel"ë¼ëŠ” ë³€ìˆ˜ì— globalLightLevelì„ ì„¸íŒ…í•œë‹¤.
+		//ëª¨ë“  ì…°ì´ë”ì— ì´ ì´ë¦„ì„ ê°€ì§„ ë³€ìˆ˜ë¥¼ ì°¾ëŠ”ë‹¤.
 		Shader.SetGlobalFloat("GlobalLightLevel", globalLightLevel);
 
-        //Ä«¸Ş¶óÀÇ ¹è°æ»öÀ» º¯°æ, 
-        //³·ÀÇ »ö°ú ¹ãÀÇ »ö »çÀÌ¸¦ Àü¿ª ¹à±â ¸¸Å­ ¼±Çü º¸°£ÇÔ
+        //ì¹´ë©”ë¼ì˜ ë°°ê²½ìƒ‰ì„ ë³€ê²½, 
+        //ë‚®ì˜ ìƒ‰ê³¼ ë°¤ì˜ ìƒ‰ ì‚¬ì´ë¥¼ ì „ì—­ ë°ê¸° ë§Œí¼ ì„ í˜• ë³´ê°„í•¨
         //Camera.main.backgroundColor = Color.Lerp(dayColor, nightColor, globalLightLevel);
 		#endregion
 
 
-		//ÇÃ·¹ÀÌ¾îÀÇ ÇöÀç À§Ä¡ÇÑ Ã»Å©°¡ ¸¶Áö¸·À¸·Î À§Ä¡ÇÑ Ã»Å©¿Í ´Ù¸£´Ù¸é
+		//í”Œë ˆì´ì–´ì˜ í˜„ì¬ ìœ„ì¹˜í•œ ì²­í¬ê°€ ë§ˆì§€ë§‰ìœ¼ë¡œ ìœ„ì¹˜í•œ ì²­í¬ì™€ ë‹¤ë¥´ë‹¤ë©´
 		if (!playerChunkCoord.Equals(playerLastChunkCoord))
-        { 
-            CheckViewDistance();
-            //´Ù½Ã °»½Å
+        {
+            //lock (activeChunks)
+            {
+                CheckViewDistance();
+            }
+
+            //ë‹¤ì‹œ ê°±ì‹ 
             playerLastChunkCoord = GetChunkCoordFromVector3(player.position);
         }
 
-        /*
-        //¸¸¾à ¸¸µé Ã»Å©°¡ ÇÏ³ª ÀÌ»óÀÌ°í ÀÌ¹Ì °»½ÅÇÑ »óÅÂ°¡ ¾Æ´Ï¶ó¸é
-        if(chunksToCreateQue.Count > 0 && !IsCreateChunks)
-		{
-            m_CreateChunks = CreateChunks();
-            //ÄÚ·çÆ¾À» ½ÃÀÛÇÏ¿© Ã»Å©¸¦ ¸¸µç´Ù.
-            StartCoroutine(m_CreateChunks);
-		}
-        */
-       
-        //±¸Á¶¹° »ı¼ººÎ
-        //ÀÌ¹Ì »ı¼º ÁßÀÌ ¾Æ´Ï¶ó¸é
-        if(!IsApplyingAll)
-		{
-            ApplyModifications();
-        }
-
-        //¸¸¾à ±×·Á³¾ Ã»Å©°¡ ÀÖ´Ù¸é
-        //ÇÑÇÁ·¹ÀÓ¿¡ ÇÏ³ª¾¿¸¸
-        if(chunksToDraw.Count > 0)
-		{
-            //ÀÏ´Ü Àá±Ù´Ù.
-            lock(lockObject)
-			{
-                //¸¸¾à ¸¸µé Ã»Å©°¡ ¸ÊÀÌ ±¸¼ºµÇ¾ú°í
-                //½º·¹µå¿¡ ÀÇÇØ ¼öÁ¤ÁßÀÌ ¾Æ´Ï¶ó¸é
-                if(chunksToDraw.Peek().IsEditable)
-				{
-                    chunksToDraw.Dequeue().ApplyChunkMesh();
-				}
-			}
-		}
-
-
-        //Ã»Å© ÃÊ±âÈ­(Init)
-        //ÇÑÇÁ·¹ÀÓ¿¡ ÇÏ³ª¾¿¸¸
-        if (chunksToCreateQue.Count > 0)
+        //ì²­í¬ ì´ˆê¸°í™”(Init)
+        //í•œí”„ë ˆì„ì— í•˜ë‚˜ì”©ë§Œ
+        if (chunksToCreate.Count > 0)
             CreateChunk();
 
-        //Ã»Å© °»½Å
-        //¿ª½Ã ÇÑÇÁ·¹ÀÓ¿¡ ÇÏ³ª¾¿¸¸
-        if (chunksToRefresh.Count > 0)
-            RefreshChunk();
 
+        //ë§Œì•½ ê·¸ë ¤ë‚¼ ì²­í¬ê°€ ìˆë‹¤ë©´
+        //í•œí”„ë ˆì„ì— í•˜ë‚˜ì”©ë§Œ
+        if (chunksToDraw.Count > 0)
+		{
+            lock (chunksToDraw)
+            {
+                //ë§Œì•½ ë§Œë“¤ ì²­í¬ê°€ ë§µì´ êµ¬ì„±ë˜ì—ˆê³ 
+                //ìŠ¤ë ˆë“œì— ì˜í•´ ìˆ˜ì •ì¤‘ì´ ì•„ë‹ˆë¼ë©´
+                if (chunksToDraw.Peek().IsEditable)
+                {
+                    chunksToDraw.Dequeue().ApplyChunkMesh();
+                }
+            }
+		}
+
+        Debug.Log(modifications.Count);
+        
     }
 
 	/// <summary>
-	/// ÁöÁ¤µÈ ÁÂÇ¥¿¡ º¹¼¿ÀÇ À¯¹«¸¦ ¹İÈ¯ÇÑ´Ù.
+	/// ì§€ì •ëœ ì¢Œí‘œì— ë³µì…€ì˜ ìœ ë¬´ë¥¼ ë°˜í™˜í•œë‹¤.
 	/// </summary>
 	/// <param name="_x"></param>
 	/// <param name="_y"></param>
@@ -283,117 +272,117 @@ public class World : MonoBehaviour
     }
     
     /// <summary>
-    /// ¿ùµå ÁÂÇ¥¸¦ ¹Ş¾Æ¼­ ±× ÁÂÇ¥°¡ ¼ÓÇÑ Ã»Å©ÀÇ ¸ÊÀ» ÂüÁ¶ÇØ¼­
-    /// ºí·°ÀÇ isSolid¸¦ ¹İÈ¯
+    /// ì›”ë“œ ì¢Œí‘œë¥¼ ë°›ì•„ì„œ ê·¸ ì¢Œí‘œê°€ ì†í•œ ì²­í¬ì˜ ë§µì„ ì°¸ì¡°í•´ì„œ
+    /// ë¸”ëŸ­ì˜ isSolidë¥¼ ë°˜í™˜
     /// </summary>
     /// <param name="pos"></param>
     /// <returns></returns>
     public bool CheckVoxelSolid(Vector3 pos)
 	{
-        //pos°¡ ¼ÓÇÑ Ã»Å© ÁÂÇ¥ ºÒ·¯¿È
+        //posê°€ ì†í•œ ì²­í¬ ì¢Œí‘œ ë¶ˆëŸ¬ì˜´
         ChunkCoord thisChunk = new ChunkCoord(pos);
 
-        //ÁÂÇ¥ À¯È¿ ¹İÈ¯
+        //ì¢Œí‘œ ìœ íš¨ ë°˜í™˜
         if (!IsVoxelInWorld(pos))
             return false;
 
-        //ÁöÁ¤µÈ ÁÂÇ¥¿¡ Ã»Å©°¡ »ı¼ºµÇ¾ú°í, Ã»Å©ÀÇ ¸ÊÀÌ ÃÊ±âÈ­ µÇ¾ú´Ù¸é
+        //ì§€ì •ëœ ì¢Œí‘œì— ì²­í¬ê°€ ìƒì„±ë˜ì—ˆê³ , ì²­í¬ì˜ ë§µì´ ì´ˆê¸°í™” ë˜ì—ˆë‹¤ë©´
         if(chunks[thisChunk.x, thisChunk.z] != null && chunks[thisChunk.x, thisChunk.z].IsEditable)
 		{
-            //ÁöÁ¤µÈ ÁÂÇ¥¿¡ ÀÖ´Â ºí·°ÀÇ Å¸ÀÔÀ» ¹Ş¾Æ isSolid ¹İÈ¯
+            //ì§€ì •ëœ ì¢Œí‘œì— ìˆëŠ” ë¸”ëŸ­ì˜ íƒ€ì…ì„ ë°›ì•„ isSolid ë°˜í™˜
             return blockTypes[chunks[thisChunk.x, thisChunk.z].GetVoxelFromGlobalVector3(pos).id].isSolid;
 		}
 
-        //¸¸¾à¿¡ À§¿¡ Á¶°Ç¿¡ ¸ğµÎ ÇØ´çÀÌ ¾øÀ¸¸é GetVoxelÀ» È£ÃâÇØ¼­ È®ÀÎ
+        //ë§Œì•½ì— ìœ„ì— ì¡°ê±´ì— ëª¨ë‘ í•´ë‹¹ì´ ì—†ìœ¼ë©´ GetVoxelì„ í˜¸ì¶œí•´ì„œ í™•ì¸
         return blockTypes[GetVoxel(pos)].isSolid;
 	}
 
     /// <summary>
-    /// ¿ùµå ÁÂÇ¥¸¦ ¹Ş¾Æ¼­ ±× ÁÂÇ¥°¡ ¼ÓÇÑ Ã»Å©ÀÇ ¸ÊÀ» ÂüÁ¶,
-    /// ÀÌ ºí·°ÀÌ °Ç³ÊÆíÀÌ ºñÄ¡´Â ºí·°ÀÎÁö ¿©ºÎ¸¦ ¹İÈ¯
+    /// ì›”ë“œ ì¢Œí‘œë¥¼ ë°›ì•„ì„œ ê·¸ ì¢Œí‘œê°€ ì†í•œ ì²­í¬ì˜ ë§µì„ ì°¸ì¡°,
+    /// ì´ ë¸”ëŸ­ì´ ê±´ë„ˆí¸ì´ ë¹„ì¹˜ëŠ” ë¸”ëŸ­ì¸ì§€ ì—¬ë¶€ë¥¼ ë°˜í™˜
     /// </summary>
     /// <param name="pos"></param>
     /// <returns></returns>
     public bool CheckVoxelTransparent(Vector3 pos)
     {
-        //pos°¡ ¼ÓÇÑ Ã»Å© ÁÂÇ¥ ºÒ·¯¿È
+        //posê°€ ì†í•œ ì²­í¬ ì¢Œí‘œ ë¶ˆëŸ¬ì˜´
         ChunkCoord thisChunk = new ChunkCoord(pos);
 
-        //ÁÂÇ¥ À¯È¿ ¹İÈ¯
+        //ì¢Œí‘œ ìœ íš¨ ë°˜í™˜
         if (!IsVoxelInWorld(pos))
             return false;
 
-        //ÁöÁ¤µÈ ÁÂÇ¥¿¡ Ã»Å©°¡ »ı¼ºµÇ¾ú°í, Ã»Å©ÀÇ ¸ÊÀÌ ÃÊ±âÈ­ µÇ¾ú´Ù¸é
+        //ì§€ì •ëœ ì¢Œí‘œì— ì²­í¬ê°€ ìƒì„±ë˜ì—ˆê³ , ì²­í¬ì˜ ë§µì´ ì´ˆê¸°í™” ë˜ì—ˆë‹¤ë©´
         if (chunks[thisChunk.x, thisChunk.z] != null && chunks[thisChunk.x, thisChunk.z].IsEditable)
         {
-            //ÁöÁ¤µÈ ÁÂÇ¥¿¡ ÀÖ´Â ºí·°ÀÇ Å¸ÀÔÀ» ¹Ş¾Æ °Ç³ÊÆíÀÌ ºñÄ¡´Â Áö ¹İÈ¯
+            //ì§€ì •ëœ ì¢Œí‘œì— ìˆëŠ” ë¸”ëŸ­ì˜ íƒ€ì…ì„ ë°›ì•„ ê±´ë„ˆí¸ì´ ë¹„ì¹˜ëŠ” ì§€ ë°˜í™˜
             return blockTypes[chunks[thisChunk.x, thisChunk.z].GetVoxelFromGlobalVector3(pos).id].drawNearPlane;
         }
 
-        //¸¸¾à¿¡ À§¿¡ Á¶°Ç¿¡ ¸ğµÎ ÇØ´çÀÌ ¾øÀ¸¸é GetVoxelÀ» È£ÃâÇØ¼­ È®ÀÎ
+        //ë§Œì•½ì— ìœ„ì— ì¡°ê±´ì— ëª¨ë‘ í•´ë‹¹ì´ ì—†ìœ¼ë©´ GetVoxelì„ í˜¸ì¶œí•´ì„œ í™•ì¸
         return blockTypes[GetVoxel(pos)].drawNearPlane;
     }
 
     /// <summary>
-    /// ÁöÁ¤µÈ ÀÚÇ¥ÀÇ VoxelState ¹İÈ¯
+    /// ì§€ì •ëœ ìí‘œì˜ VoxelState ë°˜í™˜
     /// </summary>
     /// <param name="pos"></param>
     /// <returns></returns>
     public VoxelState GetVoxelState(Vector3 pos)
 	{
-        //pos°¡ ¼ÓÇÑ Ã»Å© ÁÂÇ¥ ºÒ·¯¿È
+        //posê°€ ì†í•œ ì²­í¬ ì¢Œí‘œ ë¶ˆëŸ¬ì˜´
         ChunkCoord thisChunk = new ChunkCoord(pos);
 
-        //ÁÂÇ¥ À¯È¿ÇÏÁö ¾ÊÀ¸¸é null ¹İÈ¯
+        //ì¢Œí‘œ ìœ íš¨í•˜ì§€ ì•Šìœ¼ë©´ null ë°˜í™˜
         if (!IsVoxelInWorld(pos))
             return null;
 
-        //ÁöÁ¤µÈ ÁÂÇ¥¿¡ Ã»Å©°¡ »ı¼ºµÇ¾ú°í, Ã»Å©ÀÇ ¸ÊÀÌ ÃÊ±âÈ­ µÇ¾ú´Ù¸é
+        //ì§€ì •ëœ ì¢Œí‘œì— ì²­í¬ê°€ ìƒì„±ë˜ì—ˆê³ , ì²­í¬ì˜ ë§µì´ ì´ˆê¸°í™” ë˜ì—ˆë‹¤ë©´
         if (chunks[thisChunk.x, thisChunk.z] != null && chunks[thisChunk.x, thisChunk.z].IsEditable)
         {
-            //ÁöÁ¤µÈ ÁÂÇ¥¿¡ ÀÖ´Â VoxelState ¹İÈ¯
+            //ì§€ì •ëœ ì¢Œí‘œì— ìˆëŠ” VoxelState ë°˜í™˜
             return chunks[thisChunk.x, thisChunk.z].GetVoxelFromGlobalVector3(pos);
         }
 
-        //¸¸¾à¿¡ À§¿¡ Á¶°Ç¿¡ ¸ğµÎ ÇØ´çÀÌ ¾øÀ¸¸é GetVoxelÀ» È£ÃâÇØ¼­ »ı¼ºÇÑ µÚ ¹İÈ¯
+        //ë§Œì•½ì— ìœ„ì— ì¡°ê±´ì— ëª¨ë‘ í•´ë‹¹ì´ ì—†ìœ¼ë©´ GetVoxelì„ í˜¸ì¶œí•´ì„œ ìƒì„±í•œ ë’¤ ë°˜í™˜
         return new VoxelState(GetVoxel(pos));
     }
 
-    //ÀÌ ÄÚµå´Â ¿ùµå¸¦ ¸¸µé°Å³ª µ¿±¼À» ¸¸µé°Å³ª ÇÏ´Â µîÀÇ ¾Ë°í¸®Áò¿¡ »ç¿ëµÉ °Í
-    //¹ÙÀÌ¿È µîÀÇ µ¿ÀÛµµ ÀÌ°÷¿¡¼­ ¹ß»ıÇÔ
+    //ì´ ì½”ë“œëŠ” ì›”ë“œë¥¼ ë§Œë“¤ê±°ë‚˜ ë™êµ´ì„ ë§Œë“¤ê±°ë‚˜ í•˜ëŠ” ë“±ì˜ ì•Œê³ ë¦¬ì¦˜ì— ì‚¬ìš©ë  ê²ƒ
+    //ë°”ì´ì˜´ ë“±ì˜ ë™ì‘ë„ ì´ê³³ì—ì„œ ë°œìƒí•¨
     /// <summary>
-    /// ÁÂÇ¥¸¦ ¹Ş¾Æ¼­ ÇØ´ç ÁÂÇ¥ÀÇ ºí·° ID¸¦ ¹İÈ¯
-    /// ¸Ê »ı¼º ¾Ë°í¸®ÁòÀÌ Æ÷ÇÔµÊ
+    /// ì¢Œí‘œë¥¼ ë°›ì•„ì„œ í•´ë‹¹ ì¢Œí‘œì˜ ë¸”ëŸ­ IDë¥¼ ë°˜í™˜
+    /// ë§µ ìƒì„± ì•Œê³ ë¦¬ì¦˜ì´ í¬í•¨ë¨
     /// </summary>
     /// <param name="pos"></param>
     /// <returns></returns>
     public byte GetVoxel(Vector3 pos)
 	{
-        //yÁÂÇ¥ Á¤¼öÈ­
+        //yì¢Œí‘œ ì •ìˆ˜í™”
         int tempY = Mathf.FloorToInt(pos.y);
 
-        //º¹¼¿ÀÌ ¿ùµå ³»ºÎ¿¡ ÀÖÁö ¾Ê´Ù¸é Air(=0)¹İÈ¯
+        //ë³µì…€ì´ ì›”ë“œ ë‚´ë¶€ì— ìˆì§€ ì•Šë‹¤ë©´ Air(=0)ë°˜í™˜
         if (!IsVoxelInWorld(pos))
             return 0;
-        //¸Ê ÇÏºÎ º£µå¶ôÀ¸·Î
+        //ë§µ í•˜ë¶€ ë² ë“œë½ìœ¼ë¡œ
         if (pos.y < 1)
         {
             return 1;
         }
 
         
-        //0 ~ 1ÀÇ °ªÀÎ ÆŞ¸°³ëÀÌÁî¿¡ ³ôÀÌ¸¦ °öÇØ¼­ ¹üÀ§¸¦ Á¶Á¤
+        //0 ~ 1ì˜ ê°’ì¸ í„ë¦°ë…¸ì´ì¦ˆì— ë†’ì´ë¥¼ ê³±í•´ì„œ ë²”ìœ„ë¥¼ ì¡°ì •
         int terHeight = 
             Mathf.FloorToInt(biome.terHeight * Noise.GetPerlin2D(
                 new Vector2(pos.x, pos.z), 0, biome.terScale))
             + biome.solidHeight;
 
-        //¹Ù·Î ¸®ÅÏÇÏ¸é Á¦´ë·Î ¹èÄ¡µÇÁö ¾ÊÀ½
+        //ë°”ë¡œ ë¦¬í„´í•˜ë©´ ì œëŒ€ë¡œ ë°°ì¹˜ë˜ì§€ ì•ŠìŒ
         byte vValue = 0;
 
 
-        //±âº»ÀûÀÎ ¸ÊÀÇ Æ²
-        //³ôÀÌ¿¡ µû¶ó ºí·°µé ¹èÄ¡
+        //ê¸°ë³¸ì ì¸ ë§µì˜ í‹€
+        //ë†’ì´ì— ë”°ë¼ ë¸”ëŸ­ë“¤ ë°°ì¹˜
         if (tempY == terHeight)
             vValue = 3;
         else if (tempY < terHeight && tempY > terHeight - 4)
@@ -403,43 +392,43 @@ public class World : MonoBehaviour
         else
             vValue = 2;
 
-        //Lode ¹İ¿µ ºÎºĞ, ³»ºÎ ºí·Ïµé ¼³Á¤
-        //µ¹ÀÌ¶ó¸é(== Ç¥¸éÀÇ ÈëÀÌ³ª ¹èµå¶ôÀÌ ¾Æ´Ï¶ó¸é
+        //Lode ë°˜ì˜ ë¶€ë¶„, ë‚´ë¶€ ë¸”ë¡ë“¤ ì„¤ì •
+        //ëŒì´ë¼ë©´(== í‘œë©´ì˜ í™ì´ë‚˜ ë°°ë“œë½ì´ ì•„ë‹ˆë¼ë©´
         if(vValue == 2)
 		{
-            //Lode¿¡ ´ëÇØ¼­ ¹İº¹, ºí·°ÀÇ »ı¼º¹üÀ§¿Í ÀÓ°èÄ¡, ½ºÄÉÀÏ Ã¼Å© ÇØ¼­ vValue°ªÀ» º¯Çü
+            //Lodeì— ëŒ€í•´ì„œ ë°˜ë³µ, ë¸”ëŸ­ì˜ ìƒì„±ë²”ìœ„ì™€ ì„ê³„ì¹˜, ìŠ¤ì¼€ì¼ ì²´í¬ í•´ì„œ vValueê°’ì„ ë³€í˜•
             foreach(Lode lode in biome.lodes)
 			{
-                //¹üÀ§ ³»¿¡ ÀÖ´Ù¸é
+                //ë²”ìœ„ ë‚´ì— ìˆë‹¤ë©´
                 if(tempY > lode.minHeight && tempY < lode.maxHeight)
 				{
-                    //³ëÀÌÁî¸¦ Ã¼Å©ÇØ¼­ true°¡ ¹İÈ¯µÇ¸é
+                    //ë…¸ì´ì¦ˆë¥¼ ì²´í¬í•´ì„œ trueê°€ ë°˜í™˜ë˜ë©´
                     if(Noise.GetPerlin3D(pos, lode.Offset, lode.scale, lode.threshold))
 					{
-                        //vValue¸¦ º¯Çü
+                        //vValueë¥¼ ë³€í˜•
                         vValue = lode.blockID;
 					}
 				}
 			}
 		}
 
-        //³ª¹« ¹İ¿µ ºÎºĞ
-        //Áö¸é¿¡¸¸ »ı¼ºÇÏ±â À§ÇÑ Á¶°Ç¹®
+        //ë‚˜ë¬´ ë°˜ì˜ ë¶€ë¶„
+        //ì§€ë©´ì—ë§Œ ìƒì„±í•˜ê¸° ìœ„í•œ ì¡°ê±´ë¬¸
         if(tempY == terHeight)
 		{
-            //³ª¹«°¡ »ı¼ºµÇ´Â ¹üÀ§¸¦ ¼³Á¤
+            //ë‚˜ë¬´ê°€ ìƒì„±ë˜ëŠ” ë²”ìœ„ë¥¼ ì„¤ì •
             if(Noise.GetPerlin2D(new Vector2(pos.x, pos.z), 0, biome.ForestScale) > biome.ForestThreshold)
 			{
                 //vValue = 1;
-                //½ÇÁ¦ ³ª¹«°¡ »ı¼ºµÇ´Â À§Ä¡
-                //ÀÌ¹Ì ½£À¸·Î ¼³Á¤µÈ »óÅÂ¿¡¼­ ´Ù½Ã Noise¸¦ ¹Ş¾Æ¼­ vValue¸¦ ¹Ù²Ù¾úÀ¸¹Ç·Î
-                //½£ÀÇ ¹üÀ§ ¾È¿¡ ´Ù½Ã ºĞ»êµµ¿Í ÀÓ°èÄ¡¿¡ µû¶ó ¹èÄ¡µÊ
+                //ì‹¤ì œ ë‚˜ë¬´ê°€ ìƒì„±ë˜ëŠ” ìœ„ì¹˜
+                //ì´ë¯¸ ìˆ²ìœ¼ë¡œ ì„¤ì •ëœ ìƒíƒœì—ì„œ ë‹¤ì‹œ Noiseë¥¼ ë°›ì•„ì„œ vValueë¥¼ ë°”ê¾¸ì—ˆìœ¼ë¯€ë¡œ
+                //ìˆ²ì˜ ë²”ìœ„ ì•ˆì— ë‹¤ì‹œ ë¶„ì‚°ë„ì™€ ì„ê³„ì¹˜ì— ë”°ë¼ ë°°ì¹˜ë¨
                 if (Noise.GetPerlin2D(new Vector2(pos.x, pos.z), 0, biome.TreeScale) > biome.TreeThreshold)
 				{
 
-                    //³ª¹« ÇüÅÂ°¡ µé¾îÀÖ´Â Queue<VoxelMod>¸¦ ¹Ş¾Æ¼­ modifications¿¡ EnqueueÇÑ´Ù.
-                    //¸¸¿¡ ÇÏ³ª¸¦ À§ÇØ lockÀ» °Ç´Ù.
-                    lock (lockObject)
+                    //ë‚˜ë¬´ í˜•íƒœê°€ ë“¤ì–´ìˆëŠ” Queue<VoxelMod>ë¥¼ ë°›ì•„ì„œ modificationsì— Enqueueí•œë‹¤.
+                    //ë§Œì— í•˜ë‚˜ë¥¼ ìœ„í•´ lockì„ ê±´ë‹¤.
+                    //lock (lockObject)
                     {
                         modifications.Enqueue(Structure.CreateTree(pos, biome.Min_TreeHeight, biome.Max_TreeHeight));
                     }
@@ -449,20 +438,23 @@ public class World : MonoBehaviour
 		}
 
 
-        //±×¸®°í ¸®ÅÏ
+        //ê·¸ë¦¬ê³  ë¦¬í„´
         return vValue;
     }
 
-    //°ÔÀÓÀÌ Ã³À½ ½ÇÇàµÇ¾úÀ» ¶§ ÇÑ¹ø ½ÇÇàµÇ´Â ¸Ş¼Òµå
-    //¾÷µ¥ÀÌÆ®´Â ³ªÁß¿¡ Ãß°¡
+    //ê²Œì„ì´ ì²˜ìŒ ì‹¤í–‰ë˜ì—ˆì„ ë•Œ í•œë²ˆ ì‹¤í–‰ë˜ëŠ” ë©”ì†Œë“œ
+    //ì—…ë°ì´íŠ¸ëŠ” ë‚˜ì¤‘ì— ì¶”ê°€
     /// <summary>
-    /// World ÃÊ±â Ã»Å© »ı¼º
+    /// World ì´ˆê¸° ì²­í¬ ìƒì„±
     /// </summary>
     void GenerateWorld()
 	{
-        //°¢ Ã»Å© ÁÂÇ¥ÀÇ ÃÖ´ë ÃÖ¼Ò, Ã³À½ ½ºÆù ÁöÁ¡ÀÇ ½Ã¾ß ¹üÀ§ ¾ÈÂÊ¸¸ ·Îµå
+        //ê° ì²­í¬ ì¢Œí‘œì˜ ìµœëŒ€ ìµœì†Œ, ì²˜ìŒ ìŠ¤í° ì§€ì ì˜ ì‹œì•¼ ë²”ìœ„ ì•ˆìª½ë§Œ ë¡œë“œ
         player.position = spawnPosition;
-        
+
+        //ì²­í¬ ì¢Œí‘œ ìºì‹±
+        ChunkCoord coord;
+
         for (int x = (VoxelData.WorldSizeInChunks / 2) - VoxelData.ViewDistanceInChunks; 
             x < (VoxelData.WorldSizeInChunks / 2) + VoxelData.ViewDistanceInChunks; x++)
 		{
@@ -470,173 +462,202 @@ public class World : MonoBehaviour
             for (int z = (VoxelData.WorldSizeInChunks / 2) - VoxelData.ViewDistanceInChunks;
                 z < (VoxelData.WorldSizeInChunks / 2) + VoxelData.ViewDistanceInChunks; z++)
 			{
-                //Ã³À½¿¡´Â »ı¼ºµÇÀÚ¸¶ÀÚ ÃÊ±âÈ­ µÇ¾î¾ß ÇÔ
-                chunks[x, z] = new Chunk(new ChunkCoord(x, z), this, true);
-                activeChunks.Add(new ChunkCoord(x, z));
+                //ìºì‹±í•œ ì²­í¬ ì¢Œí‘œ ë³€í˜•
+                coord = new ChunkCoord(x, z);
+                chunks[x, z] = new Chunk(coord, this);
+
+                //ë§Œë“¤ ëª©ë¡ì— ì¶”ê°€
+                chunksToCreate.Add(coord);
 			}
 		}
 
-        #region ±¸Á¶¹° ¼¼ÆÃºÎ (»èÁ¦µÊ)
-        /*
-        //±¸Á¶¹°À» ¼¼ÆÃÇÏ´Â ºÎºĞ
-        VoxelMod v;
-        while(modifications.Count > 0)
-		{
-            v = modifications.Dequeue();
+        //ì‹œì•¼ ë‚´ë¥¼ í™œì„±í™” í•˜ê¸° ìœ„í•´ì„œ
+        CheckViewDistance();
 
-            //VoxelModÀÇ À§Ä¡°¡ ¼ÓÇÑ Ã»Å©ÀÇ ÁÂÇ¥ ¹Ş¾Æ¿È
-            ChunkCoord c = GetChunkCoordFromVector3(v.pos);
-
-            //¾Æ·¡ ÄÚµå´Â »ı¼ºÇÒ ±¸Á¶¹°ÀÌ Ã»Å©¿¡ °ÉÃÄÀÖÀ» °æ¿ì
-            //Àß¸®´Â °ÍÀ» ¹æÁöÇÏ±â À§ÇÔÀÌ´Ù.
-            //Áï, ±¸Á¶¹°ÀÌ Ã»Å©¿¡ °ÉÄ¡¸é °ÉÄ£ Ã»Å©¸¦ »ı¼ºÇÑ´Ù.
-            //Áßº¹Ã¼Å©´Â CheckViewDistance¿¡¼­ ÇÑ´Ù.
-            //¸¸¾à ±× À§Ä¡°¡ ¾ÆÁ÷ »ı¼ºµÇÁö ¾ÊÀº Ã»Å©¶ó¸é
-            if(chunks[c.x, c.z] == null)
-			{
-                //»ı¼ºÇÏ°í ¾×Æ¼ºê¿¡ Ãß°¡
-                chunks[c.x, c.z] = new Chunk(c, this, true);
-                activeChunks.Add(c);
-			}
-
-            //World.cs¿¡ ÀÖ´ø modificationsµéÀ» 
-            //À§Ä¡¿¡ ¸Â´Â Ã»Å©µéÀÇ modifications¿¡ ³Ö¾îÁØ´Ù.
-            chunks[c.x, c.z].modifications.Enqueue(v);
-
-            //¸¸¾à ¾÷µ¥ÀÌÆ®ÇÒ Ã»Å© ¸ñ·Ï¿¡ ÇöÀç ¹Ş¾Æ¿Â Ã»Å©°¡ ¾ø´Ù¸é
-            if(!chunksToRefresh.Contains(chunks[c.x, c.z]))
-			{
-                //Ãß°¡ÇÑ´Ù.
-                chunksToRefresh.Add(chunks[c.x, c.z]);
-			}
-		}
-        //°»½ÅÇÒ Ã»Å© ¸ñ·ÏµéÀÇ Ã»Å©¸¦ ÀüºÎ °»½ÅÇÑ´Ù.
-        while(chunksToRefresh.Count > 0)
-		{
-            chunksToRefresh[0].RefreshChunkMeshData();
-            chunksToRefresh.RemoveAt(0);
-		}
-        */
-        #endregion
+        
+    
     }
 
 	/// <summary>
-	/// ¸¸µéÃ»Å© Å¥¿¡¼­ ÇÏ³ª¾¿ ²¨³» ÃÊ±âÈ­ÇÏ´Â ¸Ş¼Òµå
-	/// Update¿¡¼­ È£ÃâµÊ
+	/// ë§Œë“¤ì²­í¬ íì—ì„œ í•˜ë‚˜ì”© êº¼ë‚´ ì´ˆê¸°í™”í•˜ëŠ” ë©”ì†Œë“œ
+	/// ê° ì²­í¬ì˜ Init()ì„ í˜¸ì¶œí•˜ëŠ” ìœ ì¼í•œ ë©”ì†Œë“œ
 	/// </summary>
 	void CreateChunk()
 	{
-        ChunkCoord c = chunksToCreateQue.Dequeue();
-        activeChunks.Add(c);
+        ChunkCoord c = chunksToCreate[0];
+        chunksToCreate.RemoveAt(0);
+        //activeChunks.Add(c);
         chunks[c.x, c.z].Init();
 	}
 
     /// <summary>
-    /// Ã»Å©¸¦ Ã¼Å©ÇØ¼­ ¾÷µ¥ÀÌÆ® ÇÑ´Ù.
-    /// Update¿¡¼­ È£ÃâµÊ
+    /// ì²­í¬ë¥¼ ì²´í¬í•´ì„œ ì—…ë°ì´íŠ¸ í•œë‹¤. chunksToRefresh ë¦¬ìŠ¤íŠ¸ ì²˜ë¦¬ (í•œë²ˆ ì‹¤í–‰ì— í•˜ë‚˜ì”©)
+    /// RefreshChunks_ThreadTaskì—ì„œ í˜¸ì¶œë¨
     /// </summary>
     void RefreshChunk()
 	{
-        //while·çÇÁ¸¦ Á¦¾îÇÏ±â À§ÇØ
+        //whileë£¨í”„ë¥¼ ì œì–´í•˜ê¸° ìœ„í•´
         bool refreshed = false;
         int index = 0;
 
-        while(!refreshed && index < chunksToRefresh.Count - 1)
-		{
-            //¸¸¾à ¾÷µ¥ÀÌÆ®ÇÒ Ã»Å© ¸ñ·ÏÀÇ Ã»Å©°¡ ¸ÊÀÌ ¼¼ÆÃ µÇ¾ú´Ù¸é
-            //Áï, GetVoxelÀ» È£ÃâÇØ¼­ World.cs¿¡ ±¸Á¶¹°À» Ãß°¡Çß´Ù¸é
-            if(chunksToRefresh[index].IsEditable)
-			{
-                //Ã»Å© ¾÷µ¥ÀÌÆ® ÈÄ Á¦°Å
-                chunksToRefresh[index].RefreshChunkMeshData();
-                chunksToRefresh.RemoveAt(index);
+        //activeChunksì— ì¶”ê°€í•  ì¢Œí‘œë¥¼ ì €ì¥í•œë‹¤.
+        ChunkCoord chunkToAddActiveChunks = null;
 
-                //¹İº¹¹® Å»Ãâ
-                refreshed = true;
-			}
-            //Ã»Å©°¡ ¸ÊÀÌ ¼¼ÆÃ µÇÁö ¾Ê¾Ò´Ù¸é
-            else
+        //chunksToRefreshê°€ ë°˜ë³µ ë„ì¤‘ ìˆ˜ì •ë˜ëŠ” ê²ƒì„ ë§‰ê¸° ìœ„í•¨
+        lock (chunksToRefresh)
+        {
+            while (!refreshed && index < chunksToRefresh.Count - 1)
+            {
+                //ë§Œì•½ ì—…ë°ì´íŠ¸í•  ì²­í¬ ëª©ë¡ì˜ ì²­í¬ê°€ ë§µì´ ì„¸íŒ… ë˜ì—ˆë‹¤ë©´
+                //ì¦‰, GetVoxelì„ í˜¸ì¶œí•´ì„œ World.csì— êµ¬ì¡°ë¬¼ì„ ì¶”ê°€í–ˆë‹¤ë©´
+                if (chunksToRefresh[index].IsEditable)
+                {
+                    //ì²­í¬ ì—…ë°ì´íŠ¸
+                    chunksToRefresh[index]._RefreshChunkMeshData(null);
+
+
+                    //activeChunksì— ì¶”ê°€í•  ì¢Œí‘œ ì €ì¥
+                    chunkToAddActiveChunks = chunksToRefresh[index].coord;
+
+                    chunksToRefresh.RemoveAt(index);
+                    
+                    //ë°˜ë³µë¬¸ íƒˆì¶œ
+                    refreshed = true;
+                }
+                //ì²­í¬ê°€ ë§µì´ ì„¸íŒ… ë˜ì§€ ì•Šì•˜ë‹¤ë©´
+                else
+                {
+                    //ì¸ë±ìŠ¤ ì¦ê°€í•˜ê³  ë‹¤ì‹œ í™•ì¸
+                    index++;
+                }
+            }
+        }
+
+        //chunksToRefreshì˜ lock ë¸”ëŸ­ì„ ìµœì†Œí™” í•˜ê¸° ìœ„í•´ ë°”ê¹¥ìœ¼ë¡œ ë¹¼ë‚¸ ë¶€ë¶„
+        //activeChunksì˜ null ì²´í¬ë¥¼ í•œ ë’¤ activeChunksì— ì¤‘ë³µ ì—†ì´ ì¶”ê°€í•œë‹¤.
+        //ì¤‘ë³µë˜ì–´ ë“¤ì–´ê°€ë©´ í™œì„±í™”/ë¹„í™œì„±í™”ê°€ ì›í™œí•˜ì§€ ì•Šë‹¤.
+        if(chunkToAddActiveChunks != null && activeChunks != null)
+		{
+            lock(activeChunks)
 			{
-                //ÀÎµ¦½º Áõ°¡ÇÏ°í ´Ù½Ã È®ÀÎ
-                index++;
-			}
+                if (!activeChunks.Contains(chunkToAddActiveChunks))
+                    activeChunks.Add(chunkToAddActiveChunks);
+            }
 		}
+
 	}
 
     /// <summary>
-    /// modifications¸¦ Æ÷ÇÔÇÑ Ã»Å© ÃÊ±âÈ­ ÄÚ·çÆ¾
+    /// modificationsë¥¼ í¬í•¨í•œ ì²­í¬ ì´ˆê¸°í™”
     /// </summary>
     /// <returns></returns>
     void ApplyModifications()
 	{
-        //½ÇÇàÁß
+        //ì‹¤í–‰ì¤‘
         IsApplyingAll = true;
-
-        
 
         VoxelMod v;
         Queue<VoxelMod> que;
         while(modifications.Count > 0)
 		{
-            //Queue<Queue<VoxelMod>>¿¡¼­ Queue<VoxelMod> ÇÏ³ª¸¦ °¡Á®¿Â´Ù.
-            que = modifications.Dequeue();
+            //Queue<Queue<VoxelMod>>ì—ì„œ Queue<VoxelMod> í•˜ë‚˜ë¥¼ ê°€ì ¸ì˜¨ë‹¤.
+            //ë§Œì•½ ConcurrentQueueì—ì„œ ê°€ì ¸ì˜¤ëŠ” ê²ƒì„ ì‹¤íŒ¨í–ˆë‹¤ë©´, ì´ë²ˆ ê°±ì‹ ì„ ë„˜ê¸´ë‹¤.
+            if (!modifications.TryDequeue(out que))
+                break;
 
-            //que¿¡ ´ëÇØ ¹İº¹ÇÏ¸ç ½ÇÁ¦ ºí·°µé ¹İ¿µ
+            //queì— ëŒ€í•´ ë°˜ë³µí•˜ë©° ì‹¤ì œ ë¸”ëŸ­ë“¤ ë°˜ì˜
             while (que.Count > 0)
             {
-                //VoxelMod¸¦ ¹Ş¾Æ¿È
+                //VoxelModë¥¼ ë°›ì•„ì˜´
                 v = que.Dequeue();
 
-                //VoxelModÀÇ À§Ä¡°¡ ¼ÓÇÑ Ã»Å©ÀÇ ÁÂÇ¥ ¹Ş¾Æ¿È
+                //VoxelModì˜ ìœ„ì¹˜ê°€ ì†í•œ ì²­í¬ì˜ ì¢Œí‘œ ë°›ì•„ì˜´
                 ChunkCoord c = GetChunkCoordFromVector3(v.pos);
 
-                //¾Æ·¡ ÄÚµå´Â »ı¼ºÇÒ ±¸Á¶¹°ÀÌ Ã»Å©¿¡ °ÉÃÄÀÖÀ» °æ¿ì
-                //Àß¸®´Â °ÍÀ» ¹æÁöÇÏ±â À§ÇÔÀÌ´Ù.
-                //Áï, ±¸Á¶¹°ÀÌ Ã»Å©¿¡ °ÉÄ¡¸é °ÉÄ£ Ã»Å©¸¦ »ı¼ºÇÑ´Ù.
-                //Áßº¹Ã¼Å©´Â CheckViewDistance¿¡¼­ ÇÑ´Ù.
-                //¸¸¾à ±× À§Ä¡°¡ ¾ÆÁ÷ »ı¼ºµÇÁö ¾ÊÀº Ã»Å©¶ó¸é
+                //ì•„ë˜ ì½”ë“œëŠ” ìƒì„±í•  êµ¬ì¡°ë¬¼ì´ ì²­í¬ì— ê±¸ì³ìˆì„ ê²½ìš°
+                //ì˜ë¦¬ëŠ” ê²ƒì„ ë°©ì§€í•˜ê¸° ìœ„í•¨ì´ë‹¤.
+                //ì¦‰, êµ¬ì¡°ë¬¼ì´ ì²­í¬ì— ê±¸ì¹˜ë©´ ê±¸ì¹œ ì²­í¬ë¥¼ ìƒì„±í•œë‹¤.
+                //ì¤‘ë³µì²´í¬ëŠ” CheckViewDistanceì—ì„œ í•œë‹¤.
+                //ë§Œì•½ ê·¸ ìœ„ì¹˜ê°€ ì•„ì§ ìƒì„±ë˜ì§€ ì•Šì€ ì²­í¬ë¼ë©´
                 if (chunks[c.x, c.z] == null)
                 {
-                    //»ı¼ºÇÏ°í ¾×Æ¼ºê¿¡ Ãß°¡
-                    chunks[c.x, c.z] = new Chunk(c, this, true);
-                    activeChunks.Add(c);
+                    //ìƒì„±í•˜ê³  ë§Œë“¤ ëª©ë¡ì— ì¶”ê°€
+                    chunks[c.x, c.z] = new Chunk(c, this);
+                    chunksToCreate.Add(c);
                 }
 
-                //World.cs¿¡ ÀÖ´ø modificationsµéÀ» 
-                //À§Ä¡¿¡ ¸Â´Â Ã»Å©µéÀÇ modifications¿¡ ³Ö¾îÁØ´Ù.
+                //World.csì— ìˆë˜ modificationsë“¤ì„ 
+                //ìœ„ì¹˜ì— ë§ëŠ” ì²­í¬ë“¤ì˜ modificationsì— ë„£ì–´ì¤€ë‹¤.
                 chunks[c.x, c.z].modifications.Enqueue(v);
 
-                //¸¸¾à ¾÷µ¥ÀÌÆ®ÇÒ Ã»Å© ¸ñ·Ï¿¡ ÇöÀç ¹Ş¾Æ¿Â Ã»Å©°¡ ¾ø´Ù¸é
-                if (!chunksToRefresh.Contains(chunks[c.x, c.z]))
-                {
-                    //Ãß°¡ÇÑ´Ù.
-                    chunksToRefresh.Add(chunks[c.x, c.z]);
+                //ì´ë¯¸ Init()ì—ì„œ ì¶”ê°€í•¨
+                /*
+                lock(chunksToRefresh)
+				{
+                    //ë§Œì•½ ì—…ë°ì´íŠ¸í•  ì²­í¬ ëª©ë¡ì— í˜„ì¬ ë°›ì•„ì˜¨ ì²­í¬ê°€ ì—†ë‹¤ë©´
+                    if (!chunksToRefresh.Contains(chunks[c.x, c.z]))
+                    {
+                        //ì¶”ê°€í•œë‹¤.
+                        chunksToRefresh.Add(chunks[c.x, c.z]);
+                    }
                 }
+                */
             }
         }
-        //ÄÚ·çÆ¾ Á¾·áµÊ
+        //ì¢…ë£Œë¨
         IsApplyingAll = false;
     }
 
-	#region Ã»Å© »ı¼º ÄÚ·çÆ¾ (»èÁ¦µÊ)
+    /// <summary>
+    /// ì²­í¬ë“¤ì˜ êµ¬ì¡°ë¬¼ê³¼ ë©”ì‰¬ë°ì´í„°ë¥¼ ì—…ë°ì´íŠ¸ í•¨
+    /// ìŠ¤ë ˆë“œì—ì„œ ì‹¤í–‰
+    /// </summary>
+    void RefreshChunks_ThreadTask()
+	{
+        while(RefreshChunksThreadRunning)
+		{
+            //êµ¬ì¡°ë¬¼ ìƒì„±ë¶€
+            //ì´ë¯¸ ìƒì„± ì¤‘ì´ ì•„ë‹ˆë¼ë©´
+            if (!IsApplyingAll)
+            {
+                ApplyModifications();
+            }
+
+            //ì²­í¬ ê°±ì‹ 
+            //ì—­ì‹œ í•œí”„ë ˆì„ì— í•˜ë‚˜ì”©ë§Œ
+            if (chunksToRefresh.Count > 0)
+                RefreshChunk();
+
+            
+        }
+	}
+
+	private void OnDisable()
+	{
+        //ë¹„í™œì„±í™” ë˜ë©´, ì²­í¬ ê°±ì‹  ìŠ¤ë ˆë“œ ì¤‘ì§€
+        RefreshChunksThreadRunning = false;
+
+    }
+
+	#region ì²­í¬ ìƒì„± ì½”ë£¨í‹´ (ì‚­ì œë¨)
 	/*
     /// <summary>
-    /// Ã»Å©¸¦ »ı¼ºÇÏ´Â ÄÚ·çÆ¾
+    /// ì²­í¬ë¥¼ ìƒì„±í•˜ëŠ” ì½”ë£¨í‹´
     /// </summary>
     /// <returns></returns>
     IEnumerator CreateChunks()
 	{
-        //Ã»Å© »ı¼ºÁßÀÓÀ» ÀÇ¹ÌÇÏ´Â ÇÃ·¡±×
+        //ì²­í¬ ìƒì„±ì¤‘ì„ì„ ì˜ë¯¸í•˜ëŠ” í”Œë˜ê·¸
         IsCreateChunks = true;
 
-        //¸¸µé Ã»Å©µéÀÌ ³²¾Æ ÀÖÀ¸¸é °è¼Ó ¹İº¹
+        //ë§Œë“¤ ì²­í¬ë“¤ì´ ë‚¨ì•„ ìˆìœ¼ë©´ ê³„ì† ë°˜ë³µ
         while(chunksToCreateQue.Count > 0)
 		{
             
-            //¸¸µé Ã»Å© Å¥¿¡¼­ Ã»Å©¸¦ ÃÊ±âÈ­ ½ÃÅ°°í Å¥¿¡¼­ »èÁ¦
+            //ë§Œë“¤ ì²­í¬ íì—ì„œ ì²­í¬ë¥¼ ì´ˆê¸°í™” ì‹œí‚¤ê³  íì—ì„œ ì‚­ì œ
             chunks[chunksToCreateQue.Peek().x, chunksToCreateQue.Peek().z].Init();
             chunksToCreateQue.Dequeue();
-            //ÇÑ ÇÁ·¹ÀÓ µ¿¾È ¾çº¸
+            //í•œ í”„ë ˆì„ ë™ì•ˆ ì–‘ë³´
             yield return null;
 		}
 
@@ -646,14 +667,14 @@ public class World : MonoBehaviour
 	#endregion
 
 	/// <summary>
-	/// ÁÂÇ¥¸¦ ¹Ş¾Æ¼­ ±×¿¡ ¸Â´Â Ã»Å© ÁÂÇ¥¸¦ ChunkCoord·Î ¹İÈ¯
+	/// ì¢Œí‘œë¥¼ ë°›ì•„ì„œ ê·¸ì— ë§ëŠ” ì²­í¬ ì¢Œí‘œë¥¼ ChunkCoordë¡œ ë°˜í™˜
 	/// </summary>
 	/// <param name="pos"></param>
 	/// <returns></returns>
 	ChunkCoord GetChunkCoordFromVector3(Vector3 pos)
 	{
 
-        //ÁÂÇ¥°ª Á¤¼ö·Î
+        //ì¢Œí‘œê°’ ì •ìˆ˜ë¡œ
         int x = Mathf.FloorToInt(pos.x / VoxelData.ChunkWidth);
         int z = Mathf.FloorToInt(pos.z / VoxelData.ChunkWidth);
         
@@ -661,13 +682,13 @@ public class World : MonoBehaviour
 
     }
     /// <summary>
-    /// ÁÂÇ¥¸¦ ¹Ş¾Æ¼­ ±× ÁÂÇ¥°¡ ¼ÓÇÑ Ã»Å© °´Ã¼¸¦ ¹İÈ¯
+    /// ì¢Œí‘œë¥¼ ë°›ì•„ì„œ ê·¸ ì¢Œí‘œê°€ ì†í•œ ì²­í¬ ê°ì²´ë¥¼ ë°˜í™˜
     /// </summary>
     /// <param name="pos"></param>
     /// <returns></returns>
     public Chunk GetChunkFromVector3(Vector3 pos)
 	{
-        //ÁÂÇ¥°ª Á¤¼ö·Î
+        //ì¢Œí‘œê°’ ì •ìˆ˜ë¡œ
         int x = Mathf.FloorToInt(pos.x / VoxelData.ChunkWidth);
         int z = Mathf.FloorToInt(pos.z / VoxelData.ChunkWidth);
         
@@ -675,46 +696,64 @@ public class World : MonoBehaviour
     }
 
     /// <summary>
-    /// ÇÃ·¹ÀÌ¾îÀÇ ÁÂÇ¥¸¦ ÂüÁ¶, ½Ã¾ß ¹üÀ§³»ÀÇ Ã»Å©¸¦ »ı¼º
+    /// í”Œë ˆì´ì–´ì˜ ì¢Œí‘œë¥¼ ì°¸ì¡°, ì‹œì•¼ ë²”ìœ„ë‚´ì˜ ì²­í¬ë¥¼ ìƒì„±
     /// </summary>
     void CheckViewDistance()
 	{
-        //ÇÃ·¹ÀÌ¾î À§Ä¡ÀÇ Ã»Å© ÁÂÇ¥¸¦ ±¸ÇÑ´Ù.
+        //í”Œë ˆì´ì–´ ìœ„ì¹˜ì˜ ì²­í¬ ì¢Œí‘œë¥¼ êµ¬í•œë‹¤.
         ChunkCoord coord = GetChunkCoordFromVector3(player.position);
-        //ºä µğ½ºÅÙ½º¸¦ °»½ÅÇÏ±â Àü È°¼ºÈ­ µÇ¾î ÀÖ´ø Ã»Å©µé ÀúÀå
-        List<ChunkCoord> prevActiveChunks = new List<ChunkCoord>(activeChunks);
-        //ÀúÀå ÈÄ activeChunks Å¬¸®¾î
-        activeChunks.Clear();
-        //ÇÃ·¹ÀÌ¾î ½Ã¾ß ¹üÀ§ ³»ÀÇ Ã»Å©µé·Î ¹İº¹
+
+
+        //ë·° ë””ìŠ¤í…ìŠ¤ë¥¼ ê°±ì‹ í•˜ê¸° ì „ í™œì„±í™” ë˜ì–´ ìˆë˜ ì²­í¬ë“¤ ì €ì¥
+        List<ChunkCoord> prevActiveChunks;
+
+        //activeChunksë¥¼ ë³µì‚¬í•˜ëŠ” ë™ì•ˆì€ ì ê¸ˆ
+        lock(activeChunks)
+		{
+            prevActiveChunks = new List<ChunkCoord>(activeChunks);
+            activeChunks = null;
+        }
+        
+        
+        //activeChunksì— ëŒ€ì…í•  ë¦¬ìŠ¤íŠ¸
+        //C++ë¡œ ì¹˜ë©´ í¬ì¸í„°
+        List<ChunkCoord> activeChunksTemp = new List<ChunkCoord>();
+
+        //ì €ì¥ í›„ activeChunks í´ë¦¬ì–´
+        //activeChunks.Clear();
+
+        //í”Œë ˆì´ì–´ ì‹œì•¼ ë²”ìœ„ ë‚´ì˜ ì²­í¬ë“¤ë¡œ ë°˜ë³µ
         for(int x = coord.x - VoxelData.ViewDistanceInChunks; 
             x < coord.x + VoxelData.ViewDistanceInChunks; x++)
 		{
             for (int z = coord.z - VoxelData.ViewDistanceInChunks;
             z < coord.z + VoxelData.ViewDistanceInChunks; z++)
             {
-                //ÀÓ½Ã Ä³½Ì
+                //ì„ì‹œ ìºì‹±
                 ChunkCoord temp = new ChunkCoord(x, z);
-                //½Ã¾ß ³»ÀÇ Ã»Å©°¡ À¯È¿ÇÏ´Ù¸é
+                //ì‹œì•¼ ë‚´ì˜ ì²­í¬ê°€ ìœ íš¨í•˜ë‹¤ë©´
                 if (IsChunkInWorld(temp))
 				{
-                    //¹üÀ§ ³»¿¡ ÀÖ´Âµ¥ ¸¸µé¾îÁöÁö ¾Ê¾Ò´Ù¸é
+                    //ë²”ìœ„ ë‚´ì— ìˆëŠ”ë° ë§Œë“¤ì–´ì§€ì§€ ì•Šì•˜ë‹¤ë©´
                     if (chunks[temp.x, temp.z] == null)
                     {
-                        //Ã»Å©¸¦ »ı¼º¸¸ ÇÏ°í(ÃÊ±âÈ­´Â ÇÏÁö ¾ÊÀº »óÅÂ)
-                        //¸¸µé Ã»Å© ¸ñ·Ï¿¡ ³Ö´Â´Ù.
-                        chunks[x, z] = new Chunk(new ChunkCoord(x, z), this, false);
-                        chunksToCreateQue.Enqueue(temp);
+                        //ì²­í¬ë¥¼ ìƒì„±ë§Œ í•˜ê³ (ì´ˆê¸°í™”ëŠ” í•˜ì§€ ì•Šì€ ìƒíƒœ)
+                        //ë§Œë“¤ ì²­í¬ ëª©ë¡ì— ë„£ëŠ”ë‹¤.
+                        chunks[x, z] = new Chunk(temp, this);
+                        chunksToCreate.Add(temp);
                     }
-                    //¹üÀ§ ³»¿¡ ÀÖ´Âµ¥ È°¼ºÈ­ µÇ¾î ÀÖÁö ¾Ê´Ù¸é
+                    //ë²”ìœ„ ë‚´ì— ìˆëŠ”ë° í™œì„±í™” ë˜ì–´ ìˆì§€ ì•Šë‹¤ë©´
                     else if (!chunks[temp.x, temp.z].IsActive)
                     {
-                        //È°¼ºÈ­ ½ÃÅ°°í È°¼ºÈ­µÈ ¸ñ·Ï¿¡ ¿Ã¸°´Ù.
+                        //í™œì„±í™” ì‹œí‚¤ê³  í™œì„±í™”ëœ ëª©ë¡ì— ì˜¬ë¦°ë‹¤.
                         chunks[temp.x, temp.z].IsActive = true;
                         
                     }
-                    activeChunks.Add(temp);
+                    //activeChunks.Add(temp);
+
+                    activeChunksTemp.Add(temp);
                 }
-                //ÀÌÀü È°¼º ¸ñ·Ï¿¡¼­ ÇöÀç ½Ã¾ß¿¡ ÀÖ´Â °ÍµéÀ» »«´Ù
+                //ì´ì „ í™œì„± ëª©ë¡ì—ì„œ í˜„ì¬ ì‹œì•¼ì— ìˆëŠ” ê²ƒë“¤ì„ ëº€ë‹¤
                 for(int i = 0; i < prevActiveChunks.Count; i++)
 				{
                     if(prevActiveChunks[i].Equals(temp))
@@ -727,20 +766,24 @@ public class World : MonoBehaviour
         }
         
 
-        //À§ÀÇ ¹İº¹ ÈÄ ³²Àº °ÍµéÀº Àü¿¡´Â ½Ã¾ß¿¡ ÀÖ¾úÁö¸¸ ÇöÀç¿£ ¾ø´Â °ÍµéÀÌ´Ù.
-        //µû¶ó¼­ ºñÈ°¼ºÈ­ ½ÃÅ²´Ù.
-        
+        //ìœ„ì˜ ë°˜ë³µ í›„ ë‚¨ì€ ê²ƒë“¤ì€ ì „ì—ëŠ” ì‹œì•¼ì— ìˆì—ˆì§€ë§Œ í˜„ì¬ì—” ì—†ëŠ” ê²ƒë“¤ì´ë‹¤.
+        //ë”°ë¼ì„œ ë¹„í™œì„±í™” ì‹œí‚¨ë‹¤.
         foreach (ChunkCoord c in prevActiveChunks)
 		{
         
             chunks[c.x, c.z].IsActive = false;
             
 		}
+
+
+        //activeChunksê°€ ì„ì‹œë¡œ ë§Œë“  ë¦¬ìŠ¤íŠ¸ì˜ ì£¼ì†Œë¥¼ ê°€ì§€ë„ë¡ í•œë‹¤.
+        //C++ë¡œ ì¹˜ë©´ ë™ì í• ë‹¹ ë°›ì€ ì£¼ì†Œë¥¼ ê·¸ëŒ€ë¡œ ëŒ€ì…í•˜ëŠ” ê²ƒ
+        activeChunks = activeChunksTemp;
         
 	}
 
     /// <summary>
-    /// ÁöÁ¤µÈ Ã»Å© ÁÂÇ¥¿¡ ÀÖ´Â Ã»Å©°¡ ¿ùµå ¹üÀ§ ³»¿¡ ÀÖ´ÂÁö ¿©ºÎ ¹İÈ¯
+    /// ì§€ì •ëœ ì²­í¬ ì¢Œí‘œì— ìˆëŠ” ì²­í¬ê°€ ì›”ë“œ ë²”ìœ„ ë‚´ì— ìˆëŠ”ì§€ ì—¬ë¶€ ë°˜í™˜
     /// </summary>
     /// <param name="coord"></param>
     /// <returns></returns>
@@ -754,7 +797,7 @@ public class World : MonoBehaviour
 	}
 
     /// <summary>
-    /// º¹¼¿ÀÌ ¿ùµå ³»ºÎ¿¡ ÀÖ´ÂÁö ¿©ºÎ ¹İÈ¯
+    /// ë³µì…€ì´ ì›”ë“œ ë‚´ë¶€ì— ìˆëŠ”ì§€ ì—¬ë¶€ ë°˜í™˜
     /// </summary>
     /// <param name="pos"></param>
     /// <returns></returns>

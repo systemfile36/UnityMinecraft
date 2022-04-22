@@ -129,22 +129,15 @@ public class Chunk
 
     //World를 인자로 받는다.(find는 비싼(expansive한 작업))
     /// <summary>
-    /// 청크의 생성자, 즉시 초기화할지 여부를 결정가능
+    /// 청크의 생성자
     /// </summary>
     /// <param name="_coord">생성될 청크의 좌표</param>
     /// <param name="_world">World에 대한 참조</param>
-    /// <param name="genOnLoad">생성되자마자 Init을 호출 할지 여부</param>
-    public Chunk (ChunkCoord _coord, World _world, bool genOnLoad)
+    public Chunk (ChunkCoord _coord, World _world)
 	{
         this.world = _world;
         this.coord = _coord;
-        IsActive = true;
-
-        if(genOnLoad)
-		{
-            Init();
-		}
-
+        //IsActive = true;
     }
 
     /// <summary>
@@ -185,7 +178,7 @@ public class Chunk
         //스레드 풀에 복셀 맵 세팅 메소드를 넣는다.
         ThreadPool.QueueUserWorkItem(PopulateVoxelMap);
 
-
+        //PopulateVoxelMap(null);
 
         //RefreshChunkMeshData();
 
@@ -210,8 +203,17 @@ public class Chunk
                 }
             }
         }
-        _RefreshChunkMeshData(null);
+        //_RefreshChunkMeshData(null);
+
         IsMapInit = true;
+
+        //세팅하고 갱신할 목록에 넣는다.
+        lock (world.chunksToRefresh)
+        {
+            world.chunksToRefresh.Add(this);
+        }
+
+        
     }
     /// <summary>
     /// 복셀이 청크 내부에 있는지 여부 반환
@@ -252,10 +254,17 @@ public class Chunk
         voxelMap[xP, yP, zP].id = id;
 
         //EditVoxel은, 특별히 병렬 처리 안해도 됨
-        _RefreshChunkMeshData(null);
+        //_RefreshChunkMeshData(null);
+
+        lock(world.chunksToRefresh)
+		{
+            //블럭 수정은 우선적으로 처리하기 위하여 맨 앞에 넣는다.
+            world.chunksToRefresh.Insert(0, this);
+            RefreshAdjacentChunk(xP, yP, zP);
+        }
 
         //인접한 청크 조건에 따라 갱신
-        RefreshAdjacentChunk(xP, yP, zP);
+        //RefreshAdjacentChunk(xP, yP, zP);
     }
     /// <summary>
     /// 수정한 블럭의 좌표를 인자로 받아 그 블럭과 인접한 청크 갱신
@@ -278,7 +287,10 @@ public class Chunk
 			{
                 //만약 내부에 없다면, 다른 청크에 있고, 수정된 블럭과 접해있다는 뜻
                 //따라서 그 청크를 갱신한다.
-                world.GetChunkFromVector3(temp + position).RefreshChunkMeshData();
+                //world.GetChunkFromVector3(temp + position).RefreshChunkMeshData();
+                
+                //lock은 이미 호출하는 EditVoxel에서 이미 걸려 있음
+                world.chunksToRefresh.Insert(0, world.GetChunkFromVector3(temp + position));
 			}
 		}
 	}
@@ -354,6 +366,7 @@ public class Chunk
         return voxelMap[xP, yP, zP];
 
     }
+    /*
     /// <summary>
     /// 외부에서 참조할 예정, 스레드 큐에 청크 메쉬 데이터 업데이트를 맡김
     /// </summary>
@@ -362,6 +375,7 @@ public class Chunk
         ThreadPool.QueueUserWorkItem(_RefreshChunkMeshData);
        
 	}
+    */
     /// <summary>
     /// 메쉬 데이터를 갱신한다.
     /// WaitCallback()형식에 맞추기 위해 object 받음
@@ -417,11 +431,13 @@ public class Chunk
         }
 
         //갱신을 완료한 뒤 그려낼 청크 목록에 추가한다.
-        //한번에 한 스레드만 이 코드에 접근할 수 있다.
-        lock(world.lockObject)
-		{
+
+        lock (world.chunksToDraw)
+        { 
             world.chunksToDraw.Enqueue(this);
         }
+       
+        
 
         //플래그 리셋
         IsLockedMeshThread = false;
@@ -437,7 +453,7 @@ public class Chunk
         vertexIndex = 0;
         vertices.Clear();
         triangles.Clear();
-        TransparentTriangles.Clear();
+        //TransparentTriangles.Clear();
         uvs.Clear();
 
         colors.Clear();
@@ -593,9 +609,8 @@ public class Chunk
 	{
         get
 		{
-            //만약 맵이 세팅되지 않았거나
-            //스레드에 의해 간섭중이라면
-            if(!IsMapInit || IsLockedMeshThread)
+            //만약 맵이 세팅되지 않았다면
+            if(!IsMapInit)
 			{
                 return false;
 			}
