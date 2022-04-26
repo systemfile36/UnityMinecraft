@@ -34,7 +34,7 @@ public class ToolbarControl : MonoBehaviour
 	/// <summary>
 	/// Toolbar의 UI_ItemSlot들과 연결된 ItemSlot들의 리스트
 	/// </summary>
-	public List<ItemSlot> toolbarItemSlots = new List<ItemSlot>();
+	public List<ItemSlot> toolbarItemSlots = new List<ItemSlot>(9);
 
 	void Awake()
 	{

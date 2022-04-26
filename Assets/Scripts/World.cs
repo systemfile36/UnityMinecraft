@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
+
 using UnityEngine;
 using System.Threading;
 #if ENABLE_INPUT_SYSTEM && STARTER_ASSETS_PACKAGES_CHECKED
@@ -134,7 +135,7 @@ public class World : MonoBehaviour
     ChunkCoord playerLastChunkCoord;
 
     //만들 청크들을 저장하는 리스트
-    List<ChunkCoord> chunksToCreate = new List<ChunkCoord>();
+    List<ChunkCoord> chunksToCreate = new List<ChunkCoord>(VoxelData.ViewDistanceInChunks * VoxelData.ViewDistanceInChunks);
     
     //코루틴이 이미 실행중인지 여부 판단을 위한 변수
     //private bool IsCreateChunks;
@@ -166,12 +167,12 @@ public class World : MonoBehaviour
     //그려낼 청크들 저장하는 큐
     //다른 스레드가 메쉬 데이터를 만들고 여기 넣으면
     //메인 스레드가 이것을 참고로 화면에 그려냄
-    public Queue<Chunk> chunksToDraw = new Queue<Chunk>();
+    public Queue<Chunk> chunksToDraw = new Queue<Chunk>(10);
 
     /// <summary>
-    /// 잠금을 위한 오브젝트
+    /// activeChunks가 수정 가능한지 여부 확인
     /// </summary>
-    //public Object lockObject = new Object();
+    bool IsActiveChunksEditable = true;
 
     /// <summary>
     /// 현재 게임 모드를 나타내는 정적 변수
@@ -190,6 +191,7 @@ public class World : MonoBehaviour
 
         //청크들 갱신 스레드 시작
         RefreshChunksThread = new Thread(RefreshChunks_ThreadTask);
+        RefreshChunksThread.Name = "RefreshCHunksThread";
         RefreshChunksThread.Start();
 
         //월드 중앙에 스폰
@@ -206,8 +208,14 @@ public class World : MonoBehaviour
         
 	}
 
-	void Update()
+    long maxTicks = 0;
+    long currentTicks = 0;
+    long beforeTicks = 0;
+    long afterTicks = 0;
+
+    void Update()
 	{
+        
         //플레이어 현재 청크 갱신
         playerChunkCoord = GetChunkCoordFromVector3(player.position);
 
@@ -227,19 +235,22 @@ public class World : MonoBehaviour
         {
             //lock (activeChunks)
             {
-                CheckViewDistance();
+  
+                CheckViewDistance();  //2022-04-25 기준 최대 40ms 지연
+
             }
 
             //다시 갱신
             playerLastChunkCoord = GetChunkCoordFromVector3(player.position);
         }
-
+        
         //청크 초기화(Init)
-        //한프레임에 하나씩만
+        //한프레임에 하나씩만 (2022-04-25 기준 최대 3ms 지연)
         if (chunksToCreate.Count > 0)
             CreateChunk();
 
 
+        
         //만약 그려낼 청크가 있다면
         //한프레임에 하나씩만
         if (chunksToDraw.Count > 0)
@@ -250,13 +261,24 @@ public class World : MonoBehaviour
                 //스레드에 의해 수정중이 아니라면
                 if (chunksToDraw.Peek().IsEditable)
                 {
-                    chunksToDraw.Dequeue().ApplyChunkMesh();
+                    
+                    chunksToDraw.Dequeue().ApplyChunkMesh(); //2022-04-25 기준 최대 11ms 지연
+                    
                 }
             }
 		}
-
-        Debug.Log(modifications.Count);
         
+        //PrintTimeElapsed(beforeTicks, afterTicks);
+    }
+
+    void PrintTimeElapsed(long beforeTicks, long afterTicks)
+	{
+        currentTicks = afterTicks - beforeTicks;
+        if (currentTicks > maxTicks)
+        {
+            maxTicks = currentTicks;
+        }
+        Debug.Log($"currentTicks : {currentTicks} ticks, {currentTicks / 10000} ms\nmaxTicks : {maxTicks} ticks, {maxTicks / 10000} ms");
     }
 
 	/// <summary>
@@ -490,6 +512,9 @@ public class World : MonoBehaviour
         chunks[c.x, c.z].Init();
 	}
 
+    //activeChunks에 추가할 좌표를 저장한다.
+    Queue<ChunkCoord> coordToAddActiveChunks = new Queue<ChunkCoord>();
+
     /// <summary>
     /// 청크를 체크해서 업데이트 한다. chunksToRefresh 리스트 처리 (한번 실행에 하나씩)
     /// RefreshChunks_ThreadTask에서 호출됨
@@ -499,9 +524,6 @@ public class World : MonoBehaviour
         //while루프를 제어하기 위해
         bool refreshed = false;
         int index = 0;
-
-        //activeChunks에 추가할 좌표를 저장한다.
-        ChunkCoord chunkToAddActiveChunks = null;
 
         //chunksToRefresh가 반복 도중 수정되는 것을 막기 위함
         lock (chunksToRefresh)
@@ -517,7 +539,7 @@ public class World : MonoBehaviour
 
 
                     //activeChunks에 추가할 좌표 저장
-                    chunkToAddActiveChunks = chunksToRefresh[index].coord;
+                    coordToAddActiveChunks.Enqueue(chunksToRefresh[index].coord);
 
                     chunksToRefresh.RemoveAt(index);
                     
@@ -534,14 +556,19 @@ public class World : MonoBehaviour
         }
 
         //chunksToRefresh의 lock 블럭을 최소화 하기 위해 바깥으로 빼낸 부분
-        //activeChunks의 null 체크를 한 뒤 activeChunks에 중복 없이 추가한다.
+        //activeChunks의 접근 가능을 체크한 뒤 activeChunks에 중복 없이 추가한다.
         //중복되어 들어가면 활성화/비활성화가 원활하지 않다.
-        if(chunkToAddActiveChunks != null && activeChunks != null)
+        if(IsActiveChunksEditable)
 		{
             lock(activeChunks)
 			{
-                if (!activeChunks.Contains(chunkToAddActiveChunks))
-                    activeChunks.Add(chunkToAddActiveChunks);
+                while(coordToAddActiveChunks.Count != 0)
+				{
+                    ChunkCoord temp = coordToAddActiveChunks.Dequeue();
+                    if (!activeChunks.Contains(temp))
+                        activeChunks.Add(temp);
+                }
+                
             }
 		}
 
@@ -628,7 +655,6 @@ public class World : MonoBehaviour
             if (chunksToRefresh.Count > 0)
                 RefreshChunk();
 
-            
         }
 	}
 
@@ -695,32 +721,25 @@ public class World : MonoBehaviour
         return chunks[x,z];
     }
 
+    //뷰 디스텐스를 갱신하기 전 활성화 되어 있던 청크들 저장
+    List<ChunkCoord> prevActiveChunks;
+
     /// <summary>
     /// 플레이어의 좌표를 참조, 시야 범위내의 청크를 생성
     /// </summary>
     void CheckViewDistance()
 	{
+
         //플레이어 위치의 청크 좌표를 구한다.
         ChunkCoord coord = GetChunkCoordFromVector3(player.position);
 
+        //activeChunks를 수정하는 동안은 잠금
+        IsActiveChunksEditable = false;
 
-        //뷰 디스텐스를 갱신하기 전 활성화 되어 있던 청크들 저장
-        List<ChunkCoord> prevActiveChunks;
-
-        //activeChunks를 복사하는 동안은 잠금
-        lock(activeChunks)
-		{
-            prevActiveChunks = new List<ChunkCoord>(activeChunks);
-            activeChunks = null;
-        }
-        
-        
-        //activeChunks에 대입할 리스트
-        //C++로 치면 포인터
-        List<ChunkCoord> activeChunksTemp = new List<ChunkCoord>();
-
-        //저장 후 activeChunks 클리어
-        //activeChunks.Clear();
+        //activeChunks에 있는 ChunksCoord에 대한 참조들을 복사한다.
+        //그리고 activeChunks의 참조를 삭제한다.
+        prevActiveChunks = new List<ChunkCoord>(activeChunks);
+        activeChunks.Clear();
 
         //플레이어 시야 범위 내의 청크들로 반복
         for(int x = coord.x - VoxelData.ViewDistanceInChunks; 
@@ -749,9 +768,9 @@ public class World : MonoBehaviour
                         chunks[temp.x, temp.z].IsActive = true;
                         
                     }
-                    //activeChunks.Add(temp);
+                    activeChunks.Add(temp);
 
-                    activeChunksTemp.Add(temp);
+                  
                 }
                 //이전 활성 목록에서 현재 시야에 있는 것들을 뺀다
                 for(int i = 0; i < prevActiveChunks.Count; i++)
@@ -775,12 +794,9 @@ public class World : MonoBehaviour
             
 		}
 
-
-        //activeChunks가 임시로 만든 리스트의 주소를 가지도록 한다.
-        //C++로 치면 동적할당 받은 주소를 그대로 대입하는 것
-        activeChunks = activeChunksTemp;
-        
-	}
+        //잠금 해제
+        IsActiveChunksEditable = true;
+    }
 
     /// <summary>
     /// 지정된 청크 좌표에 있는 청크가 월드 범위 내에 있는지 여부 반환

@@ -91,9 +91,9 @@ public class Chunk
     //MeshCollider meshCollider;
 
     int vertexIndex = 0;
-    List<Vector3> vertices = new List<Vector3>();
-    List<int> triangles = new List<int>();
-    List<Vector2> uvs = new List<Vector2>();
+    List<Vector3> vertices = new List<Vector3>(20000);
+    List<int> triangles = new List<int>(20000);
+    List<Vector2> uvs = new List<Vector2>(20000);
 
     //정점의 색을 저장, 셰이더에 넘겨줄 것이다.
     List<Color> colors = new List<Color>();
@@ -133,10 +133,10 @@ public class Chunk
     /// </summary>
     /// <param name="_coord">생성될 청크의 좌표</param>
     /// <param name="_world">World에 대한 참조</param>
-    public Chunk (ChunkCoord _coord, World _world)
+    public Chunk (ChunkCoord coord, World world)
 	{
-        this.world = _world;
-        this.coord = _coord;
+        this.world = world;
+        this.coord = coord;
         //IsActive = true;
     }
 
@@ -178,11 +178,6 @@ public class Chunk
         //스레드 풀에 복셀 맵 세팅 메소드를 넣는다.
         ThreadPool.QueueUserWorkItem(PopulateVoxelMap);
 
-        //PopulateVoxelMap(null);
-
-        //RefreshChunkMeshData();
-
-        //meshCollider.sharedMesh = meshFilter.mesh;
     }
 
     /// <summary>
@@ -775,6 +770,9 @@ public class Chunk
         mesh.RecalculateNormals();
 
         meshFilter.mesh = mesh;
+
+        //Debug.Log($"Chunk : {coord.x} : {coord.z}, vert : {vertices.Count}, tri : {triangles.Count}, uvs : {uvs.Count}, col : {colors.Count}");
+
     }
 
     /// <summary>
