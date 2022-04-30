@@ -160,9 +160,23 @@ public class World : MonoBehaviour
     //청크들을 갱신하는 스레드
     Thread RefreshChunksThread;
 
-    //청크 갱신 스레드 작동 중 여부 검사
+    //청크 갱신 스레드 작동 컨트롤
     private bool RefreshChunksThreadRunning = true;
 
+    /// <summary>
+    /// EditVoxel을 통해 갱신된 청크들을 따로 갱신하기 위한 큐
+    /// </summary>
+    public Queue<Chunk> chunksToRefresh_Edit = new Queue<Chunk>();
+
+    /// <summary>
+    /// 이미 생성된 청크가 수정되었을 때 갱신하는 스레드
+    /// </summary>
+    Thread RefreshEditedChunksThread;
+
+    /// <summary>
+    /// RefreshEditedChunksThread의 작동 컨트롤
+    /// </summary>
+    private bool RefreshEditedChunksThreadRunning = true;
 
     //그려낼 청크들 저장하는 큐
     //다른 스레드가 메쉬 데이터를 만들고 여기 넣으면
@@ -197,8 +211,13 @@ public class World : MonoBehaviour
 
         //청크들 갱신 스레드 시작
         RefreshChunksThread = new Thread(RefreshChunks_ThreadTask);
-        RefreshChunksThread.Name = "RefreshCHunksThread";
+        RefreshChunksThread.Name = "RefreshChunksThread";
         RefreshChunksThread.Start();
+
+        //수정된 청크 갱신 스레드 시작
+        RefreshEditedChunksThread = new Thread(RefreshEditedChunks_ThreadTask);
+        RefreshEditedChunksThread.Name = "RefreshEditedChunksThread";
+        RefreshEditedChunksThread.Start();
 
         //월드 중앙에 스폰
         spawnPosition =
@@ -258,19 +277,23 @@ public class World : MonoBehaviour
 
         
         //만약 그려낼 청크가 있다면
-        //한프레임에 하나씩만
+        //한번에 여러개를 그려도 큰 부담이 없으므로 최대한 그린다.
         if (chunksToDraw.Count > 0)
 		{
             lock (chunksToDraw)
             {
-                //만약 만들 청크가 맵이 구성되었고
-                //스레드에 의해 수정중이 아니라면
-                if (chunksToDraw.Peek().IsEditable)
-                {
-                    
-                    chunksToDraw.Dequeue().ApplyChunkMesh(); //2022-04-25 기준 최대 11ms 지연
-                    
+                while(chunksToDraw.Count > 0)
+				{
+                    //만약 만들 청크가 맵이 구성되었고
+                    //스레드에 의해 수정중이 아니라면
+                    if (chunksToDraw.Peek().IsEditable)
+                    {
+
+                        chunksToDraw.Dequeue().ApplyChunkMesh(); //2022-04-25 기준 최대 11ms 지연
+
+                    }
                 }
+                
             }
 		}
         
@@ -664,11 +687,37 @@ public class World : MonoBehaviour
         }
 	}
 
+    /// <summary>
+    /// 이미 생성된 청크가 수정되었을 때 갱신하는 스레드 테스크
+    /// </summary>
+    void RefreshEditedChunks_ThreadTask()
+	{
+        //이미 생성된 청크를 대상으로 갱신하므로 activeChunks는
+        //참조할 필요가 없다. 또한 IsEditable도 확인할 필요가 없다.
+
+        //Chunk editedChunk;
+        while(RefreshEditedChunksThreadRunning)
+		{
+            //갱신할 수정된 청크가 1개 이상이고, Dequeue에 성공했다면
+            if(chunksToRefresh_Edit.Count > 0)
+			{
+                lock(chunksToRefresh_Edit)
+				{
+                    while(chunksToRefresh_Edit.Count > 0)
+					{
+                        chunksToRefresh_Edit.Dequeue()._RefreshChunkMeshData(null);
+                    }
+                }
+                
+			}
+		}
+	}
+
 	private void OnDisable()
 	{
         //비활성화 되면, 청크 갱신 스레드 중지
         RefreshChunksThreadRunning = false;
-
+        RefreshEditedChunksThreadRunning = false;
     }
 
 	#region 청크 생성 코루틴 (삭제됨)

@@ -75,9 +75,9 @@ public class DebugControl : MonoBehaviour
 			strBuilder.Append($"FPS : {fps} \n");
 			strBuilder.Append($"Min_FPS : {min_fps}\n");
 			strBuilder.Append($"FrameSec : {frameSec}\n");
-			strBuilder.AppendFormat("X : {0}, Y : {0}, Z : {0} \n\n", Mathf.FloorToInt(player.transform.position.x),
+			strBuilder.AppendFormat("X : {0}, Y : {1}, Z : {2} \n\n", Mathf.FloorToInt(player.transform.position.x),
 				Mathf.FloorToInt(world.player.transform.position.y), Mathf.FloorToInt(player.transform.position.z));
-			strBuilder.AppendFormat("Chunk : {0} {0}\n", world.playerChunkCoord.x, world.playerChunkCoord.z);
+			strBuilder.AppendFormat("Chunk : {0} {1}\n", world.playerChunkCoord.x, world.playerChunkCoord.z);
 			strBuilder.Append($"Selected_Position {player.selectGuide.position}\n");
 			strBuilder.Append($"Selected_Light {currentSelected.globalLightWeight}");
 

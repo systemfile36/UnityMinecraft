@@ -287,13 +287,21 @@ public class Chunk
         //맵에 저장된 id를 변경
         voxelMap[xP, yP, zP].id = id;
 
+        /*
         lock(world.chunksToRefresh)
 		{
             //블럭 수정은 우선적으로 처리하기 위하여 맨 앞에 넣는다.
             world.chunksToRefresh.Insert(0, this);
             RefreshAdjacentChunk(xP, yP, zP);
         }
-        
+        */
+
+        //안쪽이 비쳐보이는 것을 막기 위해 블럭 주변의 청크를 먼저 갱신한다.
+        RefreshAdjacentChunk(xP, yP, zP);
+
+        //수정한 청크는 따로 처리하므로 chunksToRefresh_Edit에 넣는다.
+        world.chunksToRefresh_Edit.Enqueue(this);
+
     }
 
     /// <summary>
@@ -318,9 +326,12 @@ public class Chunk
                 //만약 내부에 없다면, 다른 청크에 있고, 수정된 블럭과 접해있다는 뜻
                 //따라서 그 청크를 갱신한다.
                 //world.GetChunkFromVector3(temp + position)._RefreshChunkMeshData(null);
-                
+
                 //lock은 이미 호출하는 EditVoxel에서 이미 걸려 있음
-                world.chunksToRefresh.Insert(0, world.GetChunkFromVector3(temp + position));
+                //world.chunksToRefresh.Insert(0, world.GetChunkFromVector3(temp + position));
+
+                //수정된 청크는 따로 처리한다.
+                world.chunksToRefresh_Edit.Enqueue(world.GetChunkFromVector3(temp + position));
 			}
 		}
 	}
