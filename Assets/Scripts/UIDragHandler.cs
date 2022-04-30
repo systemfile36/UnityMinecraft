@@ -40,7 +40,7 @@ public class UIDragHandler : MonoBehaviour
         cursorItemSlot = new ItemSlot(cursorSlot);
 	}
 
-	void FixedUpdate()
+	void Update()
 	{
         //UI 상에 있지 않으면 아무것도 하지 않음
         if (!_input.IsOnUI)

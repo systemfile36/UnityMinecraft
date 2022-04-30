@@ -32,7 +32,7 @@ Shader "UnityMinecraft/Blocks" {
 				//필요한 함수 미리 정의
 				#pragma vertex vertFunction
 				#pragma fragment fragFunction		
-				#pragma _target 2.0
+				//#pragma _target 2.0
 
 				#include "UnityCG.cginc"
 				

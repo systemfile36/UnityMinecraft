@@ -91,11 +91,11 @@ public class Chunk
     //MeshCollider meshCollider;
 
     int vertexIndex = 0;
-    List<Vector3> vertices = new List<Vector3>(20000);
-    List<int> triangles = new List<int>(20000);
-    List<Vector2> uvs = new List<Vector2>(20000);
+    List<Vector3> vertices;//= new List<Vector3>(20000);
+    List<int> triangles;//= new List<int>(20000);
+    List<Vector2> uvs;//= new List<Vector2>(20000);
 
-    //정점의 색을 저장, 셰이더에 넘겨줄 것이다.
+    //정점의 색을 저장, 셰이더가 간접적으로 참조할 것이다.
     List<Color> colors = new List<Color>();
 
     //투명블럭의 삼각형 좌표 저장하는 리스트
@@ -105,8 +105,8 @@ public class Chunk
     Material[] materials = new Material[2];
 
     //byte 값으로 구성된 맵, 블럭의 VoxelState를 저장한다.
-    public VoxelState[,,] voxelMap = 
-        new VoxelState[VoxelData.ChunkWidth, VoxelData.ChunkHeight, VoxelData.ChunkWidth];
+    public VoxelState[,,] voxelMap; //= 
+        //new VoxelState[VoxelData.ChunkWidth, VoxelData.ChunkHeight, VoxelData.ChunkWidth];
 
     //블럭 타입등의 참조를 위한 World 참조
     World world;
@@ -127,6 +127,11 @@ public class Chunk
     /// </summary>
     public Vector3 position;
 
+    /// <summary>
+    /// List, Map의 초기화를 병렬처리하기 위한 CountdownEvent
+    /// </summary>
+    CountdownEvent counter = new CountdownEvent(4);
+
     //World를 인자로 받는다.(find는 비싼(expansive한 작업))
     /// <summary>
     /// 청크의 생성자
@@ -135,10 +140,44 @@ public class Chunk
     /// <param name="_world">World에 대한 참조</param>
     public Chunk (ChunkCoord coord, World world)
 	{
+        //voxelMap과 정점 데이터들 병렬로 할당
+        ThreadPool.QueueUserWorkItem(InitVoxelMap);
+        ThreadPool.QueueUserWorkItem(InitVertex);
+        ThreadPool.QueueUserWorkItem(InitTriangles);
+        ThreadPool.QueueUserWorkItem(InitUvs);
+
         this.world = world;
         this.coord = coord;
         //IsActive = true;
+
+        //완료될때까지 대기
+        counter.Wait();
     }
+
+    void InitVoxelMap(object obj)
+	{
+        voxelMap = new VoxelState[VoxelData.ChunkWidth, VoxelData.ChunkHeight, VoxelData.ChunkWidth];
+        counter.Signal();
+    }
+
+    void InitVertex(object obj)
+	{
+        vertices = new List<Vector3>(20000);
+        counter.Signal();
+    }
+
+    void InitTriangles(object obj)
+	{
+        triangles = new List<int>(20000);
+        counter.Signal();
+    }
+
+    void InitUvs(object obj)
+    {
+        uvs = new List<Vector2>(20000);
+        counter.Signal();
+    }
+
 
     /// <summary>
     /// 청크를 초기화. 맵을 세팅하고 메쉬를 만들어서 추가하는 과정
@@ -248,19 +287,15 @@ public class Chunk
         //맵에 저장된 id를 변경
         voxelMap[xP, yP, zP].id = id;
 
-        //EditVoxel은, 특별히 병렬 처리 안해도 됨
-        //_RefreshChunkMeshData(null);
-
         lock(world.chunksToRefresh)
 		{
             //블럭 수정은 우선적으로 처리하기 위하여 맨 앞에 넣는다.
             world.chunksToRefresh.Insert(0, this);
             RefreshAdjacentChunk(xP, yP, zP);
         }
-
-        //인접한 청크 조건에 따라 갱신
-        //RefreshAdjacentChunk(xP, yP, zP);
+        
     }
+
     /// <summary>
     /// 수정한 블럭의 좌표를 인자로 받아 그 블럭과 인접한 청크 갱신
     /// </summary>
@@ -282,7 +317,7 @@ public class Chunk
 			{
                 //만약 내부에 없다면, 다른 청크에 있고, 수정된 블럭과 접해있다는 뜻
                 //따라서 그 청크를 갱신한다.
-                //world.GetChunkFromVector3(temp + position).RefreshChunkMeshData();
+                //world.GetChunkFromVector3(temp + position)._RefreshChunkMeshData(null);
                 
                 //lock은 이미 호출하는 EditVoxel에서 이미 걸려 있음
                 world.chunksToRefresh.Insert(0, world.GetChunkFromVector3(temp + position));

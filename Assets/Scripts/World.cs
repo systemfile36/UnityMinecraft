@@ -179,6 +179,12 @@ public class World : MonoBehaviour
     /// </summary>
     public static readonly GameMode gameMode = GameMode.Debug;
 
+	void Awake()
+	{
+        //프레임 60으로 고정
+        Application.targetFrameRate = 75;
+	}
+
 	void Start()
 	{
         //시드 값에 따라 난수생성기 초기화
