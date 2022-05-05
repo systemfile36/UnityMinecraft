@@ -16,7 +16,7 @@ https://blog.naver.com/loliisjinri
 
 --------------------------------------------
 
-플로우 차트 요약본 (로직의 흐름을 draw.io 플로우차트로 정리함)
+플로우 차트 요약본
 
 초기 지형 생성
 ->
@@ -33,3 +33,8 @@ https://blog.naver.com/loliisjinri/222688478045
 커스텀 셰이더/빛 구현 과정 상세
 ->
 https://blog.naver.com/loliisjinri/222699947447
+
+멀티 스레딩 개선 작업, 최적화
+->
+https://blog.naver.com/loliisjinri/222714827404
+
