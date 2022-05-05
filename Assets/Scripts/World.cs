@@ -100,11 +100,11 @@ public enum GameMode
 /// </summary>
 public class World : MonoBehaviour
 {
-    //맵의 시드값
-    public int seed;
 
     //바이옴을 설정하는 변수
     public BiomeAttributes biome;
+
+    
 
     //전역 밝기 조정
     [Range(0f, 0.93f)]
@@ -127,7 +127,7 @@ public class World : MonoBehaviour
 
     //활성화된 청크들 저장
     //초기 크기 (시야 범위 * 시야 범위)
-    List<ChunkCoord> activeChunks = new List<ChunkCoord>(VoxelData.ViewDistanceInChunks * VoxelData.ViewDistanceInChunks);
+    List<ChunkCoord> activeChunks = new List<ChunkCoord>();
 
     //플레이어의 현재 위치한 청크 캐싱
     public ChunkCoord playerChunkCoord;
@@ -135,7 +135,7 @@ public class World : MonoBehaviour
     ChunkCoord playerLastChunkCoord;
 
     //만들 청크들을 저장하는 리스트
-    List<ChunkCoord> chunksToCreate = new List<ChunkCoord>(VoxelData.ViewDistanceInChunks * VoxelData.ViewDistanceInChunks);
+    List<ChunkCoord> chunksToCreate = new List<ChunkCoord>();
     
     //코루틴이 이미 실행중인지 여부 판단을 위한 변수
     //private bool IsCreateChunks;
@@ -191,19 +191,26 @@ public class World : MonoBehaviour
     /// <summary>
     /// 현재 게임 모드를 나타내는 정적 변수
     /// </summary>
-    public static readonly GameMode gameMode = GameMode.Debug;
+    public GameMode gameMode = GameMode.Debug;
 
-	void Awake()
+    //ViewDistance가 런타임에 변경되었는지 확인하기 위한 변수
+    int lastViewDistance;
+
+    void Awake()
 	{
-        //프레임 60으로 고정
-        Application.targetFrameRate = 75;
-	}
+        Application.targetFrameRate = GameManager.Mgr.settings.targetFrameRate;
+
+        activeChunks.Capacity = (GameManager.Mgr.settings.ViewDistanceInChunks * 2) * (GameManager.Mgr.settings.ViewDistanceInChunks * 2);
+
+        //마지막 시야 범위 초기화
+        lastViewDistance = GameManager.Mgr.settings.ViewDistanceInChunks;
+    }
 
 	void Start()
 	{
         //시드 값에 따라 난수생성기 초기화
         //같은 시드는 같은 맵
-        Random.InitState(seed);
+        Random.InitState(GameManager.Mgr.settings.seed);
 
         //Global Light Level의 최대 최소값을 셰이더에 넘긴다.
         Shader.SetGlobalFloat("minGlobalLight", VoxelData.minLight);
@@ -232,11 +239,6 @@ public class World : MonoBehaviour
         playerLastChunkCoord = GetChunkCoordFromVector3(player.position);
         
 	}
-
-    long maxTicks = 0;
-    long currentTicks = 0;
-    long beforeTicks = 0;
-    long afterTicks = 0;
 
     void Update()
 	{
@@ -297,18 +299,8 @@ public class World : MonoBehaviour
             }
 		}
         
-        //PrintTimeElapsed(beforeTicks, afterTicks);
     }
 
-    void PrintTimeElapsed(long beforeTicks, long afterTicks)
-	{
-        currentTicks = afterTicks - beforeTicks;
-        if (currentTicks > maxTicks)
-        {
-            maxTicks = currentTicks;
-        }
-        Debug.Log($"currentTicks : {currentTicks} ticks, {currentTicks / 10000} ms\nmaxTicks : {maxTicks} ticks, {maxTicks / 10000} ms");
-    }
 
 	/// <summary>
 	/// 지정된 좌표에 복셀의 유무를 반환한다.
@@ -506,12 +498,12 @@ public class World : MonoBehaviour
         //청크 좌표 캐싱
         ChunkCoord coord;
 
-        for (int x = (VoxelData.WorldSizeInChunks / 2) - VoxelData.ViewDistanceInChunks; 
-            x < (VoxelData.WorldSizeInChunks / 2) + VoxelData.ViewDistanceInChunks; x++)
+        for (int x = (VoxelData.WorldSizeInChunks / 2) - GameManager.Mgr.settings.ViewDistanceInChunks; 
+            x < (VoxelData.WorldSizeInChunks / 2) + GameManager.Mgr.settings.ViewDistanceInChunks; x++)
 		{
             
-            for (int z = (VoxelData.WorldSizeInChunks / 2) - VoxelData.ViewDistanceInChunks;
-                z < (VoxelData.WorldSizeInChunks / 2) + VoxelData.ViewDistanceInChunks; z++)
+            for (int z = (VoxelData.WorldSizeInChunks / 2) - GameManager.Mgr.settings.ViewDistanceInChunks;
+                z < (VoxelData.WorldSizeInChunks / 2) + GameManager.Mgr.settings.ViewDistanceInChunks; z++)
 			{
                 //캐싱한 청크 좌표 변형
                 coord = new ChunkCoord(x, z);
@@ -797,11 +789,11 @@ public class World : MonoBehaviour
         activeChunks.Clear();
 
         //플레이어 시야 범위 내의 청크들로 반복
-        for(int x = coord.x - VoxelData.ViewDistanceInChunks; 
-            x < coord.x + VoxelData.ViewDistanceInChunks; x++)
+        for(int x = coord.x - GameManager.Mgr.settings.ViewDistanceInChunks; 
+            x < coord.x + GameManager.Mgr.settings.ViewDistanceInChunks; x++)
 		{
-            for (int z = coord.z - VoxelData.ViewDistanceInChunks;
-            z < coord.z + VoxelData.ViewDistanceInChunks; z++)
+            for (int z = coord.z - GameManager.Mgr.settings.ViewDistanceInChunks;
+            z < coord.z + GameManager.Mgr.settings.ViewDistanceInChunks; z++)
             {
                 //임시 캐싱
                 ChunkCoord temp = new ChunkCoord(x, z);
@@ -838,7 +830,16 @@ public class World : MonoBehaviour
 				}
             }
         }
-        
+
+        //마지막 시야범위가 현재 설정과 다르다면
+        if (lastViewDistance != GameManager.Mgr.settings.ViewDistanceInChunks)
+		{
+            //activeChunks의 Capacity를 조정한다.
+            activeChunks.TrimExcess();
+
+            //갱신
+            lastViewDistance = GameManager.Mgr.settings.ViewDistanceInChunks;
+		}
 
         //위의 반복 후 남은 것들은 전에는 시야에 있었지만 현재엔 없는 것들이다.
         //따라서 비활성화 시킨다.

@@ -22,7 +22,7 @@ public class InventoryControl : MonoBehaviour
 	void Start()
     {
         //크리에티브 모드가 아니라면 기본 인벤토리
-        if(World.gameMode != GameMode.Creative)
+        if(GameManager.Mgr.settings.gameMode != GameMode.Creative)
 		{
             defaultInv.SetActive(_input.IsOnUI);
 		}
@@ -30,7 +30,7 @@ public class InventoryControl : MonoBehaviour
 
     void Update()
     {
-        if(World.gameMode != GameMode.Creative)
+        if(GameManager.Mgr.settings.gameMode != GameMode.Creative)
 		{
             defaultInv.SetActive(_input.IsOnUI);
         }

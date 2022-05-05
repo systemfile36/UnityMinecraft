@@ -24,6 +24,11 @@ namespace StarterAssets
 #endif
 	public class FirstPersonController : MonoBehaviour
 	{
+
+		//각 필요한 변수들은 GameManager의 Settings를 통해 참조함!
+		//오브젝트 참조등의 변수나 토글 bool 변수를 제외하고는 전부 옮겨짐
+
+		/*
 		[Header("Player")]
 		[Tooltip("Move speed of the character in m/s")]
 		public float MoveSpeed = 4.0f;
@@ -45,24 +50,31 @@ namespace StarterAssets
 		public float JumpTimeout = 0.0f;
 		[Tooltip("Time required to pass before entering the fall state. Useful for walking down stairs")]
 		public float FallTimeout = 0.15f;
+		*/
 
 		[Header("Player Grounded")]
 		[Tooltip("If the character is grounded or not. Not part of the CharacterController built in grounded check")]
 		public bool Grounded = true;
+
+		/*
 		[Tooltip("Useful for rough ground")]
 		public float GroundedOffset = -0.14f;
 		[Tooltip("The radius of the grounded check. Should match the radius of the CharacterController")]
 		public float GroundedRadius = 0.3f;
-		[Tooltip("What layers the character uses as ground")]
-		public LayerMask GroundLayers;
+		//[Tooltip("What layers the character uses as ground")]
+		//public LayerMask GroundLayers;
+		*/
 
 		[Header("Cinemachine")]
 		[Tooltip("The follow target set in the Cinemachine Virtual Camera that the camera will follow")]
 		public GameObject CinemachineCameraTarget;
+
+		/*
 		[Tooltip("How far in degrees can you move the camera up")]
 		public float TopClamp = 85.0f;
 		[Tooltip("How far in degrees can you move the camera down")]
 		public float BottomClamp = -85.0f;
+		*/
 
 		// cinemachine
 		private float _cinemachineTargetPitch;
@@ -180,6 +192,7 @@ namespace StarterAssets
 		[Tooltip("This represents Block that will be Placed")]
 		public Transform placeGuide;
 
+		/*
 		//레이 캐스트 구현을 위한 변수
 		//checkInterval : 체크하는 간격, 이 값만큼 좌표를 더하면서 체크
 		//reach : 손이 닿는 범위
@@ -188,6 +201,7 @@ namespace StarterAssets
 		public float checkInterval = 0.1f;
 		[Tooltip("Reach of Player")]
 		public float reach = 8f;
+		*/
 
 		//들고있는 블럭의 인덱스
 		public byte HoldingBlockId = 0;
@@ -197,11 +211,13 @@ namespace StarterAssets
 		private float _PlaceTimeOut;
 		private float _DestroyTimeOut;
 
+		/*
 		[Header("Place/Destroy Delay")]
 		[Tooltip("Place Delay")]
 		public float PlaceDelay = 0.125f;
 		[Tooltip("Destroy Delay")]
 		public float DestroyDelay = 0.125f;
+		*/
 
 		[Header("Reference of ToolbarControl")]
 		public ToolbarControl toolbar;
@@ -227,30 +243,25 @@ namespace StarterAssets
 			_input = GetComponent<StarterAssetsInputs>();
 
 			// reset our timeouts on start
-			_jumpTimeoutDelta = JumpTimeout;
-			_fallTimeoutDelta = FallTimeout;
+			_jumpTimeoutDelta = GameManager.Mgr.settings.JumpTimeout;
+			_fallTimeoutDelta = GameManager.Mgr.settings.FallTimeout;
 
 			//설치, 파괴 딜레이 초기화
-			_PlaceTimeOut = PlaceDelay;
-			_DestroyTimeOut = DestroyDelay;
+			_PlaceTimeOut = GameManager.Mgr.settings.PlaceDelay;
+			_DestroyTimeOut = GameManager.Mgr.settings.DestroyDelay;
 		}
 
 		private void Update()
 		{
-			/*
-			GroundedCheck();
-			ApplyGravity();
-			Jump();
-			UpCollision();
-			Move();
-			*/
-			//가이드 블럭 생신
+			
+			//가이드 블럭 갱신
 			SetGuideBlock();
 
 			PlaceAndDestroyBlock();
 
 		}
 
+		//물리현상은 고정 프레임으로
 		private void FixedUpdate()
 		{
 			GroundedCheck();
@@ -265,7 +276,6 @@ namespace StarterAssets
 			CameraRotation();
 		}
 
-		//여기서 부터 --End-- 까지 이동을 제외한 로직
 
 		/// <summary>
 		/// 마우스 입력에 따라 블럭 설치와 파괴
@@ -273,20 +283,20 @@ namespace StarterAssets
 		public void PlaceAndDestroyBlock()
 		{
 			
-			//왼쪽 클릭시 블럭 파괴, 시간 체크
-			if (_input.IsLeftClicked && _DestroyTimeOut <= 0.0f)
+			//왼쪽 클릭시 블럭 파괴
+			if (_input.IsLeftClicked)
 			{
-				//일단 클릭이 되었으면 무조건 토글한다.
+				//일단 클릭이 되었으면 시간에 관계없이 무조건 토글한다.
 				_input.IsLeftClicked = false;
 
-				//선택 가이드가 활성화 되어 있다면
-				if (selectGuide.gameObject.activeSelf)
+				//선택 가이드가 활성화 되어 있고 설정된 딜레이에 도달했다면
+				if (selectGuide.gameObject.activeSelf && _DestroyTimeOut <= 0.0f)
 				{
 					//선택 가이드의 좌표의 청크를 받아서 그 좌표의 블럭을 Air로 만든다.
 					//즉 파괴한다.
 					world.GetChunkFromVector3(selectGuide.position).EditVoxel(selectGuide.position, 0);
 					//델타 타임 초기화
-					_DestroyTimeOut = DestroyDelay;
+					_DestroyTimeOut = GameManager.Mgr.settings.DestroyDelay;
 				}
 			}
 			//클릭 여부등에 관계 없이 델타 타임 감소
@@ -298,12 +308,13 @@ namespace StarterAssets
 			
 
 			//놓을 위치 가이드가 활성화 되어있다면
-			if (_input.IsRightClicked && _PlaceTimeOut <= 0.0f)
+			if (_input.IsRightClicked)
 			{
-				//일단 클릭이 되었으면 무조건 토글한다.
+				//일단 클릭이 되었으면 시간에 관계업이 무조건 토글한다.
 				_input.IsRightClicked = false;
+
 				//오른쪽 클릭시 들고 있는 블럭 설치 (들고 있는 블럭이 0이라면 설치 X)
-				if (placeGuide.gameObject.activeSelf)
+				if (placeGuide.gameObject.activeSelf && _PlaceTimeOut <= 0.0f)
 				{
 					//놓을 위치 가이드의 위치에 들고있는 블럭을 넣는다.
 					//놓을 위치가 플레이어 위치거나 머리 위치면 놓지 않는다.
@@ -328,7 +339,7 @@ namespace StarterAssets
 						
 					
 
-					_PlaceTimeOut = PlaceDelay;
+					_PlaceTimeOut = GameManager.Mgr.settings.PlaceDelay;
 				}
 
 				
@@ -342,18 +353,22 @@ namespace StarterAssets
 		
 		/// <summary>
 		/// 블럭을 선택하고 그에 맞게 가이드 블럭을 배치하는 메소드
-		/// 의사 레이캐스트로 구현
+		/// 의사 레이캐스트로 구현 (중요!)
 		/// </summary>
 		private void SetGuideBlock()
 		{
-			float step = checkInterval;
+			//예외 처리
+			if (selectGuide == null || placeGuide == null)
+				return;
+
+			float step = GameManager.Mgr.settings.checkInterval;
 
 			//마지막 위치를 저장한다.
 			//놓을 위치를 정할 때 사용하기 위함이다.
 			Vector3 lastP = new Vector3();
 
 			//step이 reach가 될때까지 반복
-			while (step < reach)
+			while (step < GameManager.Mgr.settings.reach)
 			{
 				//메인 카메라의 좌표에 바라보는 방향 벡터를 계속해서 더한다.
 				//step은 늘어날 예정
@@ -378,7 +393,7 @@ namespace StarterAssets
 				
 				//이번 pos에 블럭이 없었다면 마지막 위치를 갱신하고 step을 올린다.
 				lastP = new Vector3(Mathf.FloorToInt(pos.x), Mathf.FloorToInt(pos.y), Mathf.FloorToInt(pos.z));
-				step += checkInterval;
+				step += GameManager.Mgr.settings.checkInterval;
 			}
 
 			//만약 reach에 닿을 때까지 블럭을 발견하지 못했다면 가이드 비활성화
@@ -395,10 +410,10 @@ namespace StarterAssets
 			*/
 			//착지 자체 구현
 			// 4개의 꼭짓점에서 수선의 발을 내려 그곳에 블럭이 있는지 확인
-			if (world.CheckForVoxel(transform.position.x + GroundedRadius, transform.position.y + GroundedOffset, transform.position.z + GroundedRadius)
-				|| world.CheckForVoxel(transform.position.x - GroundedRadius, transform.position.y + GroundedOffset, transform.position.z - GroundedRadius)
-				|| world.CheckForVoxel(transform.position.x - GroundedRadius, transform.position.y + GroundedOffset, transform.position.z + GroundedRadius)
-				|| world.CheckForVoxel(transform.position.x + GroundedRadius, transform.position.y + GroundedOffset, transform.position.z - GroundedRadius))
+			if (world.CheckForVoxel(transform.position.x + GameManager.Mgr.settings.GroundedRadius, transform.position.y + GameManager.Mgr.settings.GroundedOffset, transform.position.z + GameManager.Mgr.settings.GroundedRadius)
+				|| world.CheckForVoxel(transform.position.x - GameManager.Mgr.settings.GroundedRadius, transform.position.y + GameManager.Mgr.settings.GroundedOffset, transform.position.z - GameManager.Mgr.settings.GroundedRadius)
+				|| world.CheckForVoxel(transform.position.x - GameManager.Mgr.settings.GroundedRadius, transform.position.y + GameManager.Mgr.settings.GroundedOffset, transform.position.z + GameManager.Mgr.settings.GroundedRadius)
+				|| world.CheckForVoxel(transform.position.x + GameManager.Mgr.settings.GroundedRadius, transform.position.y + GameManager.Mgr.settings.GroundedOffset, transform.position.z - GameManager.Mgr.settings.GroundedRadius))
 			{
 				Grounded = true;
 			}
@@ -588,7 +603,7 @@ namespace StarterAssets
 		private void ApplyGravity()
 		{
 			
-			_verticalVelocity += Gravity * Time.fixedDeltaTime;
+			_verticalVelocity += GameManager.Mgr.settings.Gravity * Time.fixedDeltaTime;
 			
 
 			if (Grounded)
@@ -603,11 +618,11 @@ namespace StarterAssets
 			// if there is an input
 			if (_input.look.sqrMagnitude >= _threshold)
 			{
-				_cinemachineTargetPitch += _input.look.y * RotationSpeed * Time.deltaTime;
-				_rotationVelocity = _input.look.x * RotationSpeed * Time.deltaTime;
+				_cinemachineTargetPitch += _input.look.y * GameManager.Mgr.settings.RotationSpeed * Time.deltaTime;
+				_rotationVelocity = _input.look.x * GameManager.Mgr.settings.RotationSpeed * Time.deltaTime;
 
 				// clamp our pitch rotation
-				_cinemachineTargetPitch = ClampAngle(_cinemachineTargetPitch, BottomClamp, TopClamp);
+				_cinemachineTargetPitch = ClampAngle(_cinemachineTargetPitch, GameManager.Mgr.settings.BottomClamp, GameManager.Mgr.settings.TopClamp);
 
 				// Update Cinemachine camera target pitch
 				CinemachineCameraTarget.transform.localRotation = Quaternion.Euler(_cinemachineTargetPitch, 0.0f, 0.0f);
@@ -621,7 +636,7 @@ namespace StarterAssets
 		{
 			//쓰지 않는 것들을 지운다.
 			// set target speed based on move speed, sprint speed and if sprint is pressed
-			float targetSpeed = _input.sprint ? SprintSpeed : MoveSpeed;
+			float targetSpeed = _input.sprint ? GameManager.Mgr.settings.SprintSpeed : GameManager.Mgr.settings.MoveSpeed;
 
 			// a simplistic acceleration and deceleration designed to be easy to remove, replace, or iterate upon
 
@@ -703,7 +718,7 @@ namespace StarterAssets
 			if (Grounded)
 			{
 				// reset the fall timeout timer
-				_fallTimeoutDelta = FallTimeout;
+				_fallTimeoutDelta = GameManager.Mgr.settings.FallTimeout;
 
 				/*
 				// stop our velocity dropping infinitely when grounded
@@ -718,7 +733,7 @@ namespace StarterAssets
 				if (_input.jump && _jumpTimeoutDelta <= 0.0f)
 				{
 					// the square root of H * -2 * G = how much velocity needed to reach desired height
-					_verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);
+					_verticalVelocity = Mathf.Sqrt(GameManager.Mgr.settings.JumpHeight * -2f * GameManager.Mgr.settings.Gravity);
 				}
 
 				// jump timeout
@@ -730,7 +745,7 @@ namespace StarterAssets
 			else
 			{
 				// reset the jump timeout timer
-				_jumpTimeoutDelta = JumpTimeout;
+				_jumpTimeoutDelta = GameManager.Mgr.settings.JumpTimeout;
 
 				// fall timeout
 				if (_fallTimeoutDelta >= 0.0f)
@@ -765,6 +780,7 @@ namespace StarterAssets
 		}
 
 		//기즈모는 디버그 창에 보이는 것
+		//충돌판정 가시화를 위한 기즈모
 		private void OnDrawGizmosSelected()
 		{
 			/*
@@ -779,12 +795,6 @@ namespace StarterAssets
 			// when selected, draw a gizmo in the position of, and matching radius of, the grounded collider
 			Gizmos.DrawSphere(new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z), GroundedRadius);
 			*/
-		}
-
-
-		//충돌판정 가시화를 위한 기즈모
-		private void OnDrawGizmos()
-		{
 
 			Gizmos.color = Color.red;
 
@@ -812,11 +822,13 @@ namespace StarterAssets
 
 
 			//바닥 판정
-			Gizmos.DrawCube(transform.position + new Vector3(0, GroundedOffset, 0), new Vector3(2 * GroundedRadius, 0, 2 * GroundedRadius));
+			Gizmos.DrawCube(transform.position + new Vector3(0, GameManager.Mgr.settings.GroundedOffset, 0),
+				new Vector3(2 * GameManager.Mgr.settings.GroundedRadius, 0, 2 * GameManager.Mgr.settings.GroundedRadius));
 
 			//머리 판정
 			Gizmos.DrawCube(transform.position + new Vector3(0, pHeightCol, 0), new Vector3(2 * pWidthCol, 0, 2 * pWidthCol));
-
 		}
+
+
 	}
 }

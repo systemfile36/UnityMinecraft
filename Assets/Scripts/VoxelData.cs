@@ -23,7 +23,7 @@ public class VoxelData
 	public static float lightFallOff = 0.1f;
 
 	//시야 범위, 이 범위 내의 청크만 로드
-	public static readonly int ViewDistanceInChunks = 5;
+	//public static readonly int ViewDistanceInChunks = 5;
 
 	//위의 변수들을 참고해 계산해야하므로 readonly가 불가능
 	public static int WorldSizeInVoxels
