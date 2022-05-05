@@ -7265,7 +7265,10 @@ MonoBehaviour:
     targetFrameRate: 75
     gameMode: 2
     seed: 65535
-    spawnPosition: {x: 50, y: 50, z: 50}
+    spawnPosition:
+      x: 800
+      y: 128
+      z: 800
     MoveSpeed: 4
     SprintSpeed: 6
     RotationSpeed: 1

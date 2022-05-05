@@ -204,6 +204,8 @@ public class World : MonoBehaviour
 
         //마지막 시야 범위 초기화
         lastViewDistance = GameManager.Mgr.settings.ViewDistanceInChunks;
+
+        spawnPosition = GameManager.Mgr.settings.spawnPosition.GetVector3();
     }
 
 	void Start()
@@ -227,10 +229,12 @@ public class World : MonoBehaviour
         RefreshEditedChunksThread.Start();
 
         //월드 중앙에 스폰
+        /*
         spawnPosition =
             new Vector3(VoxelData.WorldSizeInVoxels / 2f,
             VoxelData.ChunkHeight, VoxelData.WorldSizeInVoxels / 2f);
-        
+        */
+
         //월드 생성
         GenerateWorld();
 

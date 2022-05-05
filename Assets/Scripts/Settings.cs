@@ -17,8 +17,8 @@ public class Settings
 	[Header("World")]
 	public GameMode gameMode = GameMode.Debug;
 	public int seed;
-	public Vector3 spawnPosition;
-
+	public Vector3_S spawnPosition = 
+		new Vector3_S(VoxelData.ChunkWidth/2, VoxelData.ChunkHeight, VoxelData.ChunkWidth / 2);
 
 	//FirstPersonController.cs의 플레이어 행동 관련 변수들
 	#region Player Behaviour Variables
@@ -72,4 +72,74 @@ public class Settings
 	public float DestroyDelay = 0.125f;
 
 	#endregion
+}
+
+/// <summary>
+/// 직렬화 가능한 Vector2 클래스
+/// </summary>
+[System.Serializable]
+public class Vector2_S
+{
+	public float x;
+	public float y;
+
+	public Vector2_S(int x, int y)
+    {
+		this.x = x; 
+		this.y = y;
+    }
+
+    public Vector2_S(float x, float y)
+    {
+        this.x = x;
+        this.y = y;
+    }
+
+    public Vector2_S(Vector2 v)
+	{
+		x = v.x;
+		y = v.y;
+    }
+
+	public Vector2 GetVector2()
+    {
+		return new Vector2(x, y);
+    }
+}
+
+/// <summary>
+/// 직렬화 가능한 Vector3 클래스
+/// </summary>
+[System.Serializable]
+public class Vector3_S
+{
+	public float x;
+	public float y;
+	public float z;
+
+	public Vector3_S(int x, int y, int z)
+    {
+		this.x = x;
+		this.y = y;
+		this.z = z;
+    }
+
+	public Vector3_S(float x, float y, float z)
+    {
+		this.x = x;
+		this.y = y;
+		this.z = z;
+    }
+
+	public Vector3_S(Vector3 v)
+    {
+		x = v.x;
+		y = v.y;
+		z = v.z;
+    }
+
+	public Vector3 GetVector3()
+    {
+		return new Vector3(x, y, z);
+    }
 }
