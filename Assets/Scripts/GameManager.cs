@@ -22,7 +22,7 @@ public class GameManager : MonoBehaviour
 
 	void Awake()
 	{
-		if(instance == null)
+		if (instance == null)
 		{
 			//처음 생성되면 static 변수에 자신 대입
 			instance = this;
@@ -36,17 +36,20 @@ public class GameManager : MonoBehaviour
 			Destroy(this.gameObject);
 		}
 
+		//설정 로드
+		LoadSettings();
 	}
 
-    void Start()
-    {
-		SaveJsonFile(GamePaths.SettingsPath, GamePaths.SettingsFileName, ObjToJsonString(_settings));
-    }
+	void Start()
+	{
+		//SaveJsonFile(GamePaths.SettingsPath, GamePaths.SettingsFileName, ObjToJsonStringIndented(_settings));
+		
+	}
 
-    /// <summary>
-    /// GameManager의 static 인스턴스를 반환
-    /// </summary>
-    public static GameManager Mgr
+	/// <summary>
+	/// GameManager의 static 인스턴스를 반환
+	/// </summary>
+	public static GameManager Mgr
 	{
 		get
 		{
@@ -71,28 +74,58 @@ public class GameManager : MonoBehaviour
 		}
 	}
 
+	public void LoadSettings()
+	{
+		//파일로 부터 세팅 정보를 불러온다.
+		_settings = LoadJsonFile<Settings>(GamePaths.SettingsPath, GamePaths.SettingsFileName);
+
+		//_settings가 null이거나, 유효한 값이 아니라면
+		if (_settings != null && _settings.IsValid())
+        {
+			//기본 생성자를 통해 기본 값으로 초기화
+			_settings = new Settings();
+		}
+
+		Application.targetFrameRate = _settings.targetFrameRate;
+		Random.InitState(_settings.seed);
+	}
+
+	public void QuitGame()
+    {
+#if UNITY_EDITOR
+		UnityEditor.EditorApplication.isPlaying = false;
+#endif
+
+		Application.Quit();
+	}
+
 	/// <summary>
 	/// object를 Json 형식의 string으로 반환
 	/// </summary>
 	public static string ObjToJsonString(object obj)
-    {
+	{
 		return JsonConvert.SerializeObject(obj);
-    }
+	}
+
+	public static string ObjToJsonStringIndented(object obj)
+	{
+		return JsonConvert.SerializeObject(obj, Formatting.Indented);
+	}
 
 	/// <summary>
 	/// Json형식의 string을 T 타입으로 반환
 	/// </summary>
 	public static T JsonStringToobj<T>(string json)
-    {
-		return (T)JsonConvert.DeserializeObject<T>(json);
-    }
+	{
+		return JsonConvert.DeserializeObject<T>(json);
+	}
 
 	/// <summary>
 	/// Json형식의 string을 path에 fName으로 저장
 	/// fName은 확장자 포함 권장
 	/// </summary>
 	public static void SaveJsonFile(string path, string fName, string json)
-    {
+	{
 		//File을 확실히 닫기 위해 using문 사용
 		using (FileStream fStream = new FileStream($"{path}/{fName}", FileMode.Create))
 		{
@@ -100,7 +133,43 @@ public class GameManager : MonoBehaviour
 			byte[] bytes = Encoding.UTF8.GetBytes(json);
 			fStream.Write(bytes, 0, bytes.Length);
 		}
-    }
+	}
+
+	/// <summary>
+	/// path의 fName json파일을 읽어서 T 타입의 오브젝트로 반환
+	/// fName은 확장자 포함 권장
+	/// </summary>
+	public static T LoadJsonFile<T>(string path, string fName) 
+		where T : class //T는 참조형만 가능
+	{
+        try
+        {
+			using (FileStream fStream = new FileStream($"{path}/{fName}", FileMode.Open))
+			{
+				byte[] bytes = new byte[fStream.Length];
+				fStream.Read(bytes, 0, bytes.Length);
+				string json = Encoding.UTF8.GetString(bytes);
+				return JsonConvert.DeserializeObject<T>(json);
+			}
+			
+		}
+		//파일을 못 찾았을 때의 예외 처리
+		catch(FileNotFoundException e)
+        {
+			Debug.Log($"There is no File \"{e.FileName}\"");
+
+        }
+		//역직렬화 실패 시
+		catch(JsonException e)
+        {
+			Debug.Log(e.Message);
+        }
+
+		//예외 발생 시 null 반환
+		return null;
+	}
+
+     
 }
 /// <summary>
 /// 게임에 필요한 경로들이 저장된 정적 클래스

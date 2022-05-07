@@ -273,6 +273,8 @@ public class Chunk
     /// <param name="id"></param>
     public void EditVoxel(Vector3 pos, byte id)
 	{
+        Debug.Log($"EditVoxel Called in ({coord.x}, {coord.z}): {System.DateTime.Now.Millisecond}");
+
         //좌표값 정수로
         int xP = Mathf.FloorToInt(pos.x);
         int yP = Mathf.FloorToInt(pos.y);
@@ -424,6 +426,8 @@ public class Chunk
     /// </summary>
     public void _RefreshChunkMeshData(object obj)
 	{
+        
+
         //스레드가 작동중임을 알려 맵 수정을 잠근다.
         IsLockedMeshThread = true;
 

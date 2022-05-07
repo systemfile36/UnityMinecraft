@@ -198,7 +198,7 @@ public class World : MonoBehaviour
 
     void Awake()
 	{
-        Application.targetFrameRate = GameManager.Mgr.settings.targetFrameRate;
+        //Application.targetFrameRate = GameManager.Mgr.settings.targetFrameRate;
 
         activeChunks.Capacity = (GameManager.Mgr.settings.ViewDistanceInChunks * 2) * (GameManager.Mgr.settings.ViewDistanceInChunks * 2);
 
@@ -212,7 +212,7 @@ public class World : MonoBehaviour
 	{
         //시드 값에 따라 난수생성기 초기화
         //같은 시드는 같은 맵
-        Random.InitState(GameManager.Mgr.settings.seed);
+        //Random.InitState(GameManager.Mgr.settings.seed);
 
         //Global Light Level의 최대 최소값을 셰이더에 넘긴다.
         Shader.SetGlobalFloat("minGlobalLight", VoxelData.minLight);

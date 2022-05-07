@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+
 /// <summary>
 /// 설정을 저장하는 클래스
 /// </summary>
@@ -11,12 +12,12 @@ public class Settings
 	//성능 관련
     [Header("Performance")]
     public int ViewDistanceInChunks = 5;
-	public int targetFrameRate = 75;
+	public int targetFrameRate = 60;
 
 	//월드 관련
 	[Header("World")]
 	public GameMode gameMode = GameMode.Debug;
-	public int seed;
+	public int seed = 65535;
 	public Vector3_S spawnPosition = 
 		new Vector3_S(VoxelData.ChunkWidth/2, VoxelData.ChunkHeight, VoxelData.ChunkWidth / 2);
 
@@ -72,6 +73,27 @@ public class Settings
 	public float DestroyDelay = 0.125f;
 
 	#endregion
+
+	/// <summary>
+	/// 설정값이 유효한지 반환
+	/// </summary>
+	/// <returns></returns>
+	public bool IsValid()
+    {
+		
+		if((ViewDistanceInChunks > 0 && ViewDistanceInChunks < 50)
+			&& (targetFrameRate > 30 && targetFrameRate < 144)
+			&& (spawnPosition.x > 0 && spawnPosition.y > 0 && spawnPosition.z > 0
+				&& spawnPosition.x < VoxelData.WorldSizeInVoxels 
+				&& spawnPosition.y < VoxelData.ChunkHeight
+				&& spawnPosition.z < VoxelData.WorldSizeInVoxels)
+			&& System.Enum.IsDefined(typeof(GameMode), gameMode))
+        {
+			return true;
+        }
+
+		return false;
+    }
 }
 
 /// <summary>

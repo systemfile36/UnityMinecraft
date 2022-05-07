@@ -7262,7 +7262,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _settings:
     ViewDistanceInChunks: 8
-    targetFrameRate: 75
+    targetFrameRate: 60
     gameMode: 2
     seed: 65535
     spawnPosition:
