@@ -67,10 +67,8 @@ public class Settings
 	public float reach = 8f;
 
 	[Header("Place/Destroy Delay")]
-	[Tooltip("Place Delay")]
-	public float PlaceDelay = 0.125f;
-	[Tooltip("Destroy Delay")]
-	public float DestroyDelay = 0.125f;
+	[Tooltip("Edit Delay")]
+	public float EditDelay = 0.8f;
 
 	#endregion
 

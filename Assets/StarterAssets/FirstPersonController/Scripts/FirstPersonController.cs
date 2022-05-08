@@ -208,8 +208,9 @@ namespace StarterAssets
 
 
 		//블럭 설치, 파괴 딜레이를 위한 델타 타임
-		private float _PlaceTimeOut;
-		private float _DestroyTimeOut;
+		private float _EditDelay;
+		//외부에서 읽을 수 있게 하기 위한 프로퍼티
+		public float EditDelay { get { return _EditDelay; } }
 
 		/*
 		[Header("Place/Destroy Delay")]
@@ -247,8 +248,7 @@ namespace StarterAssets
 			_fallTimeoutDelta = GameManager.Mgr.settings.FallTimeout;
 
 			//설치, 파괴 딜레이 초기화
-			_PlaceTimeOut = GameManager.Mgr.settings.PlaceDelay;
-			_DestroyTimeOut = GameManager.Mgr.settings.DestroyDelay;
+			_EditDelay = GameManager.Mgr.settings.EditDelay;
 		}
 
 		private void Update()
@@ -279,6 +279,7 @@ namespace StarterAssets
 
 		/// <summary>
 		/// 마우스 입력에 따라 블럭 설치와 파괴
+		/// 설치/파괴에 딜레이를 주어서 예외 상황 대비
 		/// </summary>
 		public void PlaceAndDestroyBlock()
 		{
@@ -290,23 +291,17 @@ namespace StarterAssets
 				_input.IsLeftClicked = false;
 
 				//선택 가이드가 활성화 되어 있고 설정된 딜레이에 도달했다면
-				if (selectGuide.gameObject.activeSelf && _DestroyTimeOut <= 0.0f)
+				if (selectGuide.gameObject.activeSelf && _EditDelay <= 0.0f)
 				{
+					
 					//선택 가이드의 좌표의 청크를 받아서 그 좌표의 블럭을 Air로 만든다.
 					//즉 파괴한다.
 					world.GetChunkFromVector3(selectGuide.position).EditVoxel(selectGuide.position, 0);
 					//델타 타임 초기화
-					_DestroyTimeOut = GameManager.Mgr.settings.DestroyDelay;
+					_EditDelay = GameManager.Mgr.settings.EditDelay;
 				}
 			}
-			//클릭 여부등에 관계 없이 델타 타임 감소
-			if (_DestroyTimeOut >= 0.0f)
-			{
-				_DestroyTimeOut -= Time.deltaTime;
-			}
-
 			
-
 			//놓을 위치 가이드가 활성화 되어있다면
 			if (_input.IsRightClicked)
 			{
@@ -314,8 +309,9 @@ namespace StarterAssets
 				_input.IsRightClicked = false;
 
 				//오른쪽 클릭시 들고 있는 블럭 설치 (들고 있는 블럭이 0이라면 설치 X)
-				if (placeGuide.gameObject.activeSelf && _PlaceTimeOut <= 0.0f)
+				if (placeGuide.gameObject.activeSelf && _EditDelay <= 0.0f)
 				{
+					
 					//놓을 위치 가이드의 위치에 들고있는 블럭을 넣는다.
 					//놓을 위치가 플레이어 위치거나 머리 위치면 놓지 않는다.
 					if (!VoxelData.CompareVector3ByInteger(placeGuide.position, transform.position) 
@@ -337,17 +333,18 @@ namespace StarterAssets
 
 					}
 						
-					
-
-					_PlaceTimeOut = GameManager.Mgr.settings.PlaceDelay;
+					//델타 타임 초기화
+					_EditDelay = GameManager.Mgr.settings.EditDelay;
 				}
 
 				
 			}
+
+
 			//클릭 여부등에 관계 없이 델타 타임 감소
-			if (_PlaceTimeOut >= 0.0f)
+			if (_EditDelay >= 0.0f)
 			{
-				_PlaceTimeOut -= Time.deltaTime;
+				_EditDelay -= Time.deltaTime;
 			}
 		}
 		

@@ -166,7 +166,7 @@ public class World : MonoBehaviour
     /// <summary>
     /// EditVoxel을 통해 갱신된 청크들을 따로 갱신하기 위한 큐
     /// </summary>
-    public Queue<Chunk> chunksToRefresh_Edit = new Queue<Chunk>();
+    public ConcurrentQueue<Queue<Chunk>> chunksToRefresh_Edit = new ConcurrentQueue<Queue<Chunk>>();
 
     /// <summary>
     /// 이미 생성된 청크가 수정되었을 때 갱신하는 스레드
@@ -182,6 +182,9 @@ public class World : MonoBehaviour
     //다른 스레드가 메쉬 데이터를 만들고 여기 넣으면
     //메인 스레드가 이것을 참고로 화면에 그려냄
     public Queue<Chunk> chunksToDraw = new Queue<Chunk>(10);
+
+    //수정된 청크를 갱신하는 Queue
+    public ConcurrentQueue<Queue<Chunk>> chunksToDraw_Edit = new ConcurrentQueue<Queue<Chunk>>(); 
 
     /// <summary>
     /// activeChunks가 수정 가능한지 여부 확인
@@ -282,27 +285,24 @@ public class World : MonoBehaviour
 
 
         
-        //만약 그려낼 청크가 있다면
-        //한번에 여러개를 그려도 큰 부담이 없으므로 최대한 그린다.
+        //만약 그려낼 청크가 있다면 한 프레임에 하나씩 그린다.
         if (chunksToDraw.Count > 0)
 		{
             lock (chunksToDraw)
             {
-                while(chunksToDraw.Count > 0)
-				{
-                    //만약 만들 청크가 맵이 구성되었고
-                    //스레드에 의해 수정중이 아니라면
-                    if (chunksToDraw.Peek().IsEditable)
-                    {
-
-                        chunksToDraw.Dequeue().ApplyChunkMesh(); //2022-04-25 기준 최대 11ms 지연
-
-                    }
-                }
-                
+                 chunksToDraw.Dequeue().ApplyChunkMesh(); //2022-04-25 기준 최대 11ms 지연
             }
 		}
-        
+
+        //수정된 청크는 따로 갱신하여 준다.
+        Queue<Chunk> editedChunk;
+        if(chunksToDraw_Edit.Count > 0 && chunksToDraw_Edit.TryDequeue(out editedChunk))
+        {
+            while(editedChunk.Count > 0)
+            {
+                editedChunk.Dequeue().ApplyChunkMesh();
+            }
+        }
     }
 
 
@@ -691,20 +691,27 @@ public class World : MonoBehaviour
         //이미 생성된 청크를 대상으로 갱신하므로 activeChunks는
         //참조할 필요가 없다. 또한 IsEditable도 확인할 필요가 없다.
 
-        //Chunk editedChunk;
+        //수정된 청크의 묶음
+        Queue<Chunk> editedChunk;
         while(RefreshEditedChunksThreadRunning)
 		{
-            //갱신할 수정된 청크가 1개 이상이고, Dequeue에 성공했다면
-            if(chunksToRefresh_Edit.Count > 0)
+            //갱신할 수정된 청크의 묶음이 1개 이상이고, Dequeue에 성공했다면
+            if(chunksToRefresh_Edit.Count > 0 
+                && chunksToRefresh_Edit.TryDequeue(out editedChunk))
 			{
-                lock(chunksToRefresh_Edit)
-				{
-                    while(chunksToRefresh_Edit.Count > 0)
-					{
-                        chunksToRefresh_Edit.Dequeue()._RefreshChunkMeshData(null);
-                    }
+                //chunksToDraw_Edit에 추가할 Queue
+                Queue<Chunk> addToDraw = new Queue<Chunk>();
+
+                //그 묶음의 청크 전부 갱신
+                while(editedChunk.Count > 0)
+                {
+                    Chunk c = editedChunk.Dequeue();   
+                    c._RefreshChunkMeshData(true);
+                    addToDraw.Enqueue(c);
                 }
-                
+
+                //그려낼 목록에 추가
+                chunksToDraw_Edit.Enqueue(addToDraw);
 			}
 		}
 	}

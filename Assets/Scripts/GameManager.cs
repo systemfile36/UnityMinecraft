@@ -38,6 +38,7 @@ public class GameManager : MonoBehaviour
 
 		//설정 로드
 		LoadSettings();
+		//_settings = new Settings();
 	}
 
 	void Start()

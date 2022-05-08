@@ -216,6 +216,7 @@ public class Chunk
 
         //스레드 풀에 복셀 맵 세팅 메소드를 넣는다.
         ThreadPool.QueueUserWorkItem(PopulateVoxelMap);
+        //PopulateVoxelMap(null);
 
     }
 
@@ -269,11 +270,11 @@ public class Chunk
     /// <summary>
     /// 지정된 좌표의 블럭을 id로 바꾼다.
     /// </summary>
-    /// <param name="pos"></param>
-    /// <param name="id"></param>
     public void EditVoxel(Vector3 pos, byte id)
 	{
-        Debug.Log($"EditVoxel Called in ({coord.x}, {coord.z}): {System.DateTime.Now.Millisecond}");
+      
+        //chunksToRefresh_Edit에 추가할 청크들 묶음
+        Queue<Chunk> temp = new Queue<Chunk>(4);
 
         //좌표값 정수로
         int xP = Mathf.FloorToInt(pos.x);
@@ -298,21 +299,22 @@ public class Chunk
         }
         */
 
-        //안쪽이 비쳐보이는 것을 막기 위해 블럭 주변의 청크를 먼저 갱신한다.
-        RefreshAdjacentChunk(xP, yP, zP);
+        //인접한 청크들을 temp에 추가한다.
+        RefreshAdjacentChunk(xP, yP, zP, temp);
 
-        //수정한 청크는 따로 처리하므로 chunksToRefresh_Edit에 넣는다.
-        world.chunksToRefresh_Edit.Enqueue(this);
+        //자기 자신을 temp에 추가한다.
+        temp.Enqueue(this);
+
+        //수정된 청크들 묶음을 실제 ConcurrentQueue에 추가한다.
+        world.chunksToRefresh_Edit.Enqueue(temp);
+
 
     }
 
     /// <summary>
-    /// 수정한 블럭의 좌표를 인자로 받아 그 블럭과 인접한 청크 갱신
+    /// 수정한 블럭의 좌표와 que를 인자로 받아 그 블럭과 인접한 청크 que에 추가
     /// </summary>
-    /// <param name="x"></param>
-    /// <param name="y"></param>
-    /// <param name="z"></param>
-    private void RefreshAdjacentChunk(int x, int y, int z)
+    private void RefreshAdjacentChunk(int x, int y, int z, Queue<Chunk> que)
 	{
         Vector3 tempV = new Vector3(x, y, z);
 
@@ -327,13 +329,16 @@ public class Chunk
 			{
                 //만약 내부에 없다면, 다른 청크에 있고, 수정된 블럭과 접해있다는 뜻
                 //따라서 그 청크를 갱신한다.
-                //world.GetChunkFromVector3(temp + position)._RefreshChunkMeshData(null);
+                //world.GetChunkFromVector3(temp + position)._RefreshChunkMeshData(true);
 
                 //lock은 이미 호출하는 EditVoxel에서 이미 걸려 있음
                 //world.chunksToRefresh.Insert(0, world.GetChunkFromVector3(temp + position));
 
                 //수정된 청크는 따로 처리한다.
-                world.chunksToRefresh_Edit.Enqueue(world.GetChunkFromVector3(temp + position));
+                //world.chunksToRefresh_Edit.Enqueue(world.GetChunkFromVector3(temp + position));
+
+                //chunksToRefresh_Edit에 추가할 묶음에 갱신될 청크 추가
+                que.Enqueue(world.GetChunkFromVector3(temp + position));
 			}
 		}
 	}
@@ -475,12 +480,17 @@ public class Chunk
             }
         }
 
-        //갱신을 완료한 뒤 그려낼 청크 목록에 추가한다.
-
-        lock (world.chunksToDraw)
-        { 
-            world.chunksToDraw.Enqueue(this);
+        //매개변수가 null이면 chunksToDraw에 추가
+        if(obj == null)
+        {
+            //갱신을 완료한 뒤 그려낼 청크 목록에 추가한다.
+            lock (world.chunksToDraw)
+            {
+                world.chunksToDraw.Enqueue(this);
+            }
         }
+        
+        
        
         
 
@@ -489,6 +499,7 @@ public class Chunk
 
         //ApplyChunkMesh();
     }
+
 
     /// <summary>
     /// 메쉬 데이터를 초기화 한다. 갱신을 위함

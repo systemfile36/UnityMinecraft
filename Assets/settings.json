@@ -1,6 +1,6 @@
 {
-  "ViewDistanceInChunks": 8,
-  "targetFrameRate": 75,
+  "ViewDistanceInChunks": 5,
+  "targetFrameRate": 60,
   "gameMode": 2,
   "seed": 65535,
   "spawnPosition": {
@@ -10,7 +10,7 @@
   },
   "MoveSpeed": 4.0,
   "SprintSpeed": 6.0,
-  "RotationSpeed": 1.0,
+  "RotationSpeed": 2.0,
   "SpeedChangeRate": 10.0,
   "JumpHeight": 1.2,
   "Gravity": -15.0,
@@ -22,6 +22,5 @@
   "BottomClamp": -85.0,
   "checkInterval": 0.1,
   "reach": 8.0,
-  "PlaceDelay": 0.4,
-  "DestroyDelay": 0.4
+  "EditDelay": 0.8
 }
