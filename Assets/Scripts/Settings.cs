@@ -70,6 +70,18 @@ public class Settings
 	[Tooltip("Edit Delay")]
 	public float EditDelay = 0.8f;
 
+	[Space(10)]
+	[Header("Colliders")]
+	[Header("Can't be modified in Runtime")]
+	[Tooltip("Width of Player Collision Check")]
+	public float pWidthCol = 0.3f;
+	[Tooltip("Height Offset of Player Collision Check")]
+	public float pHeightCol = 1.7f;
+	[Tooltip("Offset for XZ Collision Check, adding to y")]
+	public float pYOffset = 0.08f;
+	[Tooltip("Offset for Side Collision Check, adding to pWidth")]
+	public float pWidthSideOffset = 0.15f;
+
 	#endregion
 
 	/// <summary>

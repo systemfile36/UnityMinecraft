@@ -101,13 +101,18 @@ namespace StarterAssets
 		//플레이어 판정 범위용 변수
 		[Header("Colliders")]
 		[Tooltip("Width of Player Collision Check")]
-		public static float pWidthCol = 0.3f;
+		public float pWidthCol = 0.3f;
 		[Tooltip("Height Offset of Player Collision Check")]
-		public static float pHeightCol = 1.7f;
+		public float pHeightCol = 1.7f;
 		[Tooltip("Offset for XZ Collision Check, adding to y")]
-		public static float pYOffset = 0.08f;
+		public float pYOffset = 0.08f;
 		[Tooltip("Offset for Side Collision Check, adding to pWidth")]
-		public static float pWidthSideOffset = 0.15f;
+		public float pWidthSideOffset = 0.15f;
+
+		/// <summary>
+		/// pWidthCol의 제곱
+		/// </summary>
+		private float pWidthColSqr;
 
 		#region 충돌 판정용 열거형, 딕셔너리
 		/// <summary>
@@ -141,48 +146,14 @@ namespace StarterAssets
 		}
 
 		//대각선 방향을 위해 길이에 cos(45도)를 곱함
-		private static float D_pWidthCol = pWidthCol * 0.707f;
+		private float D_pWidthCol /*= pWidthCol * 0.707f*/;
 
 		/// <summary>
 		/// 충돌 판정의 플레이어 기준 상대위치
 		/// 이렇게 하면 관리하기 수월해진다. player의 transform.position에 더하면 절대 좌표가 됨
+		/// LoadColliderDictionary()에서 초기화함
 		/// </summary>
-		private Dictionary<C_Direction, Vector3> pColliders = new Dictionary<C_Direction, Vector3>()
-		{
-			//PosX
-			{C_Direction.PosX_High, new Vector3((pWidthCol + pWidthSideOffset), pHeightCol, 0) },
-			{C_Direction.PosX_Low, new Vector3((pWidthCol + pWidthSideOffset), pYOffset, 0) },
-
-			//PosZ
-			{C_Direction.PosZ_High, new Vector3(0, pHeightCol, (pWidthCol + pWidthSideOffset)) },
-			{C_Direction.PosZ_Low, new Vector3(0, pYOffset, (pWidthCol + pWidthSideOffset)) },
-
-			//NegX
-			{C_Direction.NegX_High, new Vector3(-(pWidthCol + pWidthSideOffset), pHeightCol, 0) },
-			{C_Direction.NegX_Low, new Vector3(-(pWidthCol + pWidthSideOffset), pYOffset, 0) },
-
-			//NegZ
-			{C_Direction.NegZ_High, new Vector3(0, pHeightCol, -(pWidthCol + pWidthSideOffset)) },
-			{C_Direction.NegZ_Low, new Vector3(0, pYOffset, -(pWidthCol + pWidthSideOffset)) },
-
-			//PosXPosZ
-			{C_Direction.PosXPosZ_High, new Vector3(D_pWidthCol + pWidthSideOffset, pHeightCol, D_pWidthCol + pWidthSideOffset) },
-			{C_Direction.PosXPosZ_Low, new Vector3(D_pWidthCol + pWidthSideOffset, pYOffset, D_pWidthCol + pWidthSideOffset) },
-
-			//PosXNegZ
-			{C_Direction.PosXNegZ_High, new Vector3(D_pWidthCol + pWidthSideOffset, pHeightCol, -(D_pWidthCol + pWidthSideOffset)) },
-			{C_Direction.PosXNegZ_Low, new Vector3(D_pWidthCol + pWidthSideOffset, pYOffset, -(D_pWidthCol + pWidthSideOffset)) },
-
-			//NegXPosZ
-			{C_Direction.NegXPosZ_High, new Vector3(-(D_pWidthCol + pWidthSideOffset), pHeightCol, D_pWidthCol + pWidthSideOffset) },
-			{C_Direction.NegXPosZ_Low, new Vector3(-(D_pWidthCol + pWidthSideOffset), pYOffset, D_pWidthCol + pWidthSideOffset) },
-
-			//NegXNegZ
-			{C_Direction.NegXNegZ_High, new Vector3(-(D_pWidthCol + pWidthSideOffset), pHeightCol, -(D_pWidthCol + pWidthSideOffset))  },
-			{C_Direction.NegXNegZ_Low, new Vector3(-(D_pWidthCol + pWidthSideOffset), pYOffset, -(D_pWidthCol + pWidthSideOffset))  }
-
-
-		};
+		private Dictionary<C_Direction, Vector3> pColliders;
 		#endregion
 
 		//가이드 블럭 참조
@@ -237,6 +208,9 @@ namespace StarterAssets
 				world = GameObject.Find("World").GetComponent<World>();
 			}
 
+			//충돌 판정 범위를 로드한다.
+			LoadColliderDictionary();
+
 		}
 
 		private void Start()
@@ -276,6 +250,93 @@ namespace StarterAssets
 			CameraRotation();
 		}
 
+		/// <summary>
+		/// Collider Dictionary를 초기화한다.
+		/// </summary>
+		private void LoadColliderDictionary()
+        {
+			//GameManager에서 초기화
+			pWidthCol = GameManager.Mgr.settings.pWidthCol;
+			pHeightCol = GameManager.Mgr.settings.pHeightCol;
+			pWidthSideOffset = GameManager.Mgr.settings.pWidthSideOffset;
+			pYOffset = GameManager.Mgr.settings.pYOffset;
+
+			//대각선 방향을 위해 길이에 cos(45도)를 곱함
+			D_pWidthCol = pWidthCol * 0.707f;
+
+			//pWidthCol의 제곱값 초기화
+			pWidthColSqr = Mathf.Pow(pWidthCol, 2);
+
+			pColliders = new Dictionary<C_Direction, Vector3>()
+			{
+				//PosX
+				{C_Direction.PosX_High, new Vector3((pWidthCol + pWidthSideOffset), pHeightCol, 0) },
+				{C_Direction.PosX_Low, new Vector3((pWidthCol + pWidthSideOffset), pYOffset, 0) },
+
+				//PosZ
+				{C_Direction.PosZ_High, new Vector3(0, pHeightCol, (pWidthCol + pWidthSideOffset)) },
+				{C_Direction.PosZ_Low, new Vector3(0, pYOffset, (pWidthCol + pWidthSideOffset)) },
+
+				//NegX
+				{C_Direction.NegX_High, new Vector3(-(pWidthCol + pWidthSideOffset), pHeightCol, 0) },
+				{C_Direction.NegX_Low, new Vector3(-(pWidthCol + pWidthSideOffset), pYOffset, 0) },
+
+				//NegZ
+				{C_Direction.NegZ_High, new Vector3(0, pHeightCol, -(pWidthCol + pWidthSideOffset)) },
+				{C_Direction.NegZ_Low, new Vector3(0, pYOffset, -(pWidthCol + pWidthSideOffset)) },
+
+				//PosXPosZ
+				{C_Direction.PosXPosZ_High, new Vector3(D_pWidthCol + pWidthSideOffset, pHeightCol, D_pWidthCol + pWidthSideOffset) },
+				{C_Direction.PosXPosZ_Low, new Vector3(D_pWidthCol + pWidthSideOffset, pYOffset, D_pWidthCol + pWidthSideOffset) },
+
+				//PosXNegZ
+				{C_Direction.PosXNegZ_High, new Vector3(D_pWidthCol + pWidthSideOffset, pHeightCol, -(D_pWidthCol + pWidthSideOffset)) },
+				{C_Direction.PosXNegZ_Low, new Vector3(D_pWidthCol + pWidthSideOffset, pYOffset, -(D_pWidthCol + pWidthSideOffset)) },
+
+				//NegXPosZ
+				{C_Direction.NegXPosZ_High, new Vector3(-(D_pWidthCol + pWidthSideOffset), pHeightCol, D_pWidthCol + pWidthSideOffset) },
+				{C_Direction.NegXPosZ_Low, new Vector3(-(D_pWidthCol + pWidthSideOffset), pYOffset, D_pWidthCol + pWidthSideOffset) },
+
+				//NegXNegZ
+				{C_Direction.NegXNegZ_High, new Vector3(-(D_pWidthCol + pWidthSideOffset), pHeightCol, -(D_pWidthCol + pWidthSideOffset))  },
+				{C_Direction.NegXNegZ_Low, new Vector3(-(D_pWidthCol + pWidthSideOffset), pYOffset, -(D_pWidthCol + pWidthSideOffset))  }
+
+			};
+
+		}
+
+		/// <summary>
+		/// pos 좌표의 Voxel이 플레이어의 콜라이더 범위 내에 있는 지 여부 반환
+		/// </summary>
+		public bool CheckVoxelInCollider(Vector3 pos)
+        {
+			//pos와 각 콜라이더의 좌표를 블럭 좌표로 변환한 뒤
+			//일치 여부를 판단, 일치하면 범위 내에 있는 걸로 판단한다.
+			//즉, 각 콜라이더 좌표가 속한 블럭 좌표와 비교하는 것이다.
+
+			//pos를 정수로 내려서 블록 좌표로 변환한다.
+			int posX = Mathf.FloorToInt(pos.x);
+			int posY = Mathf.FloorToInt(pos.y);
+			int posZ = Mathf.FloorToInt(pos.z);
+
+			Vector3 col;
+			//각 콜라이더의 상대 좌표를 받아온다.
+			foreach(Vector3 p in pColliders.Values)
+            {
+				//상대 좌표를 실 좌표로 변환한 후 정수로 내려서 블럭 좌표로 만든다.
+				col = p + transform.position;
+				int colX = Mathf.FloorToInt(col.x);
+				int colY = Mathf.FloorToInt(col.y);
+				int colZ = Mathf.FloorToInt(col.z);
+
+				//만약 콜라이더와 같은 블럭에 있다면 범위 내에 있는 것이다.
+				if(posX == colX && posY == colY && posZ == colZ)
+                {
+					return true;
+                }
+            }
+			return false;
+        }
 
 		/// <summary>
 		/// 마우스 입력에 따라 블럭 설치와 파괴
@@ -311,11 +372,9 @@ namespace StarterAssets
 				//오른쪽 클릭시 들고 있는 블럭 설치 (들고 있는 블럭이 0이라면 설치 X)
 				if (placeGuide.gameObject.activeSelf && _EditDelay <= 0.0f)
 				{
-					
 					//놓을 위치 가이드의 위치에 들고있는 블럭을 넣는다.
-					//놓을 위치가 플레이어 위치거나 머리 위치면 놓지 않는다.
-					if (!VoxelData.CompareVector3ByInteger(placeGuide.position, transform.position) 
-						&& !VoxelData.CompareVector3ByInteger(placeGuide.position, transform.position + Vector3.up))
+					//놓을 위치 가이드가 플레이어의 콜라이더 범위와 겹치면 놓지 않는다.
+					if (!CheckVoxelInCollider(placeGuide.position))
 					{
 						//선택된 아이템 슬롯의 정보를 받아온다.
 						ItemSlot SelectedSlot = toolbar.SelectedItemSlot;
@@ -332,6 +391,10 @@ namespace StarterAssets
 						
 
 					}
+					else
+                    {
+						Debug.Log("Invalid Place!");
+                    }
 						
 					//델타 타임 초기화
 					_EditDelay = GameManager.Mgr.settings.EditDelay;
@@ -610,6 +673,9 @@ namespace StarterAssets
 
 		}
 
+		/// <summary>
+		/// 바라보는 방향을 구한 후 플레이어의 Rotation과 카메라의 피치를 조정한다.
+		/// </summary>
 		private void CameraRotation()
 		{
 			// if there is an input
@@ -629,6 +695,9 @@ namespace StarterAssets
 			}
 		}
 
+		/// <summary>
+		/// 이동 방향을 결정하고 충돌 판정을 한 후 transform에 반영
+		/// </summary>
 		private void Move()
 		{
 			//쓰지 않는 것들을 지운다.
@@ -685,26 +754,26 @@ namespace StarterAssets
 			//세계 기준 이동 좌표
 			Vector3 tempVector = inputDirection.normalized * (_speed * Time.fixedDeltaTime) + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.fixedDeltaTime;
 
-			//충돌 확인 후 벡터 조정
-			if((tempVector.x > 0 && PosX) || (tempVector.x < 0 && NegX))
+			//아래 충돌문은 if 문을 분리하여야 한다.
+			//그렇지 않으면 충돌해도 X 이동과 Z 이동 둘 중 하나만 멈추기 때문이다.
+
+			//대각선을 포함한 +X, -X 방향에 장애물이 있으면
+			//X축 속도를 0으로 한다.
+			if ((tempVector.x > 0 && (PosX || PosXPosZ || PosXNegZ)) 
+				|| (tempVector.x < 0 && (NegX || NegXNegZ || NegXPosZ)))
 			{
 				tempVector.x = 0.0f;
 			}
-			if((tempVector.z > 0 && PosZ) || (tempVector.z < 0 && NegZ))
+
+			//대각선을 포함한 +Z, -Z 방향에 장애물이 있으면
+			//Z축 속도를 0으로 한다.
+			if ((tempVector.z > 0 && (PosZ || PosXPosZ || NegXPosZ)) 
+				|| (tempVector.z < 0 && (NegZ || PosXNegZ || NegXNegZ)))
 			{
 				tempVector.z = 0.0f;
 			}
-			
-			//대각선 충돌
-			if((tempVector.x > 0 && tempVector.z > 0 && PosXPosZ)
-				|| (tempVector.x > 0 && tempVector.z < 0 && PosXNegZ)
-				|| (tempVector.x < 0 && tempVector.z > 0 && NegXPosZ)
-				|| (tempVector.x < 0 && tempVector.z < 0 && NegXNegZ))
-			{
-				tempVector.x = 0.0f;
-				tempVector.z = 0.0f;
-			}
-			
+
+
 			//_controller.Move(inputDirection.normalized * (_speed * Time.deltaTime) + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
 			transform.Translate(tempVector, Space.World);
 		}
@@ -776,10 +845,21 @@ namespace StarterAssets
 			return Mathf.Clamp(lfAngle, lfMin, lfMax);
 		}
 
+#if UNITY_EDITOR
+
 		//기즈모는 디버그 창에 보이는 것
 		//충돌판정 가시화를 위한 기즈모
 		private void OnDrawGizmosSelected()
 		{
+            try
+            {
+				if (GameManager.Mgr == null)
+					return;
+            }
+			catch(System.NullReferenceException e)
+            {
+
+            }
 			/*
 			Color transparentGreen = new Color(0.0f, 1.0f, 0.0f, 0.35f);
 			Color transparentRed = new Color(1.0f, 0.0f, 0.0f, 0.35f);
@@ -828,4 +908,5 @@ namespace StarterAssets
 
 
 	}
+#endif
 }

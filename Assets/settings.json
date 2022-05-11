@@ -22,5 +22,9 @@
   "BottomClamp": -85.0,
   "checkInterval": 0.1,
   "reach": 8.0,
-  "EditDelay": 0.8
+  "EditDelay": 0.8,
+  "pWidthCol": 0.3,
+  "pHeightCol": 1.7,
+  "pYOffset": 0.08,
+  "pWidthSideOffset": 0.15
 }
