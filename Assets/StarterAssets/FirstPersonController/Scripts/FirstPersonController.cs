@@ -323,6 +323,7 @@ namespace StarterAssets
 			//각 콜라이더의 상대 좌표를 받아온다.
 			foreach(Vector3 p in pColliders.Values)
             {
+
 				//상대 좌표를 실 좌표로 변환한 후 정수로 내려서 블럭 좌표로 만든다.
 				col = p + transform.position;
 				int colX = Mathf.FloorToInt(col.x);
@@ -354,10 +355,19 @@ namespace StarterAssets
 				//선택 가이드가 활성화 되어 있고 설정된 딜레이에 도달했다면
 				if (selectGuide.gameObject.activeSelf && _EditDelay <= 0.0f)
 				{
+
+                    //선택 가이드의 좌표의 청크를 받아서 그 좌표의 블럭을 Air로 만든다.
+                    //즉 파괴한다.
+                    try
+                    {
+						world.GetChunkFromVector3(selectGuide.position).EditVoxel(selectGuide.position, 0);
+					}
+					catch(System.IndexOutOfRangeException e)
+                    {
+						Debug.Log(e.Message);
+						Debug.Log(selectGuide.position);
+                    }
 					
-					//선택 가이드의 좌표의 청크를 받아서 그 좌표의 블럭을 Air로 만든다.
-					//즉 파괴한다.
-					world.GetChunkFromVector3(selectGuide.position).EditVoxel(selectGuide.position, 0);
 					//델타 타임 초기화
 					_EditDelay = GameManager.Mgr.settings.EditDelay;
 				}
@@ -393,7 +403,7 @@ namespace StarterAssets
 					}
 					else
                     {
-						Debug.Log("Invalid Place!");
+						GameManager.Mgr.PrintInfo("Invalid Place!");
                     }
 						
 					//델타 타임 초기화

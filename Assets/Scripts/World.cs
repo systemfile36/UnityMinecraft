@@ -872,8 +872,8 @@ public class World : MonoBehaviour
     /// <returns></returns>
     bool IsChunkInWorld(ChunkCoord coord)
 	{
-        if (coord.x > 0 && coord.x < VoxelData.WorldSizeInChunks - 1
-            && coord.z > 0 && coord.z < VoxelData.WorldSizeInChunks - 1)
+        if (coord.x >= 0 && coord.x < VoxelData.WorldSizeInChunks - 1
+            && coord.z >= 0 && coord.z < VoxelData.WorldSizeInChunks - 1)
             return true;
         else
             return false;

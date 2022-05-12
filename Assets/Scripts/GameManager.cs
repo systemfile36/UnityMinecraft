@@ -19,6 +19,10 @@ public class GameManager : MonoBehaviour
 	/// </summary>
 	[SerializeField] private Settings _settings = null;
 
+	/// <summary>
+	/// 안내 메시지 클래스
+	/// </summary>
+	private InfoMessage _infoMessage = null;
 
 	void Awake()
 	{
@@ -38,6 +42,9 @@ public class GameManager : MonoBehaviour
 
 		//설정 로드
 		LoadSettings();
+
+		//InfoMessage 초기화
+		_infoMessage = GameObject.Find("InfoMessage").GetComponent<InfoMessage>();
 		//_settings = new Settings();
 	}
 
@@ -75,14 +82,23 @@ public class GameManager : MonoBehaviour
 		}
 	}
 
+	/// <summary>
+	/// InfoMessage의 출력할 메시지 큐에 str을 넣는다.
+	/// </summary>
+	public void PrintInfo(string str)
+    {
+		_infoMessage.AddMessages(str);
+    }
+
 	public void LoadSettings()
 	{
 		//파일로 부터 세팅 정보를 불러온다.
 		_settings = LoadJsonFile<Settings>(GamePaths.SettingsPath, GamePaths.SettingsFileName);
 
 		//_settings가 null이거나, 유효한 값이 아니라면
-		if (_settings != null && _settings.IsValid())
+		if (_settings == null || !_settings.IsValid())
         {
+			Debug.Log("Invalid Settings");
 			//기본 생성자를 통해 기본 값으로 초기화
 			_settings = new Settings();
 		}

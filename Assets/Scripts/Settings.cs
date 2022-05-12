@@ -19,7 +19,7 @@ public class Settings
 	public GameMode gameMode = GameMode.Debug;
 	public int seed = 65535;
 	public Vector3_S spawnPosition = 
-		new Vector3_S(VoxelData.ChunkWidth/2, VoxelData.ChunkHeight, VoxelData.ChunkWidth / 2);
+		new Vector3_S(VoxelData.WorldSizeInVoxels/2, VoxelData.ChunkHeight, VoxelData.WorldSizeInVoxels / 2);
 
 	//FirstPersonController.cs의 플레이어 행동 관련 변수들
 	#region Player Behaviour Variables
@@ -95,9 +95,8 @@ public class Settings
 			&& (targetFrameRate > 30 && targetFrameRate < 144)
 			&& (spawnPosition.x > 0 && spawnPosition.y > 0 && spawnPosition.z > 0
 				&& spawnPosition.x < VoxelData.WorldSizeInVoxels 
-				&& spawnPosition.y < VoxelData.ChunkHeight
-				&& spawnPosition.z < VoxelData.WorldSizeInVoxels)
-			&& System.Enum.IsDefined(typeof(GameMode), gameMode))
+				&& spawnPosition.y <= VoxelData.ChunkHeight
+				&& spawnPosition.z < VoxelData.WorldSizeInVoxels))
         {
 			return true;
         }
