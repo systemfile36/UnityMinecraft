@@ -589,6 +589,8 @@ public class Chunk
 
         }
 
+        //https://blog.naver.com/loliisjinri/222699947447 참조
+
         //빛 감쇠를 적용할 블럭에 대해 순회한다.
         Vector3Int v;
         Vector3 currentLitVoxel;

@@ -25,6 +25,8 @@
   "EditDelay": 0.8,
   "pWidthCol": 0.3,
   "pHeightCol": 1.7,
+  "pHeightMidCol": 0.8,
   "pYOffset": 0.08,
-  "pWidthSideOffset": 0.15
+  "pWidthSideOffset": 0.15,
+  "pInvalidRate": 0.85
 }

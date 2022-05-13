@@ -104,10 +104,14 @@ namespace StarterAssets
 		public float pWidthCol = 0.3f;
 		[Tooltip("Height Offset of Player Collision Check")]
 		public float pHeightCol = 1.7f;
-		[Tooltip("Offset for XZ Collision Check, adding to y")]
+		[Tooltip("Mid Collider Offset")]
+		public float pHeightMidCol = 0.8f;
+		[Tooltip("Offset for XZ Collision Check, add to y")]
 		public float pYOffset = 0.08f;
-		[Tooltip("Offset for Side Collision Check, adding to pWidth")]
+		[Tooltip("Offset for Side Collision Check, add to pWidth")]
 		public float pWidthSideOffset = 0.15f;
+		[Tooltip("Percentage of Collider's magnitude used by CheckVoxelInCollider")]
+		public float pInvalidRate = 0.85f;
 
 		/// <summary>
 		/// pWidthCol의 제곱
@@ -121,27 +125,35 @@ namespace StarterAssets
 		private enum C_Direction
 		{
 			PosX_High,
+			PosX_Mid,
 			PosX_Low,
 
 			NegX_High,
+			NegX_Mid,
 			NegX_Low,
 
 			PosZ_High,
+			PosZ_Mid,
 			PosZ_Low,
 
 			NegZ_High,
+			NegZ_Mid,
 			NegZ_Low,
 
 			PosXPosZ_High,
+			PosXPosZ_Mid,
 			PosXPosZ_Low,
 
 			PosXNegZ_High,
+			PosXNegZ_Mid,
 			PosXNegZ_Low,
 
 			NegXPosZ_High,
+			NegXPosZ_Mid,
 			NegXPosZ_Low,
 
 			NegXNegZ_High,
+			NegXNegZ_Mid,
 			NegXNegZ_Low
 		}
 
@@ -154,6 +166,7 @@ namespace StarterAssets
 		/// LoadColliderDictionary()에서 초기화함
 		/// </summary>
 		private Dictionary<C_Direction, Vector3> pColliders;
+
 		#endregion
 
 		//가이드 블럭 참조
@@ -258,7 +271,9 @@ namespace StarterAssets
 			//GameManager에서 초기화
 			pWidthCol = GameManager.Mgr.settings.pWidthCol;
 			pHeightCol = GameManager.Mgr.settings.pHeightCol;
+			pHeightMidCol = GameManager.Mgr.settings.pHeightMidCol;
 			pWidthSideOffset = GameManager.Mgr.settings.pWidthSideOffset;
+			pInvalidRate = GameManager.Mgr.settings.pInvalidRate;
 			pYOffset = GameManager.Mgr.settings.pYOffset;
 
 			//대각선 방향을 위해 길이에 cos(45도)를 곱함
@@ -267,38 +282,47 @@ namespace StarterAssets
 			//pWidthCol의 제곱값 초기화
 			pWidthColSqr = Mathf.Pow(pWidthCol, 2);
 
+			//충돌판정 범위 초기화
 			pColliders = new Dictionary<C_Direction, Vector3>()
 			{
 				//PosX
 				{C_Direction.PosX_High, new Vector3((pWidthCol + pWidthSideOffset), pHeightCol, 0) },
+				{C_Direction.PosX_Mid, new Vector3((pWidthCol + pWidthSideOffset), pHeightMidCol, 0) },
 				{C_Direction.PosX_Low, new Vector3((pWidthCol + pWidthSideOffset), pYOffset, 0) },
 
 				//PosZ
 				{C_Direction.PosZ_High, new Vector3(0, pHeightCol, (pWidthCol + pWidthSideOffset)) },
+				{C_Direction.PosZ_Mid, new Vector3(0, pHeightMidCol, (pWidthCol + pWidthSideOffset)) },
 				{C_Direction.PosZ_Low, new Vector3(0, pYOffset, (pWidthCol + pWidthSideOffset)) },
 
 				//NegX
 				{C_Direction.NegX_High, new Vector3(-(pWidthCol + pWidthSideOffset), pHeightCol, 0) },
+				{C_Direction.NegX_Mid, new Vector3(-(pWidthCol + pWidthSideOffset), pHeightMidCol, 0) },
 				{C_Direction.NegX_Low, new Vector3(-(pWidthCol + pWidthSideOffset), pYOffset, 0) },
 
 				//NegZ
 				{C_Direction.NegZ_High, new Vector3(0, pHeightCol, -(pWidthCol + pWidthSideOffset)) },
+				{C_Direction.NegZ_Mid, new Vector3(0, pHeightMidCol, -(pWidthCol + pWidthSideOffset)) },
 				{C_Direction.NegZ_Low, new Vector3(0, pYOffset, -(pWidthCol + pWidthSideOffset)) },
 
 				//PosXPosZ
 				{C_Direction.PosXPosZ_High, new Vector3(D_pWidthCol + pWidthSideOffset, pHeightCol, D_pWidthCol + pWidthSideOffset) },
+				{C_Direction.PosXPosZ_Mid, new Vector3(D_pWidthCol + pWidthSideOffset, pHeightMidCol, D_pWidthCol + pWidthSideOffset) },
 				{C_Direction.PosXPosZ_Low, new Vector3(D_pWidthCol + pWidthSideOffset, pYOffset, D_pWidthCol + pWidthSideOffset) },
 
 				//PosXNegZ
 				{C_Direction.PosXNegZ_High, new Vector3(D_pWidthCol + pWidthSideOffset, pHeightCol, -(D_pWidthCol + pWidthSideOffset)) },
+				{C_Direction.PosXNegZ_Mid, new Vector3(D_pWidthCol + pWidthSideOffset, pHeightMidCol, -(D_pWidthCol + pWidthSideOffset)) },
 				{C_Direction.PosXNegZ_Low, new Vector3(D_pWidthCol + pWidthSideOffset, pYOffset, -(D_pWidthCol + pWidthSideOffset)) },
 
 				//NegXPosZ
 				{C_Direction.NegXPosZ_High, new Vector3(-(D_pWidthCol + pWidthSideOffset), pHeightCol, D_pWidthCol + pWidthSideOffset) },
+				{C_Direction.NegXPosZ_Mid, new Vector3(-(D_pWidthCol + pWidthSideOffset), pHeightMidCol, D_pWidthCol + pWidthSideOffset) },
 				{C_Direction.NegXPosZ_Low, new Vector3(-(D_pWidthCol + pWidthSideOffset), pYOffset, D_pWidthCol + pWidthSideOffset) },
 
 				//NegXNegZ
 				{C_Direction.NegXNegZ_High, new Vector3(-(D_pWidthCol + pWidthSideOffset), pHeightCol, -(D_pWidthCol + pWidthSideOffset))  },
+				{C_Direction.NegXNegZ_Mid, new Vector3(-(D_pWidthCol + pWidthSideOffset), pHeightMidCol, -(D_pWidthCol + pWidthSideOffset))  },
 				{C_Direction.NegXNegZ_Low, new Vector3(-(D_pWidthCol + pWidthSideOffset), pYOffset, -(D_pWidthCol + pWidthSideOffset))  }
 
 			};
@@ -325,7 +349,8 @@ namespace StarterAssets
             {
 
 				//상대 좌표를 실 좌표로 변환한 후 정수로 내려서 블럭 좌표로 만든다.
-				col = p + transform.position;
+				//pInvalidRate를 곱해서 콜라이더의 길이를 일정량 줄인다.
+				col = (p * pInvalidRate) + transform.position;
 				int colX = Mathf.FloorToInt(col.x);
 				int colY = Mathf.FloorToInt(col.y);
 				int colZ = Mathf.FloorToInt(col.z);
@@ -519,6 +544,7 @@ namespace StarterAssets
 			get
 			{
 				if (world.CheckVoxelSolid(pColliders[C_Direction.PosX_High] + transform.position)
+				|| world.CheckVoxelSolid(pColliders[C_Direction.PosX_Mid] + transform.position)
 				|| world.CheckVoxelSolid(pColliders[C_Direction.PosX_Low] + transform.position))
 				{
 					return true;
@@ -538,6 +564,7 @@ namespace StarterAssets
 			get
 			{
 				if (world.CheckVoxelSolid(pColliders[C_Direction.NegX_High] + transform.position)
+				|| world.CheckVoxelSolid(pColliders[C_Direction.NegX_Mid] + transform.position)
 				|| world.CheckVoxelSolid(pColliders[C_Direction.NegX_Low] + transform.position))
 				{
 					return true;
@@ -557,6 +584,7 @@ namespace StarterAssets
 			get
 			{
 				if (world.CheckVoxelSolid(pColliders[C_Direction.PosZ_High] + transform.position)
+				|| world.CheckVoxelSolid(pColliders[C_Direction.PosZ_Mid]	+ transform.position)
 				|| world.CheckVoxelSolid(pColliders[C_Direction.PosZ_Low] + transform.position))
 				{
 					return true;
@@ -576,6 +604,7 @@ namespace StarterAssets
 			get
 			{
 				if (world.CheckVoxelSolid(pColliders[C_Direction.NegZ_High] + transform.position)
+				|| world.CheckVoxelSolid(pColliders[C_Direction.NegZ_Mid] + transform.position)
 				|| world.CheckVoxelSolid(pColliders[C_Direction.NegZ_Low] + transform.position))
 				{
 					return true;
@@ -595,6 +624,7 @@ namespace StarterAssets
 			get
 			{
 				if(world.CheckVoxelSolid(pColliders[C_Direction.PosXPosZ_High] + transform.position)
+					|| world.CheckVoxelSolid(pColliders[C_Direction.PosXPosZ_Mid] + transform.position)
 					|| world.CheckVoxelSolid(pColliders[C_Direction.PosXPosZ_Low] + transform.position))
 				{
 					return true;
@@ -614,6 +644,7 @@ namespace StarterAssets
 			get
 			{
 				if (world.CheckVoxelSolid(pColliders[C_Direction.PosXNegZ_High] + transform.position)
+					|| world.CheckVoxelSolid(pColliders[C_Direction.PosXNegZ_Mid] + transform.position)	
 					|| world.CheckVoxelSolid(pColliders[C_Direction.PosXNegZ_Low] + transform.position))
 				{
 					return true;
@@ -633,6 +664,7 @@ namespace StarterAssets
 			get
 			{
 				if (world.CheckVoxelSolid(pColliders[C_Direction.NegXPosZ_High] + transform.position)
+					|| world.CheckVoxelSolid(pColliders[C_Direction.NegXPosZ_Mid] + transform.position)
 					|| world.CheckVoxelSolid(pColliders[C_Direction.NegXPosZ_Low] + transform.position))
 				{
 					return true;
@@ -652,6 +684,7 @@ namespace StarterAssets
 			get
 			{
 				if (world.CheckVoxelSolid(pColliders[C_Direction.NegXNegZ_High] + transform.position)
+					|| world.CheckVoxelSolid(pColliders[C_Direction.NegXNegZ_Mid] + transform.position)
 					|| world.CheckVoxelSolid(pColliders[C_Direction.NegXNegZ_Low] + transform.position))
 				{
 					return true;

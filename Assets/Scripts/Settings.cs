@@ -77,11 +77,14 @@ public class Settings
 	public float pWidthCol = 0.3f;
 	[Tooltip("Height Offset of Player Collision Check")]
 	public float pHeightCol = 1.7f;
+	[Tooltip("Mid Collider Offset")]
+	public float pHeightMidCol = 0.8f;
 	[Tooltip("Offset for XZ Collision Check, adding to y")]
 	public float pYOffset = 0.08f;
 	[Tooltip("Offset for Side Collision Check, adding to pWidth")]
 	public float pWidthSideOffset = 0.15f;
-
+	[Tooltip("Percentage of Collider's magnitude used by CheckVoxelInCollider")]
+	public float pInvalidRate = 0.85f;
 	#endregion
 
 	/// <summary>

@@ -327,17 +327,21 @@ public class World : MonoBehaviour
     public bool CheckVoxelSolid(Vector3 pos)
 	{
         //pos가 속한 청크 좌표 불러옴
-        ChunkCoord thisChunk = new ChunkCoord(pos);
+        //ChunkCoord thisChunk = new ChunkCoord(pos);
+
+        //GC 호출 최소화를 위해 지역변수에 할당
+        int cX = Mathf.FloorToInt(pos.x) / VoxelData.ChunkWidth;
+        int cZ = Mathf.FloorToInt(pos.z) / VoxelData.ChunkWidth;
 
         //좌표 유효 반환
         if (!IsVoxelInWorld(pos))
             return false;
 
         //지정된 좌표에 청크가 생성되었고, 청크의 맵이 초기화 되었다면
-        if(chunks[thisChunk.x, thisChunk.z] != null && chunks[thisChunk.x, thisChunk.z].IsEditable)
+        if(chunks[cX, cZ] != null && chunks[cX, cZ].IsEditable)
 		{
             //지정된 좌표에 있는 블럭의 타입을 받아 isSolid 반환
-            return blockTypes[chunks[thisChunk.x, thisChunk.z].GetVoxelFromGlobalVector3(pos).id].isSolid;
+            return blockTypes[chunks[cX, cZ].GetVoxelFromGlobalVector3(pos).id].isSolid;
 		}
 
         //만약에 위에 조건에 모두 해당이 없으면 GetVoxel을 호출해서 확인
