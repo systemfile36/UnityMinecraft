@@ -48,6 +48,7 @@ namespace StarterAssets
 				//무조건 UI를 켠 상태로 유지한다.
 				if(_IsHoldingCursor)
 				{
+					GameManager.Mgr.PrintInfo("Holding Item Now! Can't Off UI");
 					_IsOnUI = true;
 				}
 				else
@@ -170,12 +171,38 @@ namespace StarterAssets
 			Debug.Log(playerInput.currentActionMap);
 		}
 
+		/// <summary>
+		/// 종료 명령이 들어왔을 때의 경우
+		/// </summary>
+		/// <param name="value"></param>
+        public void OnExit(InputValue value)
+        {
+			//만약 UI모드라면 
+			if(IsOnUI)
+            {
+				//UI를 끄려고 시도한다.
+				IsOnUI = false;
+
+				//끄는데 성공했다면 Player모드로 전환한다.
+				if(!IsOnUI)
+                {
+					SetCursorState(true);
+					playerInput.SwitchCurrentActionMap("Player");
+                }
+				
+				return;
+            }
+
+			//UI모드가 아니라면 종료한다.
+			GameManager.Mgr.QuitGame();
+        }
+
 #else
 	// old input sys if we do decide to have it (most likely wont)...
 #endif
 
 
-		public void MoveInput(Vector2 newMoveDirection)
+        public void MoveInput(Vector2 newMoveDirection)
 		{
 			move = newMoveDirection;
 		} 

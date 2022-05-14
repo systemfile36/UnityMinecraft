@@ -4558,7 +4558,7 @@ MonoBehaviour:
   player: {fileID: 506515130}
   spawnPosition: {x: 0, y: 0, z: 0}
   material: {fileID: 2100000, guid: d8445ee308f7e0649a2b9f7303167e3f, type: 2}
-  TransparentMaterial: {fileID: 2100000, guid: 607802ddc6087ef4297ad33f1457fdd8, type: 2}
+  TransparentMaterial: {fileID: 2100000, guid: 9963f47783a484743affa013f5d2d210, type: 2}
   blockTypes:
   - blockName: Air
     isSolid: 0
@@ -7502,8 +7502,10 @@ MonoBehaviour:
     EditDelay: 0.8
     pWidthCol: 0.3
     pHeightCol: 1.7
+    pHeightMidCol: 0.8
     pYOffset: 0.08
     pWidthSideOffset: 0.15
+    pInvalidRate: 0.1
 --- !u!1001 &8681652680539675954
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -1,5 +1,5 @@
 ﻿//유니티의 셰이더 선택 창에서 나타날 이름
-Shader "UnityMinecraft/Blocks" {
+Shader "UnityMinecraft/Transparent Blocks" {
 
 	Properties{
 		//텍스쳐를 정의한다.
@@ -11,9 +11,10 @@ Shader "UnityMinecraft/Blocks" {
 	SubShader {
 		//https://docs.unity3d.com/530/Documentation/Manual/SL-PassTags.html
 		//키와 값의 쌍, 라이팅 파이프라인에서 가지는 역할을 제어할 때 사용
-		//불투명한 블럭이므로 "RenderType"="Opaque"만 남긴다.
 		Tags { 
-			"RenderType"="Opaque" 
+			"Queue"="AlphaTest" 
+			"IgnoreProjector"="True" 
+			"RenderType"="TransparentCutout" 
 		}
 		//Level Of Detail의 약자
 		LOD 100
@@ -113,7 +114,7 @@ Shader "UnityMinecraft/Blocks" {
 					//즉, Alpha값이 1 미만이면 clip()에 0이하의 값이 넘어간다.
 					//그럼 픽셀을 없앤다. 
 					//낭비를 막기 위해 투명한 것은 최대한 윗줄에서 버린다.
-					//clip(col.a - 1);
+					clip(col.a - 1);
 					
 					//col과 RGBA(0 0 0 1)(검은색)을 선형 보간해서 반환
 					//맨 마지막 인수는 weight로, 

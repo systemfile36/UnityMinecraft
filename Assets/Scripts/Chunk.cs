@@ -88,12 +88,13 @@ public class Chunk
     MeshRenderer meshRenderer;
     MeshFilter meshFilter;
 
-    //MeshCollider meshCollider;
-
     int vertexIndex = 0;
     List<Vector3> vertices;//= new List<Vector3>(20000);
     List<int> triangles;//= new List<int>(20000);
     List<Vector2> uvs;//= new List<Vector2>(20000);
+
+    //법선을 저장
+    List<Vector3> normals = new List<Vector3>();
 
     //정점의 색을 저장, 셰이더가 간접적으로 참조할 것이다.
     List<Color> colors = new List<Color>();
@@ -148,6 +149,7 @@ public class Chunk
 
         this.world = world;
         this.coord = coord;
+
         //IsActive = true;
 
         //완료될때까지 대기
@@ -196,11 +198,11 @@ public class Chunk
         //meshRenderer.material = world.material;
 
         //투명 블럭 구현을 위한 마테리얼 여러개 설정
-        //materials[0] = world.material;
-        //materials[1] = world.TransparentMaterial;
+        materials[0] = world.material;
+        materials[1] = world.TransparentMaterial;
 
-        //일단은, 하나의 마테리얼로
-        meshRenderer.material = world.material;
+        //마테리얼 여러개 사용
+        meshRenderer.materials = materials;
 
         //meshCollider = chunkObject.AddComponent<MeshCollider>();
 
@@ -509,8 +511,10 @@ public class Chunk
         vertexIndex = 0;
         vertices.Clear();
         triangles.Clear();
-        //TransparentTriangles.Clear();
+        TransparentTriangles.Clear();
         uvs.Clear();
+
+        normals.Clear();
 
         colors.Clear();
 	}
@@ -574,7 +578,7 @@ public class Chunk
 
                     //현재 순회중인 블럭이 받는 빛의 양을 설정한다.
                     currentVoxel.globalLightWeight = lightRay;
-
+                    
                     //다시 맵에 설정한다.
                     voxelMap[x, y, z] = currentVoxel;
 
@@ -725,6 +729,13 @@ public class Chunk
                 vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 2]]);
                 vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 3]]);
 
+                //각 정점에 대해 법선을 추가한다.
+                //faceChecks는 각 면이 바라보는 방향을 뜻하므로 그대로 넣어주면 된다.
+                for(int i = 0; i < 4; i++)
+                {
+                    normals.Add(VoxelData.faceChecks[p]);
+                }
+
                 //p의 값은 0 ~ 5로 변화하면 각 면을 그린다.
                 //그에 따른 순서도 맞추어져 있으므로 faceIndex로 p를 넘긴다.
                 AddTexture(world.blockTypes[blockID].GetTextureID(p));
@@ -773,8 +784,8 @@ public class Chunk
                 colors.Add(new Color(0, 0, 0, lightLevel));
 
 
-                //만약 투명하지 않다면, 기본 삼각형 리스트에 넣는다.
-                //if (!isTransparent)
+                //비치는 블럭이 아니면, 기본 삼각형 리스트에 넣는다.
+                if (!world.blockTypes[blockID].drawNearPlane)
                 {
                     //삼각형의 각 꼭짓점을 정점 4개에 맞게 정수로 넣는다.
                     triangles.Add(vertexIndex);
@@ -784,8 +795,7 @@ public class Chunk
                     triangles.Add(vertexIndex + 1);
                     triangles.Add(vertexIndex + 3);
                 }
-                //투명이 아니면 투명 삼각형 배열에 넣는다.
-                /*
+                //비치는 블럭이면 투명 삼각형 배열에 넣는다.
                 else
 				{
                     //삼각형의 각 꼭짓점을 정점 4개에 맞게 정수로 넣는다.
@@ -796,7 +806,7 @@ public class Chunk
                     TransparentTriangles.Add(vertexIndex + 1);
                     TransparentTriangles.Add(vertexIndex + 3);
                 }
-                */
+                
                 vertexIndex += 4;
             }
         }
@@ -811,26 +821,25 @@ public class Chunk
 	{
         Mesh mesh = new Mesh();
         mesh.vertices = vertices.ToArray();
-        //mesh.triangles = triangles.ToArray();
 
         //이 메쉬에 사용할 마테리얼의 개수 설정
-        //mesh.subMeshCount = 2;
+        mesh.subMeshCount = 2;
 
         //기본 마테리얼을 사용할 삼각형들
-        //mesh.SetTriangles(triangles.ToArray(), 0);
+        mesh.SetTriangles(triangles.ToArray(), 0);
 
         //투명 마테리얼을 사용할 삼각형들
-        //mesh.SetTriangles(TransparentTriangles.ToArray(), 1);
+        mesh.SetTriangles(TransparentTriangles.ToArray(), 1);
 
-        mesh.triangles = triangles.ToArray();
+        //mesh.triangles = triangles.ToArray();
 
         mesh.uv = uvs.ToArray();
 
         //정점의 색을 지정
         mesh.colors = colors.ToArray();
 
-        //큐브를 깔끔하게 그리기 위해 필요한 연산
-        mesh.RecalculateNormals();
+        //법선을 설정함
+        mesh.normals = normals.ToArray();
 
         meshFilter.mesh = mesh;
 

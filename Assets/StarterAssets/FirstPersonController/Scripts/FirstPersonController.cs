@@ -949,7 +949,7 @@ namespace StarterAssets
 			Gizmos.DrawCube(transform.position + new Vector3(0, pHeightCol, 0), new Vector3(2 * pWidthCol, 0, 2 * pWidthCol));
 		}
 
-
-	}
 #endif
+	}
+
 }

@@ -16,6 +16,8 @@ public class DebugControl : MonoBehaviour
 
 	VoxelState currentSelected;
 
+	VoxelState currentPlaceGuide;
+
 	//초당 프레임 레이트
 	int fps = 0;
 	//프레임 간격
@@ -68,6 +70,7 @@ public class DebugControl : MonoBehaviour
 			}
 
 			currentSelected = world.GetVoxelState(player.selectGuide.position);
+			currentPlaceGuide = world.GetVoxelState(player.placeGuide.position);
 
 			strBuilder.Clear();
 			//StringBuilder를 통한 최적화
@@ -79,7 +82,8 @@ public class DebugControl : MonoBehaviour
 				Mathf.FloorToInt(world.player.transform.position.y), Mathf.FloorToInt(player.transform.position.z));
 			strBuilder.AppendFormat("Chunk : {0} {1}\n", world.playerChunkCoord.x, world.playerChunkCoord.z);
 			strBuilder.Append($"Selected_Position {player.selectGuide.position}\n");
-			strBuilder.Append($"Selected_Light {currentSelected.globalLightWeight}");
+			strBuilder.Append($"Selected_Light {currentSelected.globalLightWeight}\n");
+			strBuilder.Append($"PlaceGuide_Light {currentPlaceGuide.globalLightWeight}");
 
 			txt.text = strBuilder.ToString();
 
