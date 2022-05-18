@@ -4551,7 +4551,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7b7195ee18f919f4dad5eb5aaa2c2365, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  biome: {fileID: 11400000, guid: a94773d102b86b5419f4bc42cb69bebe, type: 2}
+  biomes:
+  - {fileID: 11400000, guid: a94773d102b86b5419f4bc42cb69bebe, type: 2}
+  - {fileID: 11400000, guid: 4d5c005ac0e036d4d8a6e19b8c320ffd, type: 2}
+  - {fileID: 11400000, guid: c0190f60193dffe4cb144ec92ae27a06, type: 2}
   globalLightLevel: 0.93
   dayColor: {r: 0.72156864, g: 0.972549, b: 0.9843137, a: 0}
   nightColor: {r: 0, g: 0.028412873, b: 0.1509434, a: 0}
@@ -4704,6 +4707,18 @@ MonoBehaviour:
     bottomFaceTexture: 52
     leftFaceTexture: 52
     rightFaceTexture: 52
+  - blockName: Catus
+    isSolid: 1
+    drawNearPlane: 0
+    transparency: 0
+    MaxStackSize: 64
+    icon: {fileID: 582694795441963099, guid: f9c751f4f5819a246a459067c87e3011, type: 3}
+    backFaceTexture: 70
+    frontFaceTexture: 70
+    topFaceTexture: 69
+    bottomFaceTexture: 71
+    leftFaceTexture: 70
+    rightFaceTexture: 70
   gameMode: 2
 --- !u!4 &1275971076
 Transform:

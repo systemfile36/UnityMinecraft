@@ -102,9 +102,7 @@ public class World : MonoBehaviour
 {
 
     //바이옴을 설정하는 변수
-    public BiomeAttributes biome;
-
-    
+    public BiomeAttributes[] biomes;
 
     //전역 밝기 조정
     [Range(0f, 0.93f)]
@@ -421,12 +419,59 @@ public class World : MonoBehaviour
             return 1;
         }
 
-        
+        //바이옴 선택 부분
+        //바이옴 출현에 대한 노이즈를 계산해서 가중치로 삼고, 
+        //이것이 가장 높은 것을 선택한다.
+        //https://blog.naver.com/loliisjinri/222737479286 참조
+
+        float HeightSum = 0f;
+        float highestWeight = 0f;
+        int selectedBiomeIndex = 0;
+
+        //바이옴들에 대해 순회
+        for(int i = 0; i < biomes.Length; i++)
+        {
+            //해당 바이옴의 노이즈로 가중치 설정
+            float weight = 
+                Noise.GetPerlin2D(new Vector2(pos.x, pos.z), 
+                    biomes[i].biomeOffset, biomes[i].biomeScale);
+
+            //가중치 최대값 갱신, 인덱스 갱신
+            //제일 가중치가 큰 것을 선택하기 위함
+            if (weight > highestWeight)
+            {
+                highestWeight = weight;
+                selectedBiomeIndex = i;
+            }
+
+            //해당 바이옴 기준 높이를 구하고 가중치를 곱한다.
+            float height = biomes[i].terHeight
+                * Noise.GetPerlin2D(new Vector2(pos.x, pos.z), 0, biomes[i].terScale)
+                * weight;
+
+            //평균을 구하기 위해 높이를 합한다.
+            HeightSum += height;
+            
+        }
+
+        //선택된 인덱스로 biome 설정
+        BiomeAttributes biome = biomes[selectedBiomeIndex];
+
+        //높이의 평균을 구한다.
+        HeightSum /= biomes.Length;
+
+        //바이옴들의 높이 평균과 고정 층을 더해서 
+        //실제 높이로 결정
+        int terHeight = Mathf.FloorToInt(HeightSum + BiomeAttributes.solidHeight);
+
+        /* 단일 바이옴 일때의 코드
         //0 ~ 1의 값인 펄린노이즈에 높이를 곱해서 범위를 조정
         int terHeight = 
             Mathf.FloorToInt(biome.terHeight * Noise.GetPerlin2D(
                 new Vector2(pos.x, pos.z), 0, biome.terScale))
-            + biome.solidHeight;
+            + BiomeAttributes.solidHeight;
+        */
+
 
         //바로 리턴하면 제대로 배치되지 않음
         byte vValue = 0;
@@ -434,10 +479,11 @@ public class World : MonoBehaviour
 
         //기본적인 맵의 틀
         //높이에 따라 블럭들 배치
+        //biome에 따라 표면 블럭 변경
         if (tempY == terHeight)
-            vValue = 3;
+            vValue = biome.surfaceBlockId;
         else if (tempY < terHeight && tempY > terHeight - 4)
-            vValue = 4;
+            vValue = biome.b_surfaceBlockId;
         else if (tempY > terHeight)
             vValue = 0;
         else
@@ -463,25 +509,23 @@ public class World : MonoBehaviour
 			}
 		}
 
-        //나무 반영 부분
+        //구조물 반영 부분
         //지면에만 생성하기 위한 조건문
-        if(tempY == terHeight)
+        if(tempY == terHeight && biome.isCreatePlants)
 		{
-            //나무가 생성되는 범위를 설정
-            if(Noise.GetPerlin2D(new Vector2(pos.x, pos.z), 0, biome.ForestScale) > biome.ForestThreshold)
+            //구조물가 생성되는 범위를 설정
+            if(Noise.GetPerlin2D(new Vector2(pos.x, pos.z), 0, biome.PlantSetScale) > biome.PlantSetThreshold)
 			{
                 //vValue = 1;
-                //실제 나무가 생성되는 위치
-                //이미 숲으로 설정된 상태에서 다시 Noise를 받아서 vValue를 바꾸었으므로
-                //숲의 범위 안에 다시 분산도와 임계치에 따라 배치됨
-                if (Noise.GetPerlin2D(new Vector2(pos.x, pos.z), 0, biome.TreeScale) > biome.TreeThreshold)
+                //실제 구조물이 생성되는 위치
+                //이미 집합으로 설정된 상태에서 다시 Noise를 받아서 vValue를 바꾸었으므로
+                //집합의 범위 안에 다시 분산도와 임계치에 따라 배치됨
+                if (Noise.GetPerlin2D(new Vector2(pos.x, pos.z), 0, biome.PlantScale) > biome.PlantThreshold)
 				{
 
-                    //나무 형태가 들어있는 Queue<VoxelMod>를 받아서 modifications에 Enqueue한다.
-                    //만에 하나를 위해 lock을 건다.
-                    //lock (lockObject)
+                    //식물 형태가 들어있는 Queue<VoxelMod>를 받아서 modifications에 Enqueue한다.
                     {
-                        modifications.Enqueue(Structure.CreateTree(pos, biome.Min_TreeHeight, biome.Max_TreeHeight));
+                        modifications.Enqueue(Structure.CreateMajorPlant(biome.PlantId, pos, biome.Min_TreeHeight, biome.Max_TreeHeight));
                     }
 				}
 

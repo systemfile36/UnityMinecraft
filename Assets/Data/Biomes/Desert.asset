@@ -10,19 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 10693a8eb807ff04cbc3ece45b453327, type: 3}
-  m_Name: Default
+  m_Name: Desert
   m_EditorClassIdentifier: 
-  biomeName: Default
-  biomeScale: 0.07
-  biomeOffset: 99
-  terHeight: 38
-  terScale: 0.25
-  surfaceBlockId: 3
-  b_surfaceBlockId: 4
-  PlantId: 0
+  biomeName: Desert
+  biomeScale: 0.088
+  biomeOffset: 122
+  terHeight: 13
+  terScale: 0.09
+  surfaceBlockId: 5
+  b_surfaceBlockId: 5
+  PlantId: 1
   PlantSetScale: 1.3
-  PlantSetThreshold: 0.6
-  PlantScale: 15
+  PlantSetThreshold: 0.5
+  PlantScale: 11
   PlantThreshold: 0.8
   isCreatePlants: 1
   Max_TreeHeight: 12
@@ -35,7 +35,7 @@ MonoBehaviour:
     scale: 0.1
     threshold: 0.5
     Offset: 0
-  - nodeName: 
+  - nodeName: Air
     blockID: 0
     minHeight: 0
     maxHeight: 0

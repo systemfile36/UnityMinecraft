@@ -819,7 +819,16 @@ public class Chunk
     /// </summary>
     public void ApplyChunkMesh()
 	{
-        Mesh mesh = new Mesh();
+        //Mesh는 Destroy 하기 전에는 삭제되지 않는다. 즉 누수가 생긴다.
+        //따라서 Mesh를 계속 생성하는 것보다는 기존의 Mesh를 수정하는 것이 좋다.
+
+        //적용된 mesh의 참조를 받아온다.
+        Mesh mesh = meshFilter.mesh;
+
+        //수정하기 전에 먼저 비운다.
+        mesh.Clear();
+
+        //정점 적용
         mesh.vertices = vertices.ToArray();
 
         //이 메쉬에 사용할 마테리얼의 개수 설정
@@ -841,9 +850,8 @@ public class Chunk
         //법선을 설정함
         mesh.normals = normals.ToArray();
 
+        //meshFilter에 새로운 Mesh를 할당한다.
         meshFilter.mesh = mesh;
-
-        //Debug.Log($"Chunk : {coord.x} : {coord.z}, vert : {vertices.Count}, tri : {triangles.Count}, uvs : {uvs.Count}, col : {colors.Count}");
 
     }
 
