@@ -1,9 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
+using System;
 using UnityEngine;
 using System.IO;
 using Newtonsoft.Json;
 using System.Text;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// 게임을 관리하는 싱글톤 클래스
@@ -43,8 +45,15 @@ public class GameManager : MonoBehaviour
 		//설정 로드
 		LoadSettings();
 
+
 		//InfoMessage 초기화
-		_infoMessage = GameObject.Find("InfoMessage").GetComponent<InfoMessage>();
+
+		//InfoMessage 오브젝트가 존재할때만 컴포넌트를 받는다.
+		GameObject _infoTemp = GameObject.Find("InfoMessage");
+
+		if (_infoTemp != null)
+			_infoMessage = _infoTemp.GetComponent<InfoMessage>();
+
 		//_settings = new Settings();
 	}
 
@@ -53,6 +62,7 @@ public class GameManager : MonoBehaviour
 		//SaveJsonFile(GamePaths.SettingsPath, GamePaths.SettingsFileName, ObjToJsonStringIndented(_settings));
 		
 	}
+
 
 	/// <summary>
 	/// GameManager의 static 인스턴스를 반환
@@ -104,9 +114,66 @@ public class GameManager : MonoBehaviour
 		}
 
 		Application.targetFrameRate = _settings.targetFrameRate;
-		Random.InitState(_settings.seed);
 	}
 
+	/// <summary>
+	/// Settings 오브젝트를 받아서 현재 설정으로 지정하고, 
+	/// 비동기적으로 저장한 후, IAsyncResult 반환
+	/// </summary>
+	public IAsyncResult ReloadSettings(Settings set)
+    {
+		//현재 설정을 새로운 세팅으로 설정
+		_settings = set;
+
+		//_settings가 null이거나, 유효한 값이 아니라면
+		if (_settings == null || !_settings.IsValid())
+		{
+			Debug.Log("Invalid Settings");
+			//기본 생성자를 통해 기본 값으로 초기화
+			_settings = new Settings();
+		}
+
+		Application.targetFrameRate = _settings.targetFrameRate;
+
+		//비동기로 새로운 세팅을 저장하기 위한 Action 대리자
+		Action<Settings> save = (_settings) =>
+		{
+			SaveJsonFile(GamePaths.SettingsPath, GamePaths.SettingsFileName, ObjToJsonString(set));
+		};
+
+		//비동기로 현재 세팅을 저장하고 IAsyncResult 반환
+		return save.BeginInvoke(_settings, null, null);
+	}
+
+	/// <summary>
+	/// World를 로드한다.
+	/// </summary>
+	public void LoadWorld()
+    {
+		//현재 Scene이 World가 아니라면
+		if(!SceneManager.GetActiveScene().name.Equals("World"))
+        {
+			//현재 Scene을 닫고 World Scene을 로드한다.
+			SceneManager.LoadScene("World", LoadSceneMode.Single);
+        }
+    }
+
+	/// <summary>
+	/// mainMenu를 로드한다.
+	/// </summary>
+	public void LoadMainMenu()
+    {
+		if(!SceneManager.GetActiveScene().name.Equals("mainMenu"))
+        {
+			SceneManager.LoadScene("mainMenu", LoadSceneMode.Single);
+        }
+    }
+
+
+
+	/// <summary>
+	/// 게임을 종료한다.
+	/// </summary>
 	public void QuitGame()
     {
 #if UNITY_EDITOR
@@ -186,7 +253,35 @@ public class GameManager : MonoBehaviour
 		return null;
 	}
 
-     
+	/// <summary>
+	/// path의 fName .json 파일을 읽어서 json string으로 반환
+	/// </summary>
+	/// <returns></returns>
+    public static string LoadJsonString(string path, string fName)
+    {
+		try
+		{
+			using (FileStream fStream = new FileStream($"{path}/{fName}", FileMode.Open))
+			{
+				byte[] bytes = new byte[fStream.Length];
+				fStream.Read(bytes, 0, bytes.Length);
+				string json = Encoding.UTF8.GetString(bytes);
+				return json;
+			}
+
+		}
+		//파일을 못 찾았을 때의 예외 처리
+		catch (FileNotFoundException e)
+		{
+			Debug.Log($"There is no File \"{e.FileName}\"");
+			return null;
+		}
+		catch (System.Exception e)
+        {
+			Debug.Log(e.Message);
+			return null;
+        }
+	}
 }
 /// <summary>
 /// 게임에 필요한 경로들이 저장된 정적 클래스

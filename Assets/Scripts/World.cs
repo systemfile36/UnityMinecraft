@@ -100,8 +100,12 @@ public enum GameMode
 /// </summary>
 public class World : MonoBehaviour
 {
+    //저장될 월드의 이름과 설정될 시드
+    public static string WorldName = "";
+    public static int seed = 65535;
 
-    //바이옴을 설정하는 변수
+
+    //바이옴들
     public BiomeAttributes[] biomes;
 
     //전역 밝기 조정
@@ -206,14 +210,17 @@ public class World : MonoBehaviour
         //마지막 시야 범위 초기화
         lastViewDistance = GameManager.Mgr.settings.ViewDistanceInChunks;
 
+        //스폰 지점
         spawnPosition = GameManager.Mgr.settings.spawnPosition.GetVector3();
+
+        //시드 값에 따라 난수생성기 초기화
+        //같은 시드는 같은 맵
+        Random.InitState(seed);
+        
     }
 
 	void Start()
 	{
-        //시드 값에 따라 난수생성기 초기화
-        //같은 시드는 같은 맵
-        //Random.InitState(GameManager.Mgr.settings.seed);
 
         //Global Light Level의 최대 최소값을 셰이더에 넘긴다.
         Shader.SetGlobalFloat("minGlobalLight", VoxelData.minLight);
@@ -419,6 +426,9 @@ public class World : MonoBehaviour
             return 1;
         }
 
+        //Vector2 캐싱
+        Vector2 pos2 = new Vector2(pos.x, pos.z);
+
         //바이옴 선택 부분
         //바이옴 출현에 대한 노이즈를 계산해서 가중치로 삼고, 
         //이것이 가장 높은 것을 선택한다.
@@ -433,7 +443,7 @@ public class World : MonoBehaviour
         {
             //해당 바이옴의 노이즈로 가중치 설정
             float weight = 
-                Noise.GetPerlin2D(new Vector2(pos.x, pos.z), 
+                Noise.GetPerlin2D(pos2, 
                     biomes[i].biomeOffset, biomes[i].biomeScale);
 
             //가중치 최대값 갱신, 인덱스 갱신
@@ -446,7 +456,7 @@ public class World : MonoBehaviour
 
             //해당 바이옴 기준 높이를 구하고 가중치를 곱한다.
             float height = biomes[i].terHeight
-                * Noise.GetPerlin2D(new Vector2(pos.x, pos.z), 0, biomes[i].terScale)
+                * Noise.GetPerlin2D(pos2, 0, biomes[i].terScale)
                 * weight;
 
             //평균을 구하기 위해 높이를 합한다.
@@ -520,7 +530,7 @@ public class World : MonoBehaviour
                 //실제 구조물이 생성되는 위치
                 //이미 집합으로 설정된 상태에서 다시 Noise를 받아서 vValue를 바꾸었으므로
                 //집합의 범위 안에 다시 분산도와 임계치에 따라 배치됨
-                if (Noise.GetPerlin2D(new Vector2(pos.x, pos.z), 0, biome.PlantScale) > biome.PlantThreshold)
+                if (Noise.GetPerlin2D(pos2, 0, biome.PlantScale) > biome.PlantThreshold)
 				{
 
                     //식물 형태가 들어있는 Queue<VoxelMod>를 받아서 modifications에 Enqueue한다.

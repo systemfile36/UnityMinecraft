@@ -17,7 +17,6 @@ public class Settings
 	//월드 관련
 	[Header("World")]
 	public GameMode gameMode = GameMode.Debug;
-	public int seed = 65535;
 	public Vector3_S spawnPosition = 
 		new Vector3_S(VoxelData.WorldSizeInVoxels/2, VoxelData.ChunkHeight, VoxelData.WorldSizeInVoxels / 2);
 
@@ -95,7 +94,7 @@ public class Settings
     {
 		
 		if((ViewDistanceInChunks > 0 && ViewDistanceInChunks < 50)
-			&& (targetFrameRate > 30 && targetFrameRate < 144)
+			&& (targetFrameRate >= 30 && targetFrameRate <= 144)
 			&& (spawnPosition.x > 0 && spawnPosition.y > 0 && spawnPosition.z > 0
 				&& spawnPosition.x < VoxelData.WorldSizeInVoxels 
 				&& spawnPosition.y <= VoxelData.ChunkHeight

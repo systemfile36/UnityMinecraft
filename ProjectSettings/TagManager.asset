@@ -6,6 +6,7 @@ TagManager:
   tags:
   - CinemachineTarget
   - UI_ItemSlot
+  - Sliders
   layers:
   - Default
   - TransparentFX
