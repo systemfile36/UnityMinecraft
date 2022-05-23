@@ -9,12 +9,13 @@ public class MenuControl : MonoBehaviour
 {
 
     /// <summary>
-    /// 이름과 오브젝트로 메뉴를 저장하는 딕셔너리
+    /// 이름과 Transform으로 메뉴를 저장하는 딕셔너리
     /// </summary>
     private Dictionary<string, Transform> menus = new Dictionary<string, Transform>();
 
     void Awake()
     {
+        //자식의 Transform을 이름과 연결지어 딕셔너리에추가
         for(int i = 0; i < transform.childCount; i++)
         {
             menus.Add(transform.GetChild(i).name, transform.GetChild(i)); 

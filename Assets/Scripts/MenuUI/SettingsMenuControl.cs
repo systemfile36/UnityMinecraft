@@ -20,11 +20,17 @@ public class SettingsMenuControl : MonoBehaviour
     /// </summary>
     private Dictionary<string, SliderControl> slidercontrols = new Dictionary<string, SliderControl>();
 
+    /// <summary>
+    /// 가져온 설정값
+    /// </summary>
     private Settings settings;
 
     //인스펙터에서 각 SliderPrefab에 대한 참조 설정할 것
     [Tooltip("SliderControl of Settings Slider")]
     public SliderControl[] settingsSliders;
+
+    //메뉴간의 이동을 위한 MenuControl 객체
+    public MenuControl menuControl;
  
     void Awake()
     {
@@ -40,13 +46,12 @@ public class SettingsMenuControl : MonoBehaviour
         {
             slidercontrols.Add(control.transform.name, control);
         }
-
-
-        
+ 
     }
 
     private void Start()
     {
+        //초기값 설정
         LoadCurrentSettings();
     }
 
@@ -74,51 +79,51 @@ public class SettingsMenuControl : MonoBehaviour
     /// </summary>
     public void LoadCurrentSettings()
     {
+        //GameManager에서 가져옴, 읽기만 할 것
         settings = GameManager.Mgr.settings;
 
-        //각 세팅에 맞게 슬라이더 세팅
-        slidercontrols["TargetFrameRate"].slider.value = settings.targetFrameRate;
-        slidercontrols["ViewDistance"].slider.value = settings.ViewDistanceInChunks;
-        slidercontrols["RotationSpeed"].slider.value = settings.RotationSpeed;
-        slidercontrols["MoveSpeed"].slider.value = settings.MoveSpeed;
-        slidercontrols["JumpHeight"].slider.value = settings.JumpHeight;
-        slidercontrols["GroundOffset"].slider.value = settings.GroundedOffset;
-        slidercontrols["GroundRadius"].slider.value = settings.GroundedRadius;
-        slidercontrols["TopClamp"].slider.value = settings.TopClamp;
-        slidercontrols["BottomClamp"].slider.value = settings.BottomClamp;
-        slidercontrols["CheckInterval"].slider.value = settings.checkInterval;
-        slidercontrols["Reach"].slider.value = settings.reach;
-        slidercontrols["EditDelay"].slider.value = settings.EditDelay;
-        slidercontrols["ColliderSideOffset"].slider.value = settings.pWidthSideOffset;
-        slidercontrols["InvalidRate"].slider.value = settings.pInvalidRate;
+        SetSlidersValue(settings);
 
-    }
-
-    public void SetSlidersValue(Settings settings)
-    {
-        //각 세팅에 맞게 슬라이더 세팅
-        slidercontrols["TargetFrameRate"].slider.value = settings.targetFrameRate;
-        slidercontrols["ViewDistance"].slider.value = settings.ViewDistanceInChunks;
-        slidercontrols["RotationSpeed"].slider.value = settings.RotationSpeed;
-        slidercontrols["MoveSpeed"].slider.value = settings.MoveSpeed;
-        slidercontrols["JumpHeight"].slider.value = settings.JumpHeight;
-        slidercontrols["GroundOffset"].slider.value = settings.GroundedOffset;
-        slidercontrols["GroundRadius"].slider.value = settings.GroundedRadius;
-        slidercontrols["TopClamp"].slider.value = settings.TopClamp;
-        slidercontrols["BottomClamp"].slider.value = settings.BottomClamp;
-        slidercontrols["CheckInterval"].slider.value = settings.checkInterval;
-        slidercontrols["Reach"].slider.value = settings.reach;
-        slidercontrols["EditDelay"].slider.value = settings.EditDelay;
-        slidercontrols["ColliderSideOffset"].slider.value = settings.pWidthSideOffset;
-        slidercontrols["InvalidRate"].slider.value = settings.pInvalidRate;
     }
 
     /// <summary>
-    /// 뒤로가기 버튼이 눌렸을 때
+    /// Settings 오브젝트를 받아 각 슬라이더에 세팅함
+    /// </summary>
+    public void SetSlidersValue(Settings set)
+    {
+        //각 세팅에 맞게 슬라이더 세팅
+        slidercontrols["TargetFrameRate"].slider.value = set.targetFrameRate;
+        slidercontrols["ViewDistance"].slider.value = set.ViewDistanceInChunks;
+        slidercontrols["RotationSpeed"].slider.value = set.RotationSpeed;
+        slidercontrols["MoveSpeed"].slider.value = set.MoveSpeed;
+        slidercontrols["JumpHeight"].slider.value = set.JumpHeight;
+        slidercontrols["GroundOffset"].slider.value = set.GroundedOffset;
+        slidercontrols["GroundRadius"].slider.value = set.GroundedRadius;
+        slidercontrols["TopClamp"].slider.value = set.TopClamp;
+        slidercontrols["BottomClamp"].slider.value = set.BottomClamp;
+        slidercontrols["CheckInterval"].slider.value = set.checkInterval;
+        slidercontrols["Reach"].slider.value = set.reach;
+        slidercontrols["EditDelay"].slider.value = set.EditDelay;
+        slidercontrols["ColliderSideOffset"].slider.value = set.pWidthSideOffset;
+        slidercontrols["InvalidRate"].slider.value = set.pInvalidRate;
+    }
+
+    /// <summary>
+    /// 각 카테고리 내에서 뒤로가기 버튼이 눌렸을 때. 
+    /// SettingCategory로 돌아감
     /// </summary>
     public void OnClickBtnBack()
     {
+        //카테코리로 이동
         MoveToMenu("SettingCategory");
+    }
+
+    /// <summary>
+    /// Cancel 버튼이 눌렸을 때. MainMenu로 돌아감
+    /// </summary>
+    public void OnClickCancel()
+    {
+        menuControl.MoveToMenu(transform.name, "MainMenu");
     }
 
     /// <summary>
@@ -136,5 +141,50 @@ public class SettingsMenuControl : MonoBehaviour
         MoveToMenu(btn);
     }
 
+    /// <summary>
+    /// Reset 버튼이 눌렸을 떄,
+    /// 모든 슬라이더의 값을 변경 전으로 돌림
+    /// </summary>
+    public void OnClickBtnReset()
+    {
+        SetSlidersValue(settings);
+    }
 
+    /// <summary>
+    /// Default 버튼이 눌렸을 때,
+    /// 현재 설정을 초기 설정으로 바꾸고 슬라이더 세팅
+    /// </summary>
+    public void OnClickBtnDefault()
+    {
+        //기본 생성자를 통해 초기값으로 변경
+        settings = new Settings();
+
+        //각 슬러이더 값 세팅
+        SetSlidersValue(settings);
+    }
+
+    public void OnClickSave()
+    {
+        Settings newSettings = new Settings();
+
+        newSettings.targetFrameRate = Mathf.FloorToInt(slidercontrols["TargetFrameRate"].slider.value);
+        newSettings.ViewDistanceInChunks = Mathf.FloorToInt(slidercontrols["ViewDistance"].slider.value);
+        newSettings.RotationSpeed = RoundToFloat(slidercontrols["RotationSpeed"].slider.value, 1);
+        newSettings.MoveSpeed = RoundToFloat(slidercontrols["MoveSpeed"].slider.value, 1);
+        newSettings.SprintSpeed = RoundToFloat(slidercontrols["SprintSpeed"].slider.value, 1);
+        newSettings.JumpHeight = RoundToFloat(slidercontrols["JumpHeight"].slider.value, 1);
+        newSettings.GroundedOffset = RoundToFloat(slidercontrols["GroundOffset"].slider.value, 2);
+
+    }
+
+    /// <summary>
+    /// f를 소수점 아래 digits 까지만 남기고 반올림
+    /// </summary>
+    /// <param name="f"></param>
+    /// <param name="digits"></param>
+    /// <returns></returns>
+    public static float RoundToFloat(float f, int digits)
+    {
+        return (float)System.Math.Round(f, digits);
+    }
 }
