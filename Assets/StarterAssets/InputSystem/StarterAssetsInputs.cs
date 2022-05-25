@@ -87,6 +87,8 @@ namespace StarterAssets
 		{
 			//PlayerInput 컴포넌트를 받아서 참조를 저장한다.
 			playerInput = transform.GetComponent<PlayerInput>();
+
+			SetCursorState(true);
 		}
 
 		public void OnMove(InputValue value)

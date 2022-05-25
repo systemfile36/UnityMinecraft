@@ -120,7 +120,7 @@ public class GameManager : MonoBehaviour
 	/// Settings 오브젝트를 받아서 현재 설정으로 지정하고, 
 	/// 비동기적으로 저장한 후, IAsyncResult 반환
 	/// </summary>
-	public IAsyncResult ReloadSettings(Settings set)
+	public IAsyncResult SaveAndApplySettings(Settings set)
     {
 		//현재 설정을 새로운 세팅으로 설정
 		_settings = set;
@@ -138,7 +138,7 @@ public class GameManager : MonoBehaviour
 		//비동기로 새로운 세팅을 저장하기 위한 Action 대리자
 		Action<Settings> save = (_settings) =>
 		{
-			SaveJsonFile(GamePaths.SettingsPath, GamePaths.SettingsFileName, ObjToJsonString(set));
+			SaveJsonFile(GamePaths.SettingsPath, GamePaths.SettingsFileName, ObjToJsonStringIndented(set));
 		};
 
 		//비동기로 현재 세팅을 저장하고 IAsyncResult 반환

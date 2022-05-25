@@ -11,6 +11,11 @@ public class MainMenuControl : MonoBehaviour
         menuControl.MoveToMenu(transform.name, "CreateNewWorld");
     }
 
+    public void OnClickSettings()
+    {
+        menuControl.MoveToMenu(transform.name, "SettingsMenu");
+    }
+
     public void OnClickQuitGame()
     {
         GameManager.Mgr.QuitGame();

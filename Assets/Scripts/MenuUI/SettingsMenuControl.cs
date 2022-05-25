@@ -25,6 +25,9 @@ public class SettingsMenuControl : MonoBehaviour
     /// </summary>
     private Settings settings;
 
+    [Tooltip("Controller of Loading Screen")]
+    public LoadingControl loadingControl;
+
     //인스펙터에서 각 SliderPrefab에 대한 참조 설정할 것
     [Tooltip("SliderControl of Settings Slider")]
     public SliderControl[] settingsSliders;
@@ -96,6 +99,7 @@ public class SettingsMenuControl : MonoBehaviour
         slidercontrols["ViewDistance"].slider.value = set.ViewDistanceInChunks;
         slidercontrols["RotationSpeed"].slider.value = set.RotationSpeed;
         slidercontrols["MoveSpeed"].slider.value = set.MoveSpeed;
+        slidercontrols["SprintSpeed"].slider.value = set.SprintSpeed;
         slidercontrols["JumpHeight"].slider.value = set.JumpHeight;
         slidercontrols["GroundOffset"].slider.value = set.GroundedOffset;
         slidercontrols["GroundRadius"].slider.value = set.GroundedRadius;
@@ -163,10 +167,16 @@ public class SettingsMenuControl : MonoBehaviour
         SetSlidersValue(settings);
     }
 
+    /// <summary>
+    /// Save 버튼을 클릭했을 때의 이벤트
+    /// 새로운 Settings 객체를 만들어서 GameManager에 넘긴다.
+    /// </summary>
     public void OnClickSave()
     {
+        //새로 설정될 Settings를 정함
         Settings newSettings = new Settings();
 
+        //각 설정에 맞게 설정값들을 반영함
         newSettings.targetFrameRate = Mathf.FloorToInt(slidercontrols["TargetFrameRate"].slider.value);
         newSettings.ViewDistanceInChunks = Mathf.FloorToInt(slidercontrols["ViewDistance"].slider.value);
         newSettings.RotationSpeed = RoundToFloat(slidercontrols["RotationSpeed"].slider.value, 1);
@@ -174,8 +184,24 @@ public class SettingsMenuControl : MonoBehaviour
         newSettings.SprintSpeed = RoundToFloat(slidercontrols["SprintSpeed"].slider.value, 1);
         newSettings.JumpHeight = RoundToFloat(slidercontrols["JumpHeight"].slider.value, 1);
         newSettings.GroundedOffset = RoundToFloat(slidercontrols["GroundOffset"].slider.value, 2);
+        newSettings.GroundedRadius = RoundToFloat(slidercontrols["GroundRadius"].slider.value, 2);
+        newSettings.TopClamp = Mathf.FloorToInt(slidercontrols["TopClamp"].slider.value);
+        newSettings.BottomClamp = Mathf.FloorToInt(slidercontrols["BottomClamp"].slider.value);
+        newSettings.checkInterval = RoundToFloat(slidercontrols["CheckInterval"].slider.value, 2);
+        newSettings.reach = RoundToFloat(slidercontrols["Reach"].slider.value, 1);
+        newSettings.EditDelay = RoundToFloat(slidercontrols["EditDelay"].slider.value, 2);
+        newSettings.pWidthSideOffset = RoundToFloat(slidercontrols["ColliderSideOffset"].slider.value, 2);
+        newSettings.pInvalidRate = RoundToFloat(slidercontrols["InvalidRate"].slider.value, 2);
 
+        //GameManager를 통해 새로운 Settings로 설정하고 반영하고, 
+        //IAsyncResult를 LoadingControl 객체에 넘긴다.
+        loadingControl.LoadingStart(GameManager.Mgr.SaveAndApplySettings(newSettings));
     }
+
+
+    
+
+
 
     /// <summary>
     /// f를 소수점 아래 digits 까지만 남기고 반올림
