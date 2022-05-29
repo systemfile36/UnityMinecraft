@@ -193,6 +193,9 @@ public class SettingsMenuControl : MonoBehaviour
         newSettings.pWidthSideOffset = RoundToFloat(slidercontrols["ColliderSideOffset"].slider.value, 2);
         newSettings.pInvalidRate = RoundToFloat(slidercontrols["InvalidRate"].slider.value, 2);
 
+        //로드되는 청크 범위를 시야 범위의 두배로 설정
+        newSettings.LoadDistanceInChunks = newSettings.ViewDistanceInChunks * 2;
+
         //GameManager를 통해 새로운 Settings로 설정하고 반영하고, 
         //IAsyncResult를 LoadingControl 객체에 넘긴다.
         loadingControl.LoadingStart(GameManager.Mgr.SaveAndApplySettings(newSettings));

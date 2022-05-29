@@ -56,6 +56,7 @@ public class ChunkCoord
 /// 각 블럭의 상태를 저장한다.
 /// 맵에 저장될 타입
 /// </summary>
+[System.Serializable]
 public class VoxelState
 {
     public byte id;

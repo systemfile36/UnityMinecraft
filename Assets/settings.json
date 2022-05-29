@@ -1,5 +1,6 @@
 {
-  "ViewDistanceInChunks": 8,
+  "LoadDistanceInChunks": 8,
+  "ViewDistanceInChunks": 4,
   "targetFrameRate": 60,
   "gameMode": 2,
   "spawnPosition": {

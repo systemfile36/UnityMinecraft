@@ -35,6 +35,8 @@ public class UIDragHandler : MonoBehaviour
 	{
         world = GameObject.Find("World").GetComponent<World>();
         _input = GameObject.FindGameObjectWithTag("Player").GetComponent<StarterAssets.StarterAssetsInputs>();
+        eventSystem = EventSystem.current;
+
 
         //커서 슬롯과 연결된 아이템 슬롯
         cursorItemSlot = new ItemSlot(cursorSlot);

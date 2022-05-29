@@ -100,6 +100,14 @@ public enum GameMode
 /// </summary>
 public class World : MonoBehaviour
 {
+    //싱글톤 패턴을 위한 static 인스턴스
+    //private static World instance = null;
+
+    /// <summary>
+    /// 인스턴스 접근을 위한 static 프로퍼티
+    /// </summary>
+    //public static World Instance { get { return instance; } }
+
     //저장될 월드의 이름과 설정될 시드
     public static string WorldName = "";
     public static int seed = 65535;
@@ -204,6 +212,13 @@ public class World : MonoBehaviour
     void Awake()
 	{
         //Application.targetFrameRate = GameManager.Mgr.settings.targetFrameRate;
+        /*
+        //싱글톤 인스턴스 변수 초기화
+        if (instance == null)
+            instance = this;
+        else
+            Destroy(this.gameObject);
+        */
 
         activeChunks.Capacity = (GameManager.Mgr.settings.ViewDistanceInChunks * 2) * (GameManager.Mgr.settings.ViewDistanceInChunks * 2);
 
@@ -219,7 +234,12 @@ public class World : MonoBehaviour
         
     }
 
-	void Start()
+    private void OnDestroy()
+    {
+        Debug.Log("World.cs Destroyed");
+    }
+
+    void Start()
 	{
 
         //Global Light Level의 최대 최소값을 셰이더에 넘긴다.

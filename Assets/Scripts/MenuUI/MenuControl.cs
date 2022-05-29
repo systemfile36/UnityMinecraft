@@ -20,6 +20,8 @@ public class MenuControl : MonoBehaviour
         {
             menus.Add(transform.GetChild(i).name, transform.GetChild(i)); 
         }
+
+        Cursor.lockState = CursorLockMode.None;
     }
 
     /// <summary>

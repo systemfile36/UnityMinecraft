@@ -10,7 +10,8 @@ using UnityEngine;
 public class Settings
 {
 	//성능 관련
-    [Header("Performance")]
+	[Header("Performance")]
+	public int LoadDistanceInChunks = 10;
     public int ViewDistanceInChunks = 5;
 	public int targetFrameRate = 60;
 

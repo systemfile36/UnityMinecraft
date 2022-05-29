@@ -6,6 +6,7 @@ using System.IO;
 using Newtonsoft.Json;
 using System.Text;
 using UnityEngine.SceneManagement;
+using UnityEngine.EventSystems;
 
 /// <summary>
 /// 게임을 관리하는 싱글톤 클래스
@@ -35,6 +36,7 @@ public class GameManager : MonoBehaviour
 
 			//Scene이 바뀌어도 파괴되지 않는다.
 			DontDestroyOnLoad(this.gameObject);
+
 		}
 		else
 		{
@@ -45,22 +47,14 @@ public class GameManager : MonoBehaviour
 		//설정 로드
 		LoadSettings();
 
-
-		//InfoMessage 초기화
-
-		//InfoMessage 오브젝트가 존재할때만 컴포넌트를 받는다.
-		GameObject _infoTemp = GameObject.Find("InfoMessage");
-
-		if (_infoTemp != null)
-			_infoMessage = _infoTemp.GetComponent<InfoMessage>();
-
 		//_settings = new Settings();
 	}
 
 	void Start()
 	{
 		//SaveJsonFile(GamePaths.SettingsPath, GamePaths.SettingsFileName, ObjToJsonStringIndented(_settings));
-		
+		//InfoMessage 오브젝트가 존재할때만 컴포넌트를 받는다.
+		Debug.Log("GameManager.cs Start()");
 	}
 
 
@@ -166,7 +160,7 @@ public class GameManager : MonoBehaviour
 		if(!SceneManager.GetActiveScene().name.Equals("mainMenu"))
         {
 			SceneManager.LoadScene("mainMenu", LoadSceneMode.Single);
-        }
+		}
     }
 
 

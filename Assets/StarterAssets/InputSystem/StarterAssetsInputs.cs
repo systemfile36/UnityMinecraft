@@ -195,8 +195,10 @@ namespace StarterAssets
 				return;
             }
 
+			playerInput.enabled = false;
 			//UI모드가 아니라면 종료한다.
-			GameManager.Mgr.QuitGame();
+			//GameManager.Mgr.QuitGame();
+			GameManager.Mgr.LoadMainMenu();
         }
 
 #else
@@ -224,10 +226,15 @@ namespace StarterAssets
 			sprint = newSprintState;
 		}
 
+        public void OnDestroy()
+        {
+			Debug.Log("StarterAssetsInput.cs Destroyed");
+        }
+
 #if !UNITY_IOS || !UNITY_ANDROID
 
-		//포커스가 이 프로그램으로 옮겨 졌을 때 발생하는 이벤트
-		private void OnApplicationFocus(bool hasFocus)
+        //포커스가 이 프로그램으로 옮겨 졌을 때 발생하는 이벤트
+        private void OnApplicationFocus(bool hasFocus)
 		{
 			//UI모드가 아닐때만, 어플리케이션으로 커서가 옮겨졌을 때 커서잠금
 			if(!_IsOnUI)
