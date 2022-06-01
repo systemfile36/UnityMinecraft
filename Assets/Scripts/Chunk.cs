@@ -84,6 +84,10 @@ public class Chunk
 {
     public ChunkCoord coord;
 
+    //청크에 대한 정보가 저장되는 객체
+    ChunkData chunkData;
+
+
     //메쉬 필터와 메쉬 렌더러를 얻기 위함이다.
     GameObject chunkObject;
     MeshRenderer meshRenderer;
@@ -107,11 +111,11 @@ public class Chunk
     Material[] materials = new Material[2];
 
     //byte 값으로 구성된 맵, 블럭의 VoxelState를 저장한다.
-    public VoxelState[,,] voxelMap; //= 
+    //public VoxelState[,,] voxelMap; //= 
         //new VoxelState[VoxelData.ChunkWidth, VoxelData.ChunkHeight, VoxelData.ChunkWidth];
 
     //블럭 타입등의 참조를 위한 World 참조
-    World world;
+    //World world;
 
     private bool _IsActive;
 
@@ -121,9 +125,6 @@ public class Chunk
     //매쉬데이터를 추가하는 스레드가 작동 중인지 여부
     public bool IsLockedMeshThread = false;
 
-    //World 스크립트에서 직접 추가하기 위해서 public으로 선언
-    public Queue<VoxelMod> modifications = new Queue<VoxelMod>();
-
     /// <summary>
     /// 청크의 월드 기준 좌표
     /// </summary>
@@ -132,7 +133,7 @@ public class Chunk
     /// <summary>
     /// List, Map의 초기화를 병렬처리하기 위한 CountdownEvent
     /// </summary>
-    CountdownEvent counter = new CountdownEvent(4);
+    CountdownEvent counter = new CountdownEvent(3);
 
     //World를 인자로 받는다.(find는 비싼(expansive한 작업))
     /// <summary>
@@ -140,27 +141,19 @@ public class Chunk
     /// </summary>
     /// <param name="_coord">생성될 청크의 좌표</param>
     /// <param name="_world">World에 대한 참조</param>
-    public Chunk (ChunkCoord coord, World world)
+    public Chunk (ChunkCoord coord)
 	{
         //voxelMap과 정점 데이터들 병렬로 할당
-        ThreadPool.QueueUserWorkItem(InitVoxelMap);
         ThreadPool.QueueUserWorkItem(InitVertex);
         ThreadPool.QueueUserWorkItem(InitTriangles);
         ThreadPool.QueueUserWorkItem(InitUvs);
 
-        this.world = world;
         this.coord = coord;
 
         //IsActive = true;
 
         //완료될때까지 대기
         counter.Wait();
-    }
-
-    void InitVoxelMap(object obj)
-	{
-        voxelMap = new VoxelState[VoxelData.ChunkWidth, VoxelData.ChunkHeight, VoxelData.ChunkWidth];
-        counter.Signal();
     }
 
     void InitVertex(object obj)
@@ -199,8 +192,8 @@ public class Chunk
         //meshRenderer.material = world.material;
 
         //투명 블럭 구현을 위한 마테리얼 여러개 설정
-        materials[0] = world.material;
-        materials[1] = world.TransparentMaterial;
+        materials[0] = GameManager.Mgr.World.material;
+        materials[1] = GameManager.Mgr.World.TransparentMaterial;
 
         //마테리얼 여러개 사용
         meshRenderer.materials = materials;
@@ -208,7 +201,7 @@ public class Chunk
         //meshCollider = chunkObject.AddComponent<MeshCollider>();
 
         //보기 좋기 위해 부모를 설정하도록 하자.
-        chunkObject.transform.SetParent(world.transform);
+        chunkObject.transform.SetParent(GameManager.Mgr.World.transform);
         //상대위치ChunkCoord를 기반으로 실제 위치 반영
         chunkObject.transform.position
             = new Vector3(coord.x * VoxelData.ChunkWidth, 0f, coord.z * VoxelData.ChunkWidth);
@@ -217,12 +210,22 @@ public class Chunk
         //청크의 월드 위치 초기화
         position = chunkObject.transform.position;
 
+        //World의 worldData를 통해 ChunkData를 초기화 한다.
+        chunkData =
+            GameManager.Mgr.World.worldData.GetChunkData(new Vector2Int(coord.x, coord.z), true);
+        //GameManager.Mgr.World.worldData.GetChunkData(new Vector2Int((int)position.x, (int)position.z), true);
+
+        //갱신할 목록에 추가한다.
+        lock (GameManager.Mgr.World.chunksToRefresh)
+        {
+            GameManager.Mgr.World.chunksToRefresh.Add(this);
+        }
+
         //스레드 풀에 복셀 맵 세팅 메소드를 넣는다.
-        ThreadPool.QueueUserWorkItem(PopulateVoxelMap);
-        //PopulateVoxelMap(null);
+        //ThreadPool.QueueUserWorkItem(PopulateVoxelMap);
 
     }
-
+    /*
     /// <summary>
     /// 복셀맵을 세팅한다.
     /// </summary>
@@ -237,7 +240,7 @@ public class Chunk
                 {
                     //GetVoxel로 해당 좌표의 블럭 아이디를 받아서 맵에 넣는다.
                     //이때 월드 기준 좌표를 넣어야 함에 유의하라
-                    voxelMap[x, y, z] = new VoxelState(world.GetVoxel(new Vector3(x, y, z) + position));
+                    chunkData.map[x, y, z] = new VoxelState(GameManager.Mgr.World.GetVoxel(new Vector3(x, y, z) + position));
                 }
             }
         }
@@ -246,13 +249,14 @@ public class Chunk
         IsMapInit = true;
 
         //세팅하고 갱신할 목록에 넣는다.
-        lock (world.chunksToRefresh)
+        lock (GameManager.Mgr.World.chunksToRefresh)
         {
-            world.chunksToRefresh.Add(this);
+            GameManager.Mgr.World.chunksToRefresh.Add(this);
         }
 
         
     }
+    */
     /// <summary>
     /// 복셀이 청크 내부에 있는지 여부 반환
     /// </summary>
@@ -291,16 +295,10 @@ public class Chunk
 
 
         //맵에 저장된 id를 변경
-        voxelMap[xP, yP, zP].id = id;
+        chunkData.map[xP, yP, zP].id = id;
 
-        /*
-        lock(world.chunksToRefresh)
-		{
-            //블럭 수정은 우선적으로 처리하기 위하여 맨 앞에 넣는다.
-            world.chunksToRefresh.Insert(0, this);
-            RefreshAdjacentChunk(xP, yP, zP);
-        }
-        */
+        //수정된 목록에 추가한다.
+        GameManager.Mgr.World.worldData.AddToChanged(chunkData);
 
         //인접한 청크들을 temp에 추가한다.
         RefreshAdjacentChunk(xP, yP, zP, temp);
@@ -309,7 +307,7 @@ public class Chunk
         temp.Enqueue(this);
 
         //수정된 청크들 묶음을 실제 ConcurrentQueue에 추가한다.
-        world.chunksToRefresh_Edit.Enqueue(temp);
+        GameManager.Mgr.World.chunksToRefresh_Edit.Enqueue(temp);
 
 
     }
@@ -332,16 +330,16 @@ public class Chunk
 			{
                 //만약 내부에 없다면, 다른 청크에 있고, 수정된 블럭과 접해있다는 뜻
                 //따라서 그 청크를 갱신한다.
-                //world.GetChunkFromVector3(temp + position)._RefreshChunkMeshData(true);
+                //GameManager.Mgr.World.GetChunkFromVector3(temp + position)._RefreshChunkMeshData(true);
 
                 //lock은 이미 호출하는 EditVoxel에서 이미 걸려 있음
-                //world.chunksToRefresh.Insert(0, world.GetChunkFromVector3(temp + position));
+                //GameManager.Mgr.World.chunksToRefresh.Insert(0, GameManager.Mgr.World.GetChunkFromVector3(temp + position));
 
                 //수정된 청크는 따로 처리한다.
-                //world.chunksToRefresh_Edit.Enqueue(world.GetChunkFromVector3(temp + position));
+                //GameManager.Mgr.World.chunksToRefresh_Edit.Enqueue(GameManager.Mgr.World.GetChunkFromVector3(temp + position));
 
                 //chunksToRefresh_Edit에 추가할 묶음에 갱신될 청크 추가
-                que.Enqueue(world.GetChunkFromVector3(temp + position));
+                que.Enqueue(GameManager.Mgr.World.GetChunkFromVector3(temp + position));
 			}
 		}
 	}
@@ -363,10 +361,10 @@ public class Chunk
         //즉, 다른 청크의 블럭이면 World로 판단 유보
         if (!IsVoxelInChunk(x, y, z))
             //월드 좌표로 변환함에 유의
-            return world.GetVoxelState(pos + position);
+            return GameManager.Mgr.World.GetVoxelState(pos + position);
 
         //voxemMap에 저장된 VoxelState 반환
-        return voxelMap[x, y, z];
+        return chunkData.map[x, y, z];
 	}
     #region CheckVoxelTransparent (삭제됨)
     /*
@@ -384,7 +382,7 @@ public class Chunk
 
         //만약 복셀이 청크 내부에 있지 않으면 
         //청크의 좌표를 pos에 더해서 블럭 타입의 drawNearPlane 참조
-        //즉, 다른 청크의 블럭일 경우엔 World 클래스로 판단을 넘긴다.
+        //즉, 다른 청크의 블럭일 경우엔 GameManager.Mgr.GameManager.Mgr.World 클래스로 판단을 넘긴다.
         //바깥면 여부를 판단할 때 필요함
         //Air는 drawNearPlane가 true 이므로 그려지지 않을 것
         if (!IsVoxelInChunk(x, y, z))
@@ -414,7 +412,7 @@ public class Chunk
         xP -= Mathf.FloorToInt(position.x);
         zP -= Mathf.FloorToInt(position.z);
 
-        return voxelMap[xP, yP, zP];
+        return chunkData.map[xP, yP, zP];
 
     }
     /*
@@ -439,26 +437,6 @@ public class Chunk
         //스레드가 작동중임을 알려 맵 수정을 잠근다.
         IsLockedMeshThread = true;
 
-        //구조물 세팅 부분
-        VoxelMod v;
-        //큐가 빌때까지
-
-        Vector3 pos;
-
-        while(modifications.Count > 0)
-		{
-            //큐에서 하나를 꺼낸다.
-            v = modifications.Dequeue();
-
-            //월드 좌표를 청크 내의 좌표로 변환
-            pos = v.pos - position;
-
-            //지정된 위치의 id를 세팅
-            voxelMap[(int)pos.x, (int)pos.y, (int)pos.z].id = v.id;
-
-
-		}
-        
         ClearMeshData();
 
         //빛을 계산하여 세팅한다.
@@ -472,7 +450,7 @@ public class Chunk
                 for (int z = 0; z < VoxelData.ChunkWidth; z++)
                 {
                     //블럭이 Solid 일때만 그림
-                    if(world.blockTypes[voxelMap[x, y, z].id].isSolid)
+                    if(GameManager.Mgr.World.blockTypes[chunkData.map[x, y, z].id].isSolid)
 					{
                         temp.x = x; temp.y = y; temp.z = z;
                         //AddVoxelDataToChunk(new Vector3(x, y, z));
@@ -487,9 +465,9 @@ public class Chunk
         if(obj == null)
         {
             //갱신을 완료한 뒤 그려낼 청크 목록에 추가한다.
-            lock (world.chunksToDraw)
+            lock (GameManager.Mgr.World.chunksToDraw)
             {
-                world.chunksToDraw.Enqueue(this);
+                GameManager.Mgr.World.chunksToDraw.Enqueue(this);
             }
         }
         
@@ -566,22 +544,22 @@ public class Chunk
                 //위에서 부터 순회하기 위한 y 역순 루프이다.
                 for (int y = VoxelData.ChunkHeight - 1; y >=0 ; y--)
                 {
-                    currentVoxel = voxelMap[x, y, z];
+                    currentVoxel = chunkData.map[x, y, z];
 
                     //Air블럭이 아닐 경우, 현재 빛을 블럭의 투명도 만큼으로 설정한다.
                     //투명하면 1, 불투명하면 불투명할수록 0에 가까워 질것이다.
                     //그리고 빛은 무조건 감쇄되는 방향으로 변해야 한다.
                     //이를 위해 투명도가 현재 빛의 양보다 낮을때만 갱신한다.
-                    if(currentVoxel.id > 0 && world.blockTypes[currentVoxel.id].transparency < lightRay)
+                    if(currentVoxel.id > 0 && GameManager.Mgr.World.blockTypes[currentVoxel.id].transparency < lightRay)
 					{
-                        lightRay = world.blockTypes[currentVoxel.id].transparency;
+                        lightRay = GameManager.Mgr.World.blockTypes[currentVoxel.id].transparency;
 					}
 
                     //현재 순회중인 블럭이 받는 빛의 양을 설정한다.
                     currentVoxel.globalLightWeight = lightRay;
                     
                     //다시 맵에 설정한다.
-                    voxelMap[x, y, z] = currentVoxel;
+                    chunkData.map[x, y, z] = currentVoxel;
 
                     //빛을 감쇠 시킬 수 있을 만큼 밝은 블럭만 넣는다.
                     //즉, 감쇠 시킬 필요가 있는 블럭만 넣는다.
@@ -626,16 +604,16 @@ public class Chunk
                     //자신의 밝기 - 감쇠치 보다 낮은 밝기를 가지는 인접블럭에만
                     //빛의 감쇠를 적용한다.
                     //즉, 이미 감소치를 적용한 밝기보다 어두운 블럭에 대해서만 적용한다.
-                    if(voxelMap[nearVoxel.x, nearVoxel.y, nearVoxel.z].globalLightWeight 
-                        < voxelMap[v.x, v.y, v.z].globalLightWeight - VoxelData.lightFallOff)
+                    if(chunkData.map[nearVoxel.x, nearVoxel.y, nearVoxel.z].globalLightWeight 
+                        < chunkData.map[v.x, v.y, v.z].globalLightWeight - VoxelData.lightFallOff)
 					{
                         //인접 블럭의 밝기를 현재 블럭- 감쇠치만큼으로 만듬
-                        voxelMap[nearVoxel.x, nearVoxel.y, nearVoxel.z].globalLightWeight =
-                            voxelMap[v.x, v.y, v.z].globalLightWeight - VoxelData.lightFallOff;
+                        chunkData.map[nearVoxel.x, nearVoxel.y, nearVoxel.z].globalLightWeight =
+                            chunkData.map[v.x, v.y, v.z].globalLightWeight - VoxelData.lightFallOff;
 
                         //빛을 한 단계 감쇠시켰음에도 아직 감쇠의 여지가 있다면
                         //다시 감쇠시킬 목록에 추가한다.
-                        if(voxelMap[nearVoxel.x, nearVoxel.y, nearVoxel.z].globalLightWeight
+                        if(chunkData.map[nearVoxel.x, nearVoxel.y, nearVoxel.z].globalLightWeight
                             > VoxelData.lightFallOff)
 						{
                             lit_Voxels.Enqueue(nearVoxel);
@@ -663,7 +641,7 @@ public class Chunk
                 chunkObject.SetActive(value);
 		}
 	}
-    
+    /*
     /// <summary>
     /// 맵이 세팅되었는지 여부와 메쉬 데이터가 스레드에 의해
     /// 수정중인지 여부를 체크하여 반환
@@ -683,7 +661,7 @@ public class Chunk
 			}
 		}
 	}
-
+    */
     /// <summary>
     /// 위치값을 받아 복셀 데이터를 메쉬 데이터 리스트에 추가합니다.
     /// 실제 Mesh를 구성하는 정점과 폴리곤, uv, color등의 정보가 추가되는 곳
@@ -696,7 +674,7 @@ public class Chunk
         int z = Mathf.FloorToInt(pos.z);
 
         //맵에서 인자로 넘어온 pos의 블럭 아이디를 조회한다.
-        byte blockID = voxelMap[x, y, z].id;
+        byte blockID = chunkData.map[x, y, z].id;
 
         //pos좌표의 블럭이 건너편이 비치는 지 여부를 확인
         //bool drawNearPlane = world.blockTypes[blockID].drawNearPlane;
@@ -720,7 +698,7 @@ public class Chunk
             //------------------------------
 
             //인접 블럭이 유효하고, 주변이 비치는 블럭일때만 그 면을 그린다.
-            if(nearVoxel != null && world.blockTypes[nearVoxel.id].drawNearPlane)
+            if(nearVoxel != null && GameManager.Mgr.World.blockTypes[nearVoxel.id].drawNearPlane)
             {
                 
                 //개인적으로 보기 편해서 for문은 안썻다.
@@ -739,7 +717,7 @@ public class Chunk
 
                 //p의 값은 0 ~ 5로 변화하면 각 면을 그린다.
                 //그에 따른 순서도 맞추어져 있으므로 faceIndex로 p를 넘긴다.
-                AddTexture(world.blockTypes[blockID].GetTextureID(p));
+                AddTexture(GameManager.Mgr.World.blockTypes[blockID].GetTextureID(p));
 
                 #region 구 그림자 부분 (삭제됨)
                 /*
@@ -786,7 +764,7 @@ public class Chunk
 
 
                 //비치는 블럭이 아니면, 기본 삼각형 리스트에 넣는다.
-                if (!world.blockTypes[blockID].drawNearPlane)
+                if (!GameManager.Mgr.World.blockTypes[blockID].drawNearPlane)
                 {
                     //삼각형의 각 꼭짓점을 정점 4개에 맞게 정수로 넣는다.
                     triangles.Add(vertexIndex);

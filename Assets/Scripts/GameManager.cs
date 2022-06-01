@@ -26,6 +26,13 @@ public class GameManager : MonoBehaviour
 	/// 안내 메시지 클래스
 	/// </summary>
 	private InfoMessage _infoMessage = null;
+	public InfoMessage InfoMessage { get { return _infoMessage; } set { _infoMessage = value; } }
+
+	/// <summary>
+	/// 현재 World에 대한 인스턴스
+	/// </summary>
+	private World _world = null;
+	public World World { get { return _world; } set { _world = value; } }
 
 	void Awake()
 	{
@@ -280,7 +287,7 @@ public class GameManager : MonoBehaviour
 /// <summary>
 /// 게임에 필요한 경로들이 저장된 정적 클래스
 /// </summary>
-public class GamePaths
+public static class GamePaths
 {
 	private static string _settingsPath = Application.dataPath;
 	public static string SettingsPath 
@@ -293,4 +300,14 @@ public class GamePaths
 	{ 
 		get { return _settingsFileName; } 
 	}
+
+	/// <summary>
+	/// World가 저장되는 디렉터리의 경로
+	/// </summary>
+	private static string _savePath = Application.persistentDataPath + "/saves/";
+
+	public static string SavePath
+    {
+		get { return _savePath; }
+    }
 }

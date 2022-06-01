@@ -25,6 +25,9 @@ public class InfoMessage : MonoBehaviour
     void Awake()
     {
         StartCoroutine(PrintMessages());
+
+        //GameManager의 인스턴스에 자신에 대한 참조 추가
+        GameManager.Mgr.InfoMessage = this;
     }
 
     void OnDisable()

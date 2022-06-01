@@ -201,6 +201,15 @@ namespace StarterAssets
 			GameManager.Mgr.LoadMainMenu();
         }
 
+		/// <summary>
+		/// 저장 명령이 들어 왔을 때의 경우
+		/// </summary>
+		/// <param name="value"></param>
+		public void OnSave(InputValue value)
+        {
+			SaveManager.SaveWorld(GameManager.Mgr.World.worldData);
+        }
+
 #else
 	// old input sys if we do decide to have it (most likely wont)...
 #endif

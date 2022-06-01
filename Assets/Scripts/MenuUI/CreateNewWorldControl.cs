@@ -31,7 +31,7 @@ public class CreateNewWorldControl : MonoBehaviour
     public void OnClickCreate()
     {
         //월드의 이름을 반영
-        World.WorldName = tbName.text;
+        World.worldName = tbName.text;
 
         //만약 시드 값이 int 최대값보다 크다면
         //tbSeed의 텍스트를 비우고 포커스 이동

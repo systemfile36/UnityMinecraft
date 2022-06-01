@@ -100,17 +100,16 @@ public enum GameMode
 /// </summary>
 public class World : MonoBehaviour
 {
-    //싱글톤 패턴을 위한 static 인스턴스
-    //private static World instance = null;
-
-    /// <summary>
-    /// 인스턴스 접근을 위한 static 프로퍼티
-    /// </summary>
-    //public static World Instance { get { return instance; } }
 
     //저장될 월드의 이름과 설정될 시드
-    public static string WorldName = "";
+    public static string worldName = "";
     public static int seed = 65535;
+
+
+    /// <summary>
+    /// World의 데이터가 저장되는 WorldData 클래스
+    /// </summary>
+    public WorldData worldData;
 
 
     //바이옴들
@@ -211,15 +210,19 @@ public class World : MonoBehaviour
 
     void Awake()
 	{
-        //Application.targetFrameRate = GameManager.Mgr.settings.targetFrameRate;
-        /*
-        //싱글톤 인스턴스 변수 초기화
-        if (instance == null)
-            instance = this;
+        //GameManager에 현재 생성된 World Instance 할당
+        if (GameManager.Mgr.World == null)
+            GameManager.Mgr.World = this;
         else
+            //이미 존재하면 새로 생성된거 파괴
             Destroy(this.gameObject);
-        */
 
+        //worldData 인스턴스 할당
+        //worldData = new WorldData(worldName, seed);
+
+        //World를 로드한다.
+        worldData = SaveManager.LoadWorld(worldName, seed);
+        
         activeChunks.Capacity = (GameManager.Mgr.settings.ViewDistanceInChunks * 2) * (GameManager.Mgr.settings.ViewDistanceInChunks * 2);
 
         //마지막 시야 범위 초기화
@@ -236,6 +239,13 @@ public class World : MonoBehaviour
 
     private void OnDestroy()
     {
+        //파괴될때 자기 자신의 인스턴스가 할당되었다면 null로 초기화
+        if (GameManager.Mgr != null)
+            GameManager.Mgr.World = null;
+
+        //종료할 때 저장함
+        //SaveManager.SaveWorld(worldData);
+
         Debug.Log("World.cs Destroyed");
     }
 
@@ -264,7 +274,9 @@ public class World : MonoBehaviour
         */
 
         //월드 생성
+        LoadWorld();
         GenerateWorld();
+        
 
         //플레이어가 위치한 청크 초기화
         playerChunkCoord = GetChunkCoordFromVector3(player.position);
@@ -351,26 +363,12 @@ public class World : MonoBehaviour
     /// <returns></returns>
     public bool CheckVoxelSolid(Vector3 pos)
 	{
-        //pos가 속한 청크 좌표 불러옴
-        //ChunkCoord thisChunk = new ChunkCoord(pos);
+        VoxelState temp = worldData.GetVoxelState(pos);
 
-        //GC 호출 최소화를 위해 지역변수에 할당
-        int cX = Mathf.FloorToInt(pos.x) / VoxelData.ChunkWidth;
-        int cZ = Mathf.FloorToInt(pos.z) / VoxelData.ChunkWidth;
-
-        //좌표 유효 반환
-        if (!IsVoxelInWorld(pos))
+        if (temp != null)
+            return blockTypes[temp.id].isSolid;
+        else
             return false;
-
-        //지정된 좌표에 청크가 생성되었고, 청크의 맵이 초기화 되었다면
-        if(chunks[cX, cZ] != null && chunks[cX, cZ].IsEditable)
-		{
-            //지정된 좌표에 있는 블럭의 타입을 받아 isSolid 반환
-            return blockTypes[chunks[cX, cZ].GetVoxelFromGlobalVector3(pos).id].isSolid;
-		}
-
-        //만약에 위에 조건에 모두 해당이 없으면 GetVoxel을 호출해서 확인
-        return blockTypes[GetVoxel(pos)].isSolid;
 	}
 
     /// <summary>
@@ -381,22 +379,11 @@ public class World : MonoBehaviour
     /// <returns></returns>
     public bool CheckVoxelTransparent(Vector3 pos)
     {
-        //pos가 속한 청크 좌표 불러옴
-        ChunkCoord thisChunk = new ChunkCoord(pos);
-
-        //좌표 유효 반환
-        if (!IsVoxelInWorld(pos))
+        VoxelState temp = worldData.GetVoxelState(pos);
+        if (temp != null)
+            return blockTypes[temp.id].drawNearPlane;
+        else
             return false;
-
-        //지정된 좌표에 청크가 생성되었고, 청크의 맵이 초기화 되었다면
-        if (chunks[thisChunk.x, thisChunk.z] != null && chunks[thisChunk.x, thisChunk.z].IsEditable)
-        {
-            //지정된 좌표에 있는 블럭의 타입을 받아 건너편이 비치는 지 반환
-            return blockTypes[chunks[thisChunk.x, thisChunk.z].GetVoxelFromGlobalVector3(pos).id].drawNearPlane;
-        }
-
-        //만약에 위에 조건에 모두 해당이 없으면 GetVoxel을 호출해서 확인
-        return blockTypes[GetVoxel(pos)].drawNearPlane;
     }
 
     /// <summary>
@@ -406,22 +393,7 @@ public class World : MonoBehaviour
     /// <returns></returns>
     public VoxelState GetVoxelState(Vector3 pos)
 	{
-        //pos가 속한 청크 좌표 불러옴
-        ChunkCoord thisChunk = new ChunkCoord(pos);
-
-        //좌표 유효하지 않으면 null 반환
-        if (!IsVoxelInWorld(pos))
-            return null;
-
-        //지정된 좌표에 청크가 생성되었고, 청크의 맵이 초기화 되었다면
-        if (chunks[thisChunk.x, thisChunk.z] != null && chunks[thisChunk.x, thisChunk.z].IsEditable)
-        {
-            //지정된 좌표에 있는 VoxelState 반환
-            return chunks[thisChunk.x, thisChunk.z].GetVoxelFromGlobalVector3(pos);
-        }
-
-        //만약에 위에 조건에 모두 해당이 없으면 GetVoxel을 호출해서 생성한 뒤 반환
-        return new VoxelState(GetVoxel(pos));
+        return worldData.GetVoxelState(pos);   
     }
 
     //이 코드는 월드를 만들거나 동굴을 만들거나 하는 등의 알고리즘에 사용될 것
@@ -567,6 +539,29 @@ public class World : MonoBehaviour
         return vValue;
     }
 
+    /// <summary>
+    /// 스폰 지점을 기준으로 LoadDistanceInChunk만큼 청크를 로드한다.
+    /// </summary>
+    void LoadWorld()
+    {
+        
+        for (int x = (VoxelData.WorldSizeInChunks / 2) - GameManager.Mgr.settings.LoadDistanceInChunks;
+            x < (VoxelData.WorldSizeInChunks / 2) + GameManager.Mgr.settings.LoadDistanceInChunks; x++)
+        {
+
+            for (int z = (VoxelData.WorldSizeInChunks / 2) - GameManager.Mgr.settings.LoadDistanceInChunks;
+                z < (VoxelData.WorldSizeInChunks / 2) + GameManager.Mgr.settings.LoadDistanceInChunks; z++)
+            {
+                //WorldData의 Dictionary에 해당 좌표의 ChunkData 로드를 요청한다.
+                worldData.LoadChunks(new Vector2Int(x, z));
+            }
+        }
+
+    }
+
+
+
+
     //게임이 처음 실행되었을 때 한번 실행되는 메소드
     //업데이트는 나중에 추가
     /// <summary>
@@ -589,7 +584,7 @@ public class World : MonoBehaviour
 			{
                 //캐싱한 청크 좌표 변형
                 coord = new ChunkCoord(x, z);
-                chunks[x, z] = new Chunk(coord, this);
+                chunks[x, z] = new Chunk(coord);
 
                 //만들 목록에 추가
                 chunksToCreate.Add(coord);
@@ -624,38 +619,21 @@ public class World : MonoBehaviour
     /// </summary>
     void RefreshChunk()
 	{
-        //while루프를 제어하기 위해
-        bool refreshed = false;
-        int index = 0;
 
         //chunksToRefresh가 반복 도중 수정되는 것을 막기 위함
         lock (chunksToRefresh)
         {
-            while (!refreshed && index < chunksToRefresh.Count - 1)
-            {
-                //만약 업데이트할 청크 목록의 청크가 맵이 세팅 되었다면
-                //즉, GetVoxel을 호출해서 World.cs에 구조물을 추가했다면
-                if (chunksToRefresh[index].IsEditable)
-                {
-                    //청크 업데이트
-                    chunksToRefresh[index]._RefreshChunkMeshData(null);
+            //IsEditable을 체크하거나 하는 등의 과정은 필요하지 않다.20220529 기준
+
+            //청크 업데이트
+            chunksToRefresh[0]._RefreshChunkMeshData(null);
 
 
-                    //activeChunks에 추가할 좌표 저장
-                    coordToAddActiveChunks.Enqueue(chunksToRefresh[index].coord);
+            //activeChunks에 추가할 좌표 저장
+            coordToAddActiveChunks.Enqueue(chunksToRefresh[0].coord);
 
-                    chunksToRefresh.RemoveAt(index);
-                    
-                    //반복문 탈출
-                    refreshed = true;
-                }
-                //청크가 맵이 세팅 되지 않았다면
-                else
-                {
-                    //인덱스 증가하고 다시 확인
-                    index++;
-                }
-            }
+            chunksToRefresh.RemoveAt(0);
+
         }
 
         //chunksToRefresh의 lock 블럭을 최소화 하기 위해 바깥으로 빼낸 부분
@@ -678,7 +656,7 @@ public class World : MonoBehaviour
 	}
 
     /// <summary>
-    /// modifications를 포함한 청크 초기화
+    /// modifications를 반영함
     /// </summary>
     /// <returns></returns>
     void ApplyModifications()
@@ -701,6 +679,13 @@ public class World : MonoBehaviour
                 //VoxelMod를 받아옴
                 v = que.Dequeue();
 
+                //WorldData의 SetVoxel을 통해
+                //실제 맵에 세팅한다.
+                worldData.SetVoxel(v.pos, v.id);
+
+
+                #region 기존의 구조물 반영 코드(삭제됨)
+                /*
                 //VoxelMod의 위치가 속한 청크의 좌표 받아옴
                 ChunkCoord c = GetChunkCoordFromVector3(v.pos);
 
@@ -712,7 +697,7 @@ public class World : MonoBehaviour
                 if (chunks[c.x, c.z] == null)
                 {
                     //생성하고 만들 목록에 추가
-                    chunks[c.x, c.z] = new Chunk(c, this);
+                    chunks[c.x, c.z] = new Chunk(c);
                     chunksToCreate.Add(c);
                 }
 
@@ -732,6 +717,7 @@ public class World : MonoBehaviour
                     }
                 }
                 */
+                #endregion
             }
         }
         //종료됨
@@ -894,7 +880,7 @@ public class World : MonoBehaviour
                     {
                         //청크를 생성만 하고(초기화는 하지 않은 상태)
                         //만들 청크 목록에 넣는다.
-                        chunks[x, z] = new Chunk(temp, this);
+                        chunks[x, z] = new Chunk(temp);
                         chunksToCreate.Add(temp);
                     }
                     //범위 내에 있는데 활성화 되어 있지 않다면
