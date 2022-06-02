@@ -246,7 +246,6 @@ public class World : MonoBehaviour
         //종료할 때 저장함
         //SaveManager.SaveWorld(worldData);
 
-        Debug.Log("World.cs Destroyed");
     }
 
     void Start()
@@ -274,7 +273,11 @@ public class World : MonoBehaviour
         */
 
         //월드 생성
+
+        //맵을 로드하여 저장해놓음
         LoadWorld();
+
+        //실제 오브젝트를 생성함
         GenerateWorld();
         
 

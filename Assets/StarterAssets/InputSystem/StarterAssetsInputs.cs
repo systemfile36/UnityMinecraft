@@ -237,7 +237,7 @@ namespace StarterAssets
 
         public void OnDestroy()
         {
-			Debug.Log("StarterAssetsInput.cs Destroyed");
+			//Debug.Log("StarterAssetsInput.cs Destroyed");
         }
 
 #if !UNITY_IOS || !UNITY_ANDROID

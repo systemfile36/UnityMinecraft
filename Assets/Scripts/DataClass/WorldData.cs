@@ -96,6 +96,7 @@ public class WorldData
 
     /// <summary>
     /// 청크 데이터 딕셔너리에 지정된 상대 좌표의 청크를 추가한다.
+    /// 디스크에 저장되었다면 그대로 로드하고 아니면 새로 만든다
     /// </summary>
     /// <param name="coord">청크의 상대 좌표</param>
     public void LoadChunks(Vector2Int coord)
@@ -108,13 +109,24 @@ public class WorldData
             if (chunks.ContainsKey(coord))
             return;
 
-        
-            //딕셔너리에 추가하기 전에 맵을 구성한다.
-            ChunkData chunkData = new ChunkData(coord);
-            chunkData.PopulateMap();
+            //디스크에 저장된 ChunkData가 있는지 찾는다.
+            ChunkData chunkData = SaveManager.LoadChunk(worldName, coord);
+            
+            //저장된 ChunkData가 있다면 추가한다.
+            if(chunkData != null)
+            {
+                chunks.Add(coord, chunkData);
+            }
+            //저장된 ChunkData가 없다면 새로 생성한다.
+            else
+            {
+                //새로 ChunkData를 생성하고 맵을 구성한다.
+                chunkData = new ChunkData(coord);
+                chunkData.PopulateMap();
 
-            //Dictionary에 ChunkData를 추가한다.
-            chunks.Add(coord, chunkData);
+                //Dictionary에 ChunkData를 추가한다.
+                chunks.Add(coord, chunkData);
+            }
         }
     }
 

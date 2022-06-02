@@ -126,4 +126,42 @@ public static class SaveManager
             binaryFormatter.Serialize(stream, chunkData);
         }
     }
+
+
+    /// <summary>
+    /// 해당 worldName의 position의 ChunkData를 로드한다.
+    /// 존재하지 않으면 null을 리턴한다.
+    /// </summary>
+    public static ChunkData LoadChunk(string worldName, Vector2Int pos)
+    {
+        //좌표에 따른 청크 이름 지정
+        string chunkName =
+            string.Format("{0}-{1}.dat", pos.x, pos.y);
+
+        //chunk 파일의 경로를 pos를 통해 특정
+        string chunkPath = GamePaths.SavePath + worldName + "/chunks/" + chunkName;
+
+
+        //파일 존재 여부 확인
+        if (File.Exists(chunkPath))
+        {
+            BinaryFormatter binaryFormatter = new BinaryFormatter();
+            ChunkData chunk;
+
+            //World의 데이터 파일을 연다.
+            using (BufferedStream stream =
+            new BufferedStream(new FileStream(chunkPath, FileMode.Open)))
+            {
+                //stream의 내용을 역직렬화 해서 클래스로 불러온다.
+                chunk = binaryFormatter.Deserialize(stream) as ChunkData;
+
+            }
+
+            return chunk;
+        }
+
+        //파일이 없으면 null을 리턴한다.
+        return null;
+
+    }
 }
