@@ -147,16 +147,20 @@ public class GameManager : MonoBehaviour
 	}
 
 	/// <summary>
-	/// World를 로드한다.
+	/// World를 비동기로 로드하고 AsyncOperation을 return 한다.
 	/// </summary>
-	public void LoadWorld()
+	public AsyncOperation LoadWorld()
     {
 		//현재 Scene이 World가 아니라면
-		if(!SceneManager.GetActiveScene().name.Equals("World"))
-        {
+		if (!SceneManager.GetActiveScene().name.Equals("World"))
+		{
 			//현재 Scene을 닫고 World Scene을 로드한다.
-			SceneManager.LoadScene("World", LoadSceneMode.Single);
-        }
+			//SceneManager.LoadScene("World", LoadSceneMode.Single);
+
+			return SceneManager.LoadSceneAsync("World", LoadSceneMode.Single);
+		}
+		else
+			return null;
     }
 
 	/// <summary>
@@ -169,8 +173,6 @@ public class GameManager : MonoBehaviour
 			SceneManager.LoadScene("mainMenu", LoadSceneMode.Single);
 		}
     }
-
-
 
 	/// <summary>
 	/// 게임을 종료한다.

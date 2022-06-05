@@ -4,17 +4,62 @@ using UnityEngine;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading;
+using System.Collections.Concurrent;
 
 /// <summary>
 /// World의 저장을 담당하는 정적 클래스
 /// </summary>
 public static class SaveManager
 {
+    
+    private static bool _IsSaving = false;
+
     /// <summary>
-    /// worldData를 이름으로 된 디렉터리에 저장한다.
+    /// 현재 저장이 진행 중인지 여부
+    /// </summary>
+    public static bool IsSaving
+    {
+        get { return _IsSaving; }
+    }
+
+    /// <summary>
+    /// 비동기로 World를 저장하고 IAsyncResult를 return 한다.
     /// </summary>
     /// <param name="worldData">저장할 데이터</param>
-    public static void SaveWorld(WorldData worldData)
+    /// <param name="IsSeq">순차 처리 여부</param>
+    public static System.IAsyncResult SaveWorldAsync(WorldData worldData, bool IsSeq = true)
+    {
+        //IsSeq가 true이면 순차적으로 처리 되고, 아니면 병렬 처리 된다.
+        //병렬 처리를 하면 빠른 대신 메인 스레드에 영향이 갈 수 있다.
+        //반대로 순차 처리하면 느려지는 대신 메인 스레드에 영향이 적다.
+
+        //저장 중이면 저장을 캔슬한다.
+        if (_IsSaving)
+        {
+            Debug.Log("SaveWorldAsync is Canceld");
+            return null;
+        }
+
+        //저장 중임을 알린다.
+        _IsSaving = true;
+
+        Debug.Log("SaveWorldAsync running...");
+
+        System.Action<WorldData, bool> saveTask = SaveWorld;
+
+        //저장이 완료되면 콜백으로 저장 중임을 false로 세팅한다.
+        //IAsyncResult도 return 한다.
+        return saveTask.BeginInvoke(worldData, IsSeq, (ar) => { _IsSaving = false; }, null);
+
+    }
+
+    /// <summary>
+    /// worldData를 이름으로 된 디렉터리에 저장한다.
+    /// 순차 처리와 병렬 처리를 선택할 수 있다.
+    /// </summary>
+    /// <param name="worldData">저장할 데이터</param>
+    /// <param name="IsSeq">순차 처리 여부</param>
+    public static void SaveWorld(WorldData worldData, bool IsSeq = true)
     {
         //저장 경로, 월드 이름으로된 폴더를 세이브 폴더에 생성
         string savePath = GamePaths.SavePath + worldData.worldName + "/";
@@ -39,21 +84,30 @@ public static class SaveManager
             binaryFormatter.Serialize(stream, worldData);
         }
 
+
         //청크를 저장한다.
 
         //worldData의 changedChunks를 깊은 복사하여 가져온뒤 비운다.
         HashSet<ChunkData> chunks = worldData.CopyOfChangedChunks;
 
-        int num = 0;
-        //changedChunks내의 모든 청크를 저장한다.
-        foreach(ChunkData chunk in chunks)
+        //순차처리와 병렬처리를 선택한다.
+        if(IsSeq)
         {
-            //SaveChunk(chunk, worldData.worldName);
-            ThreadPool.QueueUserWorkItem((obj) => SaveChunk(chunk, worldData.worldName));
-            num++;
+            foreach (ChunkData chunk in chunks)
+            {
+                SaveChunk(chunk, worldData.worldName);
+            }
         }
+        else
+        {
+            //Parallel.ForEach로 병렬처리한다.
+            System.Threading.Tasks.Parallel.ForEach(chunks,
+                chunk => { SaveChunk(chunk, worldData.worldName); });
+        }
+
+
+        Debug.Log($"Save complete! : {chunks.Count}");
         
-        Debug.Log($"{num} chunks Saved!");
     }
 
     /// <summary>
@@ -111,9 +165,7 @@ public static class SaveManager
 
         //디렉터리가 존재하지 않으면 만든다.
         if (!Directory.Exists(savePath))
-        {
             Directory.CreateDirectory(savePath);
-        }
 
         BinaryFormatter binaryFormatter = new BinaryFormatter();
 
@@ -152,6 +204,7 @@ public static class SaveManager
             using (BufferedStream stream =
             new BufferedStream(new FileStream(chunkPath, FileMode.Open)))
             {
+                stream.Position = 0;
                 //stream의 내용을 역직렬화 해서 클래스로 불러온다.
                 chunk = binaryFormatter.Deserialize(stream) as ChunkData;
 

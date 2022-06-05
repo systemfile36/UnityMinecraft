@@ -150,7 +150,7 @@ namespace StarterAssets
 		/// <param name="value"></param>
 		public void OnInventoryToggle(InputValue value)
 		{
-			Debug.Log("OnInventoryToggle Called | IsOnUI =" + _IsOnUI);
+			//Debug.Log("OnInventoryToggle Called | IsOnUI =" + _IsOnUI);
 
 			//인벤토리 토글
 			IsOnUI = !IsOnUI;
@@ -170,7 +170,7 @@ namespace StarterAssets
 			}
 
 			//현재 ActionMap을 출력한다.
-			Debug.Log(playerInput.currentActionMap);
+			//Debug.Log(playerInput.currentActionMap);
 		}
 
 		/// <summary>
@@ -207,7 +207,10 @@ namespace StarterAssets
 		/// <param name="value"></param>
 		public void OnSave(InputValue value)
         {
-			SaveManager.SaveWorld(GameManager.Mgr.World.worldData);
+			//SaveManager.SaveWorld(GameManager.Mgr.World.worldData);
+
+			//현재 World를 저장
+			SaveManager.SaveWorldAsync(GameManager.Mgr.World.worldData);
         }
 
 #else

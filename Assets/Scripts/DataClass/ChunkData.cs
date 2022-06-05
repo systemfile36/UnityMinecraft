@@ -32,7 +32,7 @@ public class ChunkData
 
 
     //»ý¼ºÀÚ
-    public ChunkData(Vector2Int pos) { position = pos; Debug.Log($"ChunkData pos {position}");  }
+    public ChunkData(Vector2Int pos) { position = pos;}
 
     public ChunkData(int x, int y) { this.x = x; this.y = y; }
 

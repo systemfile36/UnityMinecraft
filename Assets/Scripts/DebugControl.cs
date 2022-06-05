@@ -83,7 +83,9 @@ public class DebugControl : MonoBehaviour
 			strBuilder.AppendFormat("Chunk : {0} {1}\n", world.playerChunkCoord.x, world.playerChunkCoord.z);
 			strBuilder.Append($"Selected_Position {player.selectGuide.position}\n");
 			strBuilder.Append($"Selected_Light {currentSelected.globalLightWeight}\n");
-			strBuilder.Append($"PlaceGuide_Light {currentPlaceGuide.globalLightWeight}");
+			strBuilder.Append($"PlaceGuide_Light {currentPlaceGuide.globalLightWeight}\n");
+			strBuilder.Append($"Current Loaded Chunks {GameManager.Mgr.World.worldData.chunks.Count}");
+
 
 			txt.text = strBuilder.ToString();
 

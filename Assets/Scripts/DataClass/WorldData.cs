@@ -1,7 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.Serialization; //OnDeserializedAttribute를 사용하기 위함
+using System.Threading.Tasks;
 using UnityEngine;
+using System.Collections.Concurrent;
 
 /// <summary>
 /// 월드에 대한 데이터가 저장되는 클래스(틀)
@@ -33,10 +35,13 @@ public class WorldData
     {
         get
         {
-            //changedChunks를 깊은 복사한 뒤, 기존의 것을 비운다.
-            HashSet<ChunkData> temp = new HashSet<ChunkData>(changedChunks);
-            changedChunks.Clear();
-            return temp;
+            lock(changedChunks)
+            {
+                //changedChunks를 깊은 복사한 뒤, 기존의 것을 비운다.
+                HashSet<ChunkData> temp = new HashSet<ChunkData>(changedChunks);
+                changedChunks.Clear();
+                return temp;
+            }
         }
     }
 
@@ -64,8 +69,10 @@ public class WorldData
     /// <param name="chunkData"></param>
     public void AddToChanged(ChunkData chunkData)
     {
-
-        changedChunks.Add(chunkData);
+        lock (changedChunks)
+        {
+            changedChunks.Add(chunkData);
+        }
     }
 
     /// <summary>
@@ -101,6 +108,8 @@ public class WorldData
     /// <param name="coord">청크의 상대 좌표</param>
     public void LoadChunks(Vector2Int coord)
     {
+        //Debug.Log($"LoadChunks Called : {coord}");
+
         //chunks안의 청크들의 접근 가능을 보장하기 위해
         //lock을 건다. 안그러면 중복되어 들어가거나 무결성이 파괴된다.
         lock (chunks)
@@ -128,6 +137,60 @@ public class WorldData
                 chunks.Add(coord, chunkData);
             }
         }
+    }
+
+    /// <summary>
+    /// 스폰 좌표를 기준으로 LoadDistanceInChunks 만큼 청크를 딕셔너리에 저장한다.
+    /// 초기화시에만 사용되므로 중복확인을 하지 않는다.
+    /// </summary>
+    /// <param name="spawnPos">월드기준 스폰 좌표</param>
+    public void LoadAllChunks(Vector3Int spawnPos)
+    {
+
+        int xMin = Mathf.Clamp((spawnPos.x / VoxelData.ChunkWidth) - GameManager.Mgr.settings.LoadDistanceInChunks
+            , 0, VoxelData.WorldSizeInChunks);
+        int zMin = Mathf.Clamp((spawnPos.z / VoxelData.ChunkWidth) - GameManager.Mgr.settings.LoadDistanceInChunks
+            , 0, VoxelData.WorldSizeInChunks);
+
+        int xMax = Mathf.Clamp((spawnPos.x / VoxelData.ChunkWidth) + GameManager.Mgr.settings.LoadDistanceInChunks
+            , 0, VoxelData.WorldSizeInChunks);
+        int zMax = Mathf.Clamp((spawnPos.z / VoxelData.ChunkWidth) + GameManager.Mgr.settings.LoadDistanceInChunks
+            , 0, VoxelData.WorldSizeInChunks);
+
+        //PopulateMap을 호출할 필요가 있는 청크들
+        ConcurrentQueue<ChunkData> chunksToPopulate = 
+            new ConcurrentQueue<ChunkData>();
+
+        Parallel.For(xMin, xMax, x =>
+        {
+            //임계 구역 접근 횟수를 최소화 하기 위한 캐싱
+            //각 x 값의 루프때마다 모아서 한꺼번에 추가함
+            for(int z = zMin; z < zMax; z++)
+            {
+                Vector2Int coord = new Vector2Int(x, z);
+
+                ChunkData chunkData = SaveManager.LoadChunk(worldName, coord);
+
+                //저장된 청크를 로드했다면 임시 저장에 추가한다.
+                if (chunkData != null)
+                    lock (chunks) { chunks.Add(chunkData.position, chunkData); }
+                //아니면 새로 만들어서 맵을 구성할 목록에 추가한다.
+                else
+                {
+                    chunkData = new ChunkData(coord);
+                    chunksToPopulate.Enqueue(chunkData);
+                }
+
+            }
+        });
+
+
+        //맵을 구성할 청크 목록의 청크들의 PopulateMap을 호출한다.
+        Parallel.ForEach(chunksToPopulate, chunk =>
+        {
+            chunk.PopulateMap();
+            lock (chunks) { chunks.Add(chunk.position, chunk); }
+        });
     }
 
     /// <summary>

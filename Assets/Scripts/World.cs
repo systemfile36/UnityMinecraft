@@ -111,6 +111,10 @@ public class World : MonoBehaviour
     /// </summary>
     public WorldData worldData;
 
+    /// <summary>
+    /// 로딩 화면에 대한 참조
+    /// </summary>
+    public LoadingControl loadingControl;
 
     //바이옴들
     public BiomeAttributes[] biomes;
@@ -145,18 +149,9 @@ public class World : MonoBehaviour
 
     //만들 청크들을 저장하는 리스트
     List<ChunkCoord> chunksToCreate = new List<ChunkCoord>();
-    
-    //코루틴이 이미 실행중인지 여부 판단을 위한 변수
-    //private bool IsCreateChunks;
 
     //구조물과 청크들의 업데이트 코루틴을 위한 변수
     private bool IsApplyingAll = false;
-
-    //코루틴을 위한 캐싱 변수
-    //private IEnumerator m_CreateChunks;
-
-    //새 코루틴을 위한 캐싱 변수
-    //private IEnumerator m_ApplyModifications;
 
     //구조물 생성을 위한 Que
     //구조물의 형태를 저장한 Queue를 저장하는 Queue
@@ -250,10 +245,28 @@ public class World : MonoBehaviour
 
     void Start()
 	{
+        Debug.Log("World.cs Start() Started");
 
         //Global Light Level의 최대 최소값을 셰이더에 넘긴다.
         Shader.SetGlobalFloat("minGlobalLight", VoxelData.minLight);
         Shader.SetGlobalFloat("maxGlobalLight", VoxelData.maxLight);
+
+        //월드 생성
+        //맵을 로드하여 저장해놓음
+ 
+        //로드할 범위가 10 보다 크거나 같으면 병렬로, 
+        //아니면 순차적으로 로드함
+        if (GameManager.Mgr.settings.LoadDistanceInChunks >= 10)
+            worldData.LoadAllChunks(Vector3Int.FloorToInt(spawnPosition));
+        else
+            LoadWorld();
+
+        //구조물들 반영
+        ApplyModifications();
+
+        //초기 저장
+        //SaveManager.SaveWorld(worldData, false);
+        SaveManager.SaveWorldAsync(worldData, false);
 
         //청크들 갱신 스레드 시작
         RefreshChunksThread = new Thread(RefreshChunks_ThreadTask);
@@ -265,21 +278,8 @@ public class World : MonoBehaviour
         RefreshEditedChunksThread.Name = "RefreshEditedChunksThread";
         RefreshEditedChunksThread.Start();
 
-        //월드 중앙에 스폰
-        /*
-        spawnPosition =
-            new Vector3(VoxelData.WorldSizeInVoxels / 2f,
-            VoxelData.ChunkHeight, VoxelData.WorldSizeInVoxels / 2f);
-        */
-
-        //월드 생성
-
-        //맵을 로드하여 저장해놓음
-        LoadWorld();
-
         //실제 오브젝트를 생성함
         GenerateWorld();
-        
 
         //플레이어가 위치한 청크 초기화
         playerChunkCoord = GetChunkCoordFromVector3(player.position);
@@ -343,6 +343,9 @@ public class World : MonoBehaviour
                 editedChunk.Dequeue().ApplyChunkMesh();
             }
         }
+
+      
+
     }
 
 
@@ -562,7 +565,16 @@ public class World : MonoBehaviour
 
     }
 
+    /// <summary>
+    /// LoadWorld를 비동기로 실행함
+    /// </summary>
+    /// <returns></returns>
+    System.IAsyncResult LoadWorldAsync()
+    {
+        System.Action action = LoadWorld;
 
+        return action.BeginInvoke(null, null);
+    }
 
 
     //게임이 처음 실행되었을 때 한번 실행되는 메소드

@@ -135,12 +135,10 @@ public class Chunk
     /// </summary>
     CountdownEvent counter = new CountdownEvent(3);
 
-    //World를 인자로 받는다.(find는 비싼(expansive한 작업))
     /// <summary>
     /// 청크의 생성자
     /// </summary>
     /// <param name="_coord">생성될 청크의 좌표</param>
-    /// <param name="_world">World에 대한 참조</param>
     public Chunk (ChunkCoord coord)
 	{
         //voxelMap과 정점 데이터들 병렬로 할당

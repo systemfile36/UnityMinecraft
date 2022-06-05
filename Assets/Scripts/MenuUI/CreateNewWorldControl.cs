@@ -14,6 +14,8 @@ public class CreateNewWorldControl : MonoBehaviour
     private GameMode gameMode = GameMode.Debug;
     public Button btnGameMode;
 
+    public LoadingControl loadingControl;
+
     void Awake()
     {
         //Seed 창에 기본적으로 랜덤한 시드를 넣음
@@ -46,8 +48,9 @@ public class CreateNewWorldControl : MonoBehaviour
         //시드 값 설정
         World.seed = (int)seed;
 
-        //월드 생성으로 넘어간다.
-        GameManager.Mgr.LoadWorld();
+        //World 씬을 비동기적으로 로드하고 로딩창을 띄운다.
+        loadingControl.LoadingStart(GameManager.Mgr.LoadWorld());
+        
     }
 
     public void OnClickCancel()

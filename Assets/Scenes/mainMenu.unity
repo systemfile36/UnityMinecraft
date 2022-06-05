@@ -1087,6 +1087,7 @@ MonoBehaviour:
   tbName: {fileID: 681448486}
   tbSeed: {fileID: 1521580512}
   btnGameMode: {fileID: 55924350}
+  loadingControl: {fileID: 6529941962782898605}
 --- !u!224 &355397551 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 7977053566793035675, guid: 48d4fe512eab4ff4fa2007b3c4fb9326, type: 3}
