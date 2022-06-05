@@ -245,29 +245,74 @@ public class World : MonoBehaviour
 
     void Start()
 	{
-        Debug.Log("World.cs Start() Started");
+        
+        //로딩 화면을 구현하기 위해 Start() 메시지를 최대한 가볍게 만들고, 
+        //실제 초기화 작업은 코루틴에서 하게 변경함 20220606
 
         //Global Light Level의 최대 최소값을 셰이더에 넘긴다.
         Shader.SetGlobalFloat("minGlobalLight", VoxelData.minLight);
         Shader.SetGlobalFloat("maxGlobalLight", VoxelData.maxLight);
 
-        //월드 생성
-        //맵을 로드하여 저장해놓음
- 
-        //로드할 범위가 10 보다 크거나 같으면 병렬로, 
-        //아니면 순차적으로 로드함
-        if (GameManager.Mgr.settings.LoadDistanceInChunks >= 10)
-            worldData.LoadAllChunks(Vector3Int.FloorToInt(spawnPosition));
-        else
-            LoadWorld();
+        //플레이어가 위치한 청크 초기화
+        playerChunkCoord = GetChunkCoordFromVector3(player.position);
+        playerLastChunkCoord = GetChunkCoordFromVector3(player.position);
 
-        //구조물들 반영
-        ApplyModifications();
+        //초기 값 IsCompleted == false 인 IAsyncResult 구현 객체
+        //코루틴이 작업을 끝냈는지 여부를 확인하기 위함
+        TempIAsyncResult initResult = new TempIAsyncResult();
 
-        //초기 저장
-        //SaveManager.SaveWorld(worldData, false);
-        SaveManager.SaveWorldAsync(worldData, false);
+        //IAsyncResult 구현 객체를 넘겨줌
+        loadingControl.LoadingStart(initResult);
 
+        //초기화 코루틴 시작
+        StartCoroutine(InitWorld(initResult));
+
+	}
+
+    WaitForSecondsRealtime waitFor100ms = new WaitForSecondsRealtime(0.1f);
+
+    /// <summary>
+    /// 초기화 작업을 나누어서 실행하기 위한 코루틴
+    /// TempIAsyncResult를 받아서 현재 작업 상황을 알림 
+    /// </summary>
+    /// <returns></returns>
+    IEnumerator InitWorld(TempIAsyncResult result)
+    {
+        //처음 실행 시 게임 시간 정지
+        Time.timeScale = 0f;
+
+        //비동기로 진행할 초기화 테스크
+        System.Action initAsyncTask = () =>
+        {
+            //로드 요청
+            //로드 범위에 따라 병렬과 순차 결정
+            if (GameManager.Mgr.settings.LoadDistanceInChunks >= 10)
+                worldData.LoadAllChunks(Vector3Int.FloorToInt(spawnPosition));
+            else
+                LoadWorld();
+
+            //구조물들 반영
+            ApplyModifications();
+
+            //초기 저장
+            SaveManager.SaveWorld(worldData);
+        };
+
+        //실행하기 전에 딜레이를 주어야 제대로 실행됨
+        yield return new WaitForSecondsRealtime(0.1f);
+
+        //비동기 로딩 시작
+        System.IAsyncResult temp = initAsyncTask.BeginInvoke(null, null);
+
+        //로딩이 끝나지 않았다면 
+        while(!temp.IsCompleted)
+        {
+            //100ms 대기
+            yield return waitFor100ms;
+            
+        }
+
+        //로딩이 끝났다면 비동기로 하기 어려운 초기화 실행
         //청크들 갱신 스레드 시작
         RefreshChunksThread = new Thread(RefreshChunks_ThreadTask);
         RefreshChunksThread.Name = "RefreshChunksThread";
@@ -281,11 +326,28 @@ public class World : MonoBehaviour
         //실제 오브젝트를 생성함
         GenerateWorld();
 
-        //플레이어가 위치한 청크 초기화
-        playerChunkCoord = GetChunkCoordFromVector3(player.position);
-        playerLastChunkCoord = GetChunkCoordFromVector3(player.position);
-        
-	}
+        //끝났음을 알림
+        result._IsCompleted = true;
+
+        //시간을 원래대로
+        Time.timeScale = 1f;
+    }
+
+    private class TempIAsyncResult : System.IAsyncResult
+    {
+        public bool _IsCompleted = false;
+
+        public object AsyncState => throw new System.NotImplementedException();
+
+        public WaitHandle AsyncWaitHandle => throw new System.NotImplementedException();
+
+        public bool CompletedSynchronously => throw new System.NotImplementedException();
+
+        public bool IsCompleted
+        {
+            get { return _IsCompleted; }
+        }
+    }
 
     void Update()
 	{
@@ -348,6 +410,7 @@ public class World : MonoBehaviour
 
     }
 
+    
 
 	/// <summary>
 	/// 지정된 좌표에 복셀의 유무를 반환한다.
