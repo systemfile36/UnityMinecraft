@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using Newtonsoft.Json;
 /// <summary>
 /// 각 청크에 대한 데이터가 저장되는 클래스(틀)
 /// </summary>
@@ -10,13 +10,16 @@ public class ChunkData
 {
     //청크의 상대 좌표를 나타낸다. 
     //Vector2Int는 직렬화 하기 어려우므로 정수 좌표로 한다.
+    [JsonProperty] //private이지만, 직렬화 해야 한다.
     int x;
+    [JsonProperty] //private이지만, 직렬화 해야 한다.
     int y;
 
     //각 좌표에 대한 접근은 Vector2Int로 한다.
     /// <summary>
     /// 청크의 상대 좌표
     /// </summary>
+    [JsonIgnore] //Json 직렬화에서 제외한다는 뜻(Newtonsoft.Json은 프로퍼티도 직렬화 한다.)
     public Vector2Int position
     {
         get { return new Vector2Int(x, y); }
@@ -31,7 +34,9 @@ public class ChunkData
         new VoxelState[VoxelData.ChunkWidth, VoxelData.ChunkHeight, VoxelData.ChunkWidth];
 
 
-    //생성자
+    //Json 직렬화를 위한 기본 생성자
+    public ChunkData() { }
+
     public ChunkData(Vector2Int pos) { position = pos;}
 
     public ChunkData(int x, int y) { this.x = x; this.y = y; }

@@ -216,7 +216,7 @@ public class World : MonoBehaviour
         //worldData = new WorldData(worldName, seed);
 
         //World를 로드한다.
-        worldData = SaveManager.LoadWorld(worldName, seed);
+        worldData = SaveManager.LoadWorldJson(worldName, seed);
         
         activeChunks.Capacity = (GameManager.Mgr.settings.ViewDistanceInChunks * 2) * (GameManager.Mgr.settings.ViewDistanceInChunks * 2);
 
@@ -286,16 +286,15 @@ public class World : MonoBehaviour
         {
             //로드 요청
             //로드 범위에 따라 병렬과 순차 결정
-            if (GameManager.Mgr.settings.LoadDistanceInChunks >= 10)
-                worldData.LoadAllChunks(Vector3Int.FloorToInt(spawnPosition));
-            else
-                LoadWorld();
+            
+            worldData.LoadAllChunks(Vector3Int.FloorToInt(spawnPosition));
+            
 
             //구조물들 반영
             ApplyModifications();
 
             //초기 저장
-            SaveManager.SaveWorld(worldData);
+            SaveManager.SaveWorldJson(worldData);
         };
 
         //실행하기 전에 딜레이를 주어야 제대로 실행됨

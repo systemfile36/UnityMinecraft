@@ -21,6 +21,9 @@ namespace StarterAssets
 		[Header("DebugMenu Set")]
 		public GameObject DebugText;
 
+		[Header("PauseMenu")]
+		public PauseMenuControl pauseMenu;
+
 		[Header("Scroll Value")]
 		public float ScrollAxis = 0;
 		public float ScrollThreshold = 1f;
@@ -174,9 +177,41 @@ namespace StarterAssets
 		}
 
 		/// <summary>
-		/// 종료 명령이 들어왔을 때의 경우
+		/// 일시정지 명령이 들어왔을 때의 경우
 		/// </summary>
 		/// <param name="value"></param>
+        public void OnPause(InputValue value)
+        {
+			//만약 UI모드라면 
+			if (IsOnUI)
+			{
+				//UI를 끄려고 시도한다.
+				IsOnUI = false;
+
+				//끄는데 성공했다면 Player모드로 전환한다.
+				if (!IsOnUI)
+				{
+					SetCursorState(true);
+					playerInput.SwitchCurrentActionMap("Player");
+				}
+
+				return;
+			}
+
+
+			//일시 정지 상태여부를 확인해서 토글함
+			if (!pauseMenu.IsPaused)
+				pauseMenu.SetPause();
+			else
+				pauseMenu.Continue();
+
+
+		}
+
+        /// <summary>
+        /// 종료 명령이 들어왔을 때의 경우
+        /// </summary>
+        /// <param name="value"></param>
         public void OnExit(InputValue value)
         {
 			//만약 UI모드라면 
@@ -210,7 +245,8 @@ namespace StarterAssets
 			//SaveManager.SaveWorld(GameManager.Mgr.World.worldData);
 
 			//현재 World를 저장
-			SaveManager.SaveWorldAsync(GameManager.Mgr.World.worldData);
+			//SaveManager.SaveWorldAsync(GameManager.Mgr.World.worldData);
+			//SaveManager.SaveWorldJson(GameManager.Mgr.World.worldData);
         }
 
 #else
@@ -248,8 +284,9 @@ namespace StarterAssets
         //포커스가 이 프로그램으로 옮겨 졌을 때 발생하는 이벤트
         private void OnApplicationFocus(bool hasFocus)
 		{
-			//UI모드가 아닐때만, 어플리케이션으로 커서가 옮겨졌을 때 커서잠금
-			if(!_IsOnUI)
+			//UI모드가 아니고 일시 정지상태가 아닐 때만,
+			//어플리케이션으로 커서가 옮겨졌을 때 커서잠금
+			if(!_IsOnUI && !pauseMenu.IsPaused)
 				SetCursorState(cursorLocked);
 		}
 

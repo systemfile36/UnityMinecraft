@@ -5,6 +5,11 @@ using System.Threading.Tasks;
 using UnityEngine;
 using System.Collections.Concurrent;
 
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
+using Newtonsoft.Json;
+using System.Linq;
+
 /// <summary>
 /// 월드에 대한 데이터가 저장되는 클래스(틀)
 /// </summary>
@@ -31,6 +36,7 @@ public class WorldData
     /// <summary>
     /// changedChunks의 DeepCopy를 반환하고, 기존의 것을 비운다.
     /// </summary>
+    [JsonIgnore] //Json 직렬화에서 제외한다는 뜻(Newtonsoft.Json은 프로퍼티도 직렬화 한다.)
     public HashSet<ChunkData> CopyOfChangedChunks
     {
         get
@@ -119,7 +125,7 @@ public class WorldData
             return;
 
             //디스크에 저장된 ChunkData가 있는지 찾는다.
-            ChunkData chunkData = SaveManager.LoadChunk(worldName, coord);
+            ChunkData chunkData = SaveManager.LoadChunkJson(worldName, coord);
             
             //저장된 ChunkData가 있다면 추가한다.
             if(chunkData != null)
@@ -140,13 +146,14 @@ public class WorldData
     }
 
     /// <summary>
-    /// 스폰 좌표를 기준으로 LoadDistanceInChunks 만큼 청크를 딕셔너리에 저장한다.
-    /// 초기화시에만 사용되므로 중복확인을 하지 않는다.
+    /// 스폰 좌표를 기준으로 LoadDistanceInChunks 만큼의 청크를 딕셔너리에 저장한다.
+    /// 초기 월드 생성 시에만 사용되므로 중복확인을 하지 않는다.
     /// </summary>
     /// <param name="spawnPos">월드기준 스폰 좌표</param>
     public void LoadAllChunks(Vector3Int spawnPos)
     {
-
+        var stopwatch = new System.Diagnostics.Stopwatch();
+        stopwatch.Start();
         int xMin = Mathf.Clamp((spawnPos.x / VoxelData.ChunkWidth) - GameManager.Mgr.settings.LoadDistanceInChunks
             , 0, VoxelData.WorldSizeInChunks);
         int zMin = Mathf.Clamp((spawnPos.z / VoxelData.ChunkWidth) - GameManager.Mgr.settings.LoadDistanceInChunks
@@ -157,40 +164,37 @@ public class WorldData
         int zMax = Mathf.Clamp((spawnPos.z / VoxelData.ChunkWidth) + GameManager.Mgr.settings.LoadDistanceInChunks
             , 0, VoxelData.WorldSizeInChunks);
 
-        //PopulateMap을 호출할 필요가 있는 청크들
-        ConcurrentQueue<ChunkData> chunksToPopulate = 
-            new ConcurrentQueue<ChunkData>();
+        //로드할 범위의 좌표들 집합
+        //범위 미리 지정
+        List<Vector2Int> chunkPositions = 
+            new List<Vector2Int>((GameManager.Mgr.settings.LoadDistanceInChunks * 2) * (GameManager.Mgr.settings.LoadDistanceInChunks * 2));
 
-        Parallel.For(xMin, xMax, x =>
+        for (int x = xMin; x < xMax; x++)
         {
-            //임계 구역 접근 횟수를 최소화 하기 위한 캐싱
-            //각 x 값의 루프때마다 모아서 한꺼번에 추가함
-            for(int z = zMin; z < zMax; z++)
+            for (int z = zMin; z < zMax; z++)
             {
-                Vector2Int coord = new Vector2Int(x, z);
+                chunkPositions.Add(new Vector2Int(x, z));
+            }
+        }
 
-                ChunkData chunkData = SaveManager.LoadChunk(worldName, coord);
+        Parallel.ForEach(chunkPositions, chunkPos =>
+        {
+            ChunkData chunkData = SaveManager.LoadChunkJson(worldName, chunkPos);
 
-                //저장된 청크를 로드했다면 임시 저장에 추가한다.
-                if (chunkData != null)
-                    lock (chunks) { chunks.Add(chunkData.position, chunkData); }
-                //아니면 새로 만들어서 맵을 구성할 목록에 추가한다.
-                else
-                {
-                    chunkData = new ChunkData(coord);
-                    chunksToPopulate.Enqueue(chunkData);
-                }
-
+            //저장된 청크를 로드했다면 딕셔너리에 추가한다.
+            if (chunkData != null)
+                lock (chunks) { chunks.Add(chunkData.position, chunkData); }
+            //아니면 새로 만들어서 맵을 구성하고 딕셔너리에 추가한다.
+            else
+            {
+                chunkData = new ChunkData(chunkPos);
+                chunkData.PopulateMap();
+                lock(chunks) { chunks.Add(chunkData.position, chunkData); }
             }
         });
 
-
-        //맵을 구성할 청크 목록의 청크들의 PopulateMap을 호출한다.
-        Parallel.ForEach(chunksToPopulate, chunk =>
-        {
-            chunk.PopulateMap();
-            lock (chunks) { chunks.Add(chunk.position, chunk); }
-        });
+        stopwatch.Stop();
+        Debug.Log($"LoadAllChunkJson Elapsed : {stopwatch.ElapsedMilliseconds} ms");
     }
 
     /// <summary>

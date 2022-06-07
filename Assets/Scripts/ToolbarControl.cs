@@ -115,10 +115,17 @@ public class ToolbarControl : MonoBehaviour
 
 	}
 
-	//모바일 환경이 아닐때에만
+	//파괴될 때 이벤트를 해제 해주어야 한다.
+    void OnDestroy()
+    {
+		//이벤트 해제
+        Keyboard.current.onTextInput -= SelectItemByNumber;
+    }
+
+    //모바일 환경이 아닐때에만
 #if !UNITY_ANDROID || !UNITY_IOS
-	//onTextInput의 이벤트로 연결
-	void SelectItemByNumber(char c)
+    //onTextInput의 이벤트로 연결
+    void SelectItemByNumber(char c)
 	{
 		//char을 숫자로 변환(0의 아스키 코드는 48이므로)
 		int index = c - 48;
