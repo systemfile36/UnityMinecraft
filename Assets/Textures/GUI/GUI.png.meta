@@ -98,6 +98,12 @@ TextureImporter:
   - first:
       213: 33978718357365493
     second: btnClicked
+  - first:
+      213: -8404128215359355159
+    second: btnClose
+  - first:
+      213: 4604734094500426095
+    second: btnSubmit
   externalObjects: {}
   serializedVersion: 11
   mipmaps:
@@ -866,6 +872,48 @@ TextureImporter:
       bones: []
       spriteID: 5f22d9dd677b87000800000000000000
       internalID: 33978718357365493
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: btnClose
+      rect:
+        serializedVersion: 2
+        x: 158
+        y: 37
+        width: 13
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9e60ba44ae98e5b80800000000000000
+      internalID: -8404128215359355159
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: btnSubmit
+      rect:
+        serializedVersion: 2
+        x: 144
+        y: 38
+        width: 14
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f61f3d3134d47ef30800000000000000
+      internalID: 4604734094500426095
       vertices: []
       indices: 
       edges: []

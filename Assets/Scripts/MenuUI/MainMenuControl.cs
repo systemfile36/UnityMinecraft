@@ -8,7 +8,8 @@ public class MainMenuControl : MonoBehaviour
     
     public void OnClickSinglePlay()
     {
-        menuControl.MoveToMenu(transform.name, "CreateNewWorld");
+        //menuControl.MoveToMenu(transform.name, "CreateNewWorld");
+        menuControl.MoveToMenu(transform.name, "SelectWorld");
     }
 
     public void OnClickSettings()

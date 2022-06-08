@@ -13,6 +13,11 @@ public class MenuControl : MonoBehaviour
     /// </summary>
     private Dictionary<string, Transform> menus = new Dictionary<string, Transform>();
 
+    /// <summary>
+    /// MsgBoxControl에 대한 참조
+    /// </summary>
+    public MsgBoxControl msgBoxControl;
+
     void Awake()
     {
         //자식의 Transform을 이름과 연결지어 딕셔너리에추가
