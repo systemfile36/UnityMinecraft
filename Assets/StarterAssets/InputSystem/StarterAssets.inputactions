@@ -408,9 +408,9 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Exit",
+                    "name": "Pause",
                     "type": "Button",
-                    "id": "33ddcc5a-92ea-46a3-b9a8-4d0f8f443293",
+                    "id": "b9bf815b-9242-4d7c-99be-ceb351165216",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
@@ -442,12 +442,12 @@
                 },
                 {
                     "name": "",
-                    "id": "55b5ee0b-c07c-4228-9a10-9ca51016c965",
+                    "id": "ea759a1e-17ca-4afa-90a5-98ade07d2e81",
                     "path": "<Keyboard>/escape",
                     "interactions": "",
                     "processors": "",
                     "groups": "KeyboardMouse",
-                    "action": "Exit",
+                    "action": "Pause",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

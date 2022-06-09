@@ -12,10 +12,11 @@ public class Noise
 	/// <param name="offset">값 변화를 위한 오프셋</param>
 	/// <param name="scale">스케일</param>
 	/// <returns></returns>
-    public static float GetPerlin2D(Vector2 pos, float offset, float scale)
+    public static float GetPerlin2D(Vector2 pos, float offset, float scale, int seed = 0)
 	{
-		return Mathf.PerlinNoise((pos.x + 0.01f) / VoxelData.ChunkWidth * scale + offset, 
-			(pos.y + 0.01f) / VoxelData.ChunkWidth * scale + offset);
+		unchecked { seed = (ushort)seed; }
+		return Mathf.PerlinNoise((pos.x + 0.01f) / VoxelData.ChunkWidth * scale + offset + seed, 
+			(pos.y + 0.01f) / VoxelData.ChunkWidth * scale + offset + seed);
 	}
 
 	/// <summary>
@@ -26,13 +27,15 @@ public class Noise
 	/// <param name="scale">스케일</param>
 	/// <param name="threshold">임계치</param>
 	/// <returns></returns>
-	public static bool GetPerlin3D(Vector3 pos, float offset, float scale, float threshold)
+	public static bool GetPerlin3D(Vector3 pos, float offset, float scale, float threshold, int seed = 0)
 	{
-		float x = (pos.x + offset + 0.01f) * scale;
-		float y = (pos.y + offset + 0.01f) * scale;
-		float z = (pos.z + offset + 0.01f) * scale;
+		unchecked { seed = (ushort)seed; }
 
+		float x = (pos.x + offset + 0.01f + seed) * scale;
+		float y = (pos.y + offset + 0.01f + seed) * scale;
+		float z = (pos.z + offset + 0.01f + seed) * scale;
 
+		//2차원 펄린 노이즈를 여러번 사용하여 3차원 값으로 바꾸는 과정
 		float AB = Mathf.PerlinNoise(x, y);
 		float AC = Mathf.PerlinNoise(x, z);
 

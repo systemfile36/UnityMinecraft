@@ -200,10 +200,19 @@ namespace StarterAssets
 
 
 			//일시 정지 상태여부를 확인해서 토글함
+			//ActionMap도 변경
 			if (!pauseMenu.IsPaused)
+            {
+				playerInput.SwitchCurrentActionMap("UI");
 				pauseMenu.SetPause();
+			}
 			else
+            {
+				playerInput.SwitchCurrentActionMap("Player");
 				pauseMenu.Continue();
+				
+			}
+				
 
 
 		}

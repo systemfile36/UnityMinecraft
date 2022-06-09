@@ -669,6 +669,7 @@ MonoBehaviour:
   currentSelected: {fileID: 0}
   loadingControl: {fileID: 6529941962782898605}
   menuControl: {fileID: 1328306287}
+  msgBox: {fileID: 1820870313}
 --- !u!1001 &208029710
 PrefabInstance:
   m_ObjectHideFlags: 0

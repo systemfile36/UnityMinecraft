@@ -504,7 +504,7 @@ public class World : MonoBehaviour
             //해당 바이옴의 노이즈로 가중치 설정
             float weight = 
                 Noise.GetPerlin2D(pos2, 
-                    biomes[i].biomeOffset, biomes[i].biomeScale);
+                    biomes[i].biomeOffset, biomes[i].biomeScale, seed);
 
             //가중치 최대값 갱신, 인덱스 갱신
             //제일 가중치가 큰 것을 선택하기 위함
@@ -516,7 +516,7 @@ public class World : MonoBehaviour
 
             //해당 바이옴 기준 높이를 구하고 가중치를 곱한다.
             float height = biomes[i].terHeight
-                * Noise.GetPerlin2D(pos2, 0, biomes[i].terScale)
+                * Noise.GetPerlin2D(pos2, 0, biomes[i].terScale, seed)
                 * weight;
 
             //평균을 구하기 위해 높이를 합한다.
@@ -570,7 +570,7 @@ public class World : MonoBehaviour
                 if(tempY > lode.minHeight && tempY < lode.maxHeight)
 				{
                     //노이즈를 체크해서 true가 반환되면
-                    if(Noise.GetPerlin3D(pos, lode.Offset, lode.scale, lode.threshold))
+                    if(Noise.GetPerlin3D(pos, lode.Offset, lode.scale, lode.threshold, seed))
 					{
                         //vValue를 변형
                         vValue = lode.blockID;
@@ -584,13 +584,13 @@ public class World : MonoBehaviour
         if(tempY == terHeight && biome.isCreatePlants)
 		{
             //구조물가 생성되는 범위를 설정
-            if(Noise.GetPerlin2D(new Vector2(pos.x, pos.z), 0, biome.PlantSetScale) > biome.PlantSetThreshold)
+            if(Noise.GetPerlin2D(new Vector2(pos.x, pos.z), 0, biome.PlantSetScale, seed) > biome.PlantSetThreshold)
 			{
                 //vValue = 1;
                 //실제 구조물이 생성되는 위치
                 //이미 집합으로 설정된 상태에서 다시 Noise를 받아서 vValue를 바꾸었으므로
                 //집합의 범위 안에 다시 분산도와 임계치에 따라 배치됨
-                if (Noise.GetPerlin2D(pos2, 0, biome.PlantScale) > biome.PlantThreshold)
+                if (Noise.GetPerlin2D(pos2, 0, biome.PlantScale, seed) > biome.PlantThreshold)
 				{
 
                     //식물 형태가 들어있는 Queue<VoxelMod>를 받아서 modifications에 Enqueue한다.

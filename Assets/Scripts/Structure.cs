@@ -8,15 +8,15 @@ public static class Structure
 	/// 인덱스에 따라 서로 다른 구조물(식물)의
 	/// 묶음 반환
 	/// </summary>
-	public static Queue<VoxelMod> CreateMajorPlant(int index, Vector3 pos, int minHeight, int maxHeight)
+	public static Queue<VoxelMod> CreateMajorPlant(int index, Vector3 pos, int minHeight, int maxHeight, int seed = 0)
     {
 		//인덱스에 따라 서로 다른 구조물(식물) 반환
 		switch(index)
         {
 			case 0:
-				return CreateTree(pos, minHeight, maxHeight);
+				return CreateTree(pos, minHeight, maxHeight, seed);
 			case 1:
-				return CreateCactus(pos, minHeight, maxHeight);
+				return CreateCactus(pos, minHeight, maxHeight, seed);
 			//추후 추가 예정
         }
 
@@ -28,7 +28,7 @@ public static class Structure
 	//나무를 생성하는 부분
 	//위치와 modifications 큐와 최대, 최소 높이를 받아서 지정된 높이 만큼 나무를 쌓음
 	//나무 블럭들을 저장한 Queue<VoxelMod> 를 리턴함
-    public static Queue<VoxelMod> CreateTree(Vector3 pos, int minHeight, int maxHeight)
+    public static Queue<VoxelMod> CreateTree(Vector3 pos, int minHeight, int maxHeight, int seed = 0)
 	{
 		
 		//후에 반환할 que
@@ -37,7 +37,7 @@ public static class Structure
 
 		//높이를 랜덤으로 하기 위함, 정확한 좌표를 넣어야 함
 		//0 ~ 최대높이 사이 값이 height에 들어감
-		int height = (int)(maxHeight * Noise.GetPerlin2D(new Vector2(pos.x, pos.z), 2503f, 2f));
+		int height = (int)(maxHeight * Noise.GetPerlin2D(new Vector2(pos.x, pos.z), 2503f, 2f, seed));
 
 		if(height < minHeight)
 		{
@@ -70,7 +70,7 @@ public static class Structure
 	}
 
 
-	public static Queue<VoxelMod> CreateCactus(Vector3 pos, int minHeight, int maxHeight)
+	public static Queue<VoxelMod> CreateCactus(Vector3 pos, int minHeight, int maxHeight, int seed = 0)
 	{
 
 		//후에 반환할 que
@@ -79,7 +79,7 @@ public static class Structure
 
 		//높이를 랜덤으로 하기 위함, 정확한 좌표를 넣어야 함
 		//0 ~ 최대높이 사이 값이 height에 들어감
-		int height = (int)(maxHeight * Noise.GetPerlin2D(new Vector2(pos.x, pos.z), 250f, 3f));
+		int height = (int)(maxHeight * Noise.GetPerlin2D(new Vector2(pos.x, pos.z), 250f, 3f, seed));
 
 		if (height < minHeight)
 		{

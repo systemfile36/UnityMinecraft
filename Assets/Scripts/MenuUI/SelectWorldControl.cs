@@ -38,6 +38,9 @@ public class SelectWorldControl : MonoBehaviour
     [Tooltip("MenuControl of Current Scene")]
     public MenuControl menuControl;
 
+    [Tooltip("MsgBoxControl of Current Scene")]
+    public MsgBoxControl msgBox;
+
     //세이브 폴더에서 world.json들을 찾아서 리스트에 세팅함
     void Start()
     {
@@ -59,6 +62,16 @@ public class SelectWorldControl : MonoBehaviour
 
             //World를 비동기로 로딩하고 로딩창을 띄운다.
             loadingControl.LoadingStart(GameManager.Mgr.LoadWorld());
+        }
+        //선택된 노드가 없다면
+        else
+        {
+            msgBox.MsgBoxAsync("Warning", "Threre is no Selected World!",
+                () =>
+                {
+                    //Yes버튼이 눌리면 그냥 종료한다.
+                    msgBox.CloseMsgBox();
+                });
         }
     }
 
@@ -87,6 +100,16 @@ public class SelectWorldControl : MonoBehaviour
 
             //월드 목록을 다시 로드한다.
             LoadWorldList();
+        }
+        //선택된 노드가 없을 때
+        else
+        {
+            msgBox.MsgBoxAsync("Warning", "There is no Selected World!", 
+                () => 
+                {
+                    //Yes버튼이 눌리면 그냥 종료한다.
+                    msgBox.CloseMsgBox();
+                });
         }
     }
 
