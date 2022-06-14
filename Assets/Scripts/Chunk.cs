@@ -277,6 +277,8 @@ public class Chunk
     /// </summary>
     public void EditVoxel(Vector3 pos, byte id)
 	{
+        if (chunkObject == null)
+            return;
       
         //chunksToRefresh_Edit에 추가할 청크들 묶음
         Queue<Chunk> temp = new Queue<Chunk>(4);
@@ -853,6 +855,16 @@ public class Chunk
         uvs.Add(new Vector2(x, y + VoxelData.NormalizedBlockTextureSize)); //0, 1
         uvs.Add(new Vector2(x + VoxelData.NormalizedBlockTextureSize, y)); //1, 0
         uvs.Add(new Vector2(x + VoxelData.NormalizedBlockTextureSize, y + VoxelData.NormalizedBlockTextureSize)); //1, 1
+    }
+
+    /// <summary>
+    /// 게임오브젝트를 파괴한다.
+    /// </summary>
+    /// <param name="chunk"></param>
+    public void DestroyGameObj()
+    {
+        //Debug.Log($"Destroy {coord.x}, {coord.z}");
+        Object.Destroy(chunkObject);
     }
 
 }

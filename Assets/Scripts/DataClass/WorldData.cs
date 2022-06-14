@@ -82,6 +82,34 @@ public class WorldData
     }
 
     /// <summary>
+    /// 딕셔너리에서 청크를 제거한다.
+    /// </summary>
+    /// <param name="pos"></param>
+    public void UnloadChunks(Vector2Int pos)
+    {
+        lock(chunks)
+        {
+            chunks.Remove(pos);
+        }
+    }
+
+    /// <summary>
+    /// 딕셔너리에서 청크들을 제거한다.
+    /// </summary>
+    /// <param name="poses"></param>
+    public void UnloadChunks(Vector2Int[] poses)
+    {
+        lock(chunks)
+        {
+            foreach (Vector2Int pos in poses)
+            {
+                chunks.Remove(pos);
+            }
+        }
+        
+    }
+
+    /// <summary>
     /// 청크의 상대 좌표를 받아 ChunkData를 반환한다.
     /// </summary>
     /// <param name="coord">청크의 상대 좌표</param>
@@ -114,10 +142,10 @@ public class WorldData
     /// <param name="coord">청크의 상대 좌표</param>
     public void LoadChunks(Vector2Int coord)
     {
-        //Debug.Log($"LoadChunks Called : {coord}");
+        
 
         //chunks안의 청크들의 접근 가능을 보장하기 위해
-        //lock을 건다. 안그러면 중복되어 들어가거나 무결성이 파괴된다.
+        //lock을 건다. 안그러면 중복되어 들어가거나 무결성이 파괴된다. (맵을 구성하기 전에 추가된다거나)
         lock (chunks)
         {
             //이미 존재한다면 생략한다.
@@ -203,7 +231,8 @@ public class WorldData
     /// </summary>
     /// <param name="pos">수정할 블럭의 월드 기준 좌표</param>
     /// <param name="id">설정할 블럭 id</param>
-    public bool SetVoxel(Vector3 pos, byte id)
+    /// <param name="load">딕셔너리에 없을 때 로드할 지 여부</param>
+    public bool SetVoxel(Vector3 pos, byte id, bool load = true) 
     {
 
         //수정할 블럭의 월드 기준 좌표와 id를 받아서
@@ -217,8 +246,22 @@ public class WorldData
         int x = Mathf.FloorToInt(pos.x / VoxelData.ChunkWidth);
         int z = Mathf.FloorToInt(pos.z / VoxelData.ChunkWidth);
 
-        //ChunkData를 받아온다. 없으면 로드한 후 받아온다.
-        ChunkData temp = GetChunkData(new Vector2Int(x, z), true);
+
+        
+        ChunkData temp;
+        //load == true이면 딕셔너리에 없을 때 로드한다.
+        if (load)
+        {
+            temp = GetChunkData(new Vector2Int(x, z), true);
+        }
+        //load == false이면 딕셔너리에 없으면 false를 리턴한다.
+        else
+        {
+            temp = GetChunkData(new Vector2Int(x, z), false);
+            if (temp == null)
+                return false;
+        }
+        
 
         //청크 넓이 만큼 곱해서 청크의 월드 기준 좌표를 얻는다.
         //청크의 transform.position의 x, z값과 같은 값을 가질 것
@@ -236,7 +279,7 @@ public class WorldData
         temp.map[vPos.x, vPos.y, vPos.z].id = id;
         
         //변경된 목록에 ChunkData 추가
-        changedChunks.Add(temp);
+        //changedChunks.Add(temp);
 
         return true;
 

@@ -91,6 +91,6 @@ public class ChunkData
         }
 
         //변경된 목록에 추가한다.
-        GameManager.Mgr.World.worldData.AddToChanged(this);
+        //GameManager.Mgr.World.worldData.AddToChanged(this);
     }
 }

@@ -191,6 +191,11 @@ public class World : MonoBehaviour
     public ConcurrentQueue<Queue<Chunk>> chunksToDraw_Edit = new ConcurrentQueue<Queue<Chunk>>(); 
 
     /// <summary>
+    /// 언로드할 청크의 좌표 묶음을 저장해 놓은 Queue
+    /// </summary>
+    ConcurrentQueue<List<Vector2Int>> chunksToUnload = new ConcurrentQueue<List<Vector2Int>>();
+
+    /// <summary>
     /// activeChunks가 수정 가능한지 여부 확인
     /// </summary>
     bool IsActiveChunksEditable = true;
@@ -285,7 +290,6 @@ public class World : MonoBehaviour
         System.Action initAsyncTask = () =>
         {
             //로드 요청
-            //로드 범위에 따라 병렬과 순차 결정
             
             worldData.LoadAllChunks(Vector3Int.FloorToInt(spawnPosition));
             
@@ -370,8 +374,9 @@ public class World : MonoBehaviour
         {
             //lock (activeChunks)
             {
-  
-                CheckViewDistance();  //2022-04-25 기준 최대 40ms 지연
+                //비동기로 청크 로드를 요청한다.
+                ThreadPool.QueueUserWorkItem((obj) => CheckLoadDistance());
+                CheckViewDistance(); 
 
             }
 
@@ -379,8 +384,7 @@ public class World : MonoBehaviour
             playerLastChunkCoord = GetChunkCoordFromVector3(player.position);
         }
         
-        //청크 초기화(Init)
-        //한프레임에 하나씩만 (2022-04-25 기준 최대 3ms 지연)
+        //청크 초기화(Init) 한프레임에 하나
         if (chunksToCreate.Count > 0)
             CreateChunk();
 
@@ -391,7 +395,7 @@ public class World : MonoBehaviour
 		{
             lock (chunksToDraw)
             {
-                 chunksToDraw.Dequeue().ApplyChunkMesh(); //2022-04-25 기준 최대 11ms 지연
+                 chunksToDraw.Dequeue().ApplyChunkMesh(); 
             }
 		}
 
@@ -405,7 +409,14 @@ public class World : MonoBehaviour
             }
         }
 
-      
+        
+        List<Vector2Int> unload;
+        if(chunksToUnload.TryDequeue(out unload))
+        {
+                
+            UnloadChunk(unload.ToArray());
+        }
+        
 
     }
 
@@ -760,7 +771,6 @@ public class World : MonoBehaviour
                 //실제 맵에 세팅한다.
                 worldData.SetVoxel(v.pos, v.id);
 
-
                 #region 기존의 구조물 반영 코드(삭제됨)
                 /*
                 //VoxelMod의 위치가 속한 청크의 좌표 받아옴
@@ -820,6 +830,8 @@ public class World : MonoBehaviour
             //역시 한프레임에 하나씩만
             if (chunksToRefresh.Count > 0)
                 RefreshChunk();
+
+            Thread.Sleep(8);
 
         }
 	}
@@ -1007,10 +1019,86 @@ public class World : MonoBehaviour
     }
 
     /// <summary>
+    /// 범위를 체크해서 WorldData의 딕셔너리에 로드 요청
+    /// </summary>
+    void CheckLoadDistance()
+    {
+        //현재 로드된 청크 딕셔너리의 키값만 깊은 복사로 받아온다.
+        //즉, 갱신 전에 로드된 목록이다.
+        var loadedChunks = new List<Vector2Int>(worldData.chunks.Keys);
+
+        //플레이어 위치의 청크 좌표를 구한다.
+        ChunkCoord coord = playerChunkCoord; //player.position은 메인 스레드에서만 가능!
+
+        //로드 범위에 대해 반복
+        for (int x = coord.x - GameManager.Mgr.settings.LoadDistanceInChunks;
+            x < coord.x + GameManager.Mgr.settings.LoadDistanceInChunks; x++)
+        {
+            for (int z = coord.z - GameManager.Mgr.settings.LoadDistanceInChunks;
+                z < coord.z + GameManager.Mgr.settings.LoadDistanceInChunks; z++)
+            {
+                Vector2Int temp = new Vector2Int(x, z);
+
+                //청크 로드 요청
+                //이미 로드되었다면 메소드가 알아서 무시한다.
+                worldData.LoadChunks(temp);
+
+                //갱신 전 목록과 현재 범위의 겹치는 부분을 뺀다.
+                loadedChunks.Remove(temp);
+            }
+        }
+        
+
+        //loadedChunks에 남은 것들을 언로드할 목록에 추가한다.
+        Debug.Log($"Enqueue loadedChunks {loadedChunks.Count}");
+        chunksToUnload.Enqueue(loadedChunks);
+    }
+
+    /// <summary>
+    /// 지정된 좌표의 청크를 언로드한다.
+    /// </summary>
+    /// <param name="x"></param>
+    /// <param name="z"></param>
+    void UnloadChunk(int x, int z)
+    {
+        if (!IsChunkInWorld(x, z))
+            return;
+
+        if (chunks[x, z] == null)
+            return;
+
+        chunks[x, z].DestroyGameObj();
+        chunks[x, z] = null;
+        worldData.UnloadChunks(new Vector2Int(x, z));
+    }
+
+    /// <summary>
+    /// 청크 좌표를 배열로 받아 모두 언로드한다.
+    /// </summary>
+    /// <param name="poses"></param>
+    void UnloadChunk(Vector2Int[] poses)
+    {
+        foreach(var pos in poses)
+        {
+            //예외
+            if (!IsChunkInWorld(pos.x, pos.y))
+                continue;
+
+            //예외
+            if (chunks[pos.x, pos.y] == null)
+                continue;
+
+            chunks[pos.x, pos.y].DestroyGameObj();
+            chunks[pos.x, pos.y] = null;
+        }
+
+        //모두 언로드
+        worldData.UnloadChunks(poses);
+    }
+
+    /// <summary>
     /// 지정된 청크 좌표에 있는 청크가 월드 범위 내에 있는지 여부 반환
     /// </summary>
-    /// <param name="coord"></param>
-    /// <returns></returns>
     bool IsChunkInWorld(ChunkCoord coord)
 	{
         if (coord.x >= 0 && coord.x < VoxelData.WorldSizeInChunks - 1
@@ -1019,6 +1107,18 @@ public class World : MonoBehaviour
         else
             return false;
 	}
+
+    /// <summary>
+    /// 지정된 청크 좌표에 있는 청크가 월드 범위 내에 있는지 여부 반환
+    /// </summary>
+    bool IsChunkInWorld(int x, int z)
+    {
+        if (x >= 0 && x < VoxelData.WorldSizeInChunks - 1
+            && z >= 0 && z < VoxelData.WorldSizeInChunks - 1)
+            return true;
+        else
+            return false;
+    }
 
     /// <summary>
     /// 복셀이 월드 내부에 있는지 여부 반환
