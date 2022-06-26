@@ -203,12 +203,12 @@ namespace StarterAssets
 			//ActionMapµµ º¯°æ
 			if (!pauseMenu.IsPaused)
             {
-				playerInput.SwitchCurrentActionMap("UI");
+				//playerInput.SwitchCurrentActionMap("UI");
 				pauseMenu.SetPause();
 			}
 			else
             {
-				playerInput.SwitchCurrentActionMap("Player");
+				//playerInput.SwitchCurrentActionMap("Player");
 				pauseMenu.Continue();
 				
 			}

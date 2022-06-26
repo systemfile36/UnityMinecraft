@@ -1,0 +1,15 @@
+{
+  "calm1": "bgm_1",
+  "calm2": "bgm_2",
+  "calm3": "bgm_3",
+  "hal4": "bgm_4",
+  
+  "hit1": "hit",
+  
+  "click": "click",
+  
+  "door_open": "door_open",
+  "door_close": "door_close",
+  
+  "explode1": "explode"
+}

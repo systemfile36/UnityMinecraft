@@ -56,6 +56,18 @@ namespace StarterAssets
 		[Tooltip("If the character is grounded or not. Not part of the CharacterController built in grounded check")]
 		public bool Grounded = true;
 
+		[Header("Player's Current Speed")]
+		[Tooltip("It's not same as 'Move Speed', it's player's REAL speed")]
+		[SerializeField] private float playerSpeed = 0f;
+
+		/// <summary>
+		/// 플레이어의 현재 속도 (읽기 전용)
+		/// </summary>
+		public float PlayerSpeed
+        {
+			get { return playerSpeed; }
+        }
+
 		/*
 		[Tooltip("Useful for rough ground")]
 		public float GroundedOffset = -0.14f;
@@ -207,6 +219,14 @@ namespace StarterAssets
 		[Header("Reference of ToolbarControl")]
 		public ToolbarControl toolbar;
 
+		[Header("Reference of SEController")]
+		public SEController sePlayer;
+
+		//지속적으로 필요한 효과음 캐싱
+		//private AudioClip hard_walk;
+		//private AudioClip soft_walk;
+
+
 		private void Awake()
 		{
 			// get a reference to our main camera
@@ -224,6 +244,8 @@ namespace StarterAssets
 			//충돌 판정 범위를 로드한다.
 			LoadColliderDictionary();
 
+			
+
 		}
 
 		private void Start()
@@ -236,6 +258,10 @@ namespace StarterAssets
 
 			//설치, 파괴 딜레이 초기화
 			_EditDelay = GameManager.Mgr.settings.EditDelay;
+
+			//효과음 캐싱
+			//hard_walk = GameManager.Mgr.GetAudioClip("hard_walk");
+			//soft_walk = GameManager.Mgr.GetAudioClip("soft_walk");
 		}
 
 		private void Update()
@@ -256,6 +282,8 @@ namespace StarterAssets
 			Jump();
 			UpCollision();
 			Move();
+
+			ApplyStepSe();
 		}
 
 		private void LateUpdate()
@@ -716,6 +744,45 @@ namespace StarterAssets
 
 		}
 
+		private float walkDelta = 0f;
+
+		/// <summary>
+		/// 이동 중의 발소리를 적용하는 메소드
+		/// </summary>
+		private void ApplyStepSe()
+		{
+			//속도가 0 이상이고 지정된 간격에 도달하였고, 착지 상태일 경우
+			if (playerSpeed > 0f && walkDelta < 0f
+				&& Grounded)
+            {
+				//delta Time 초기화
+				walkDelta = (1.0f / playerSpeed) * 1.4f;
+
+				//sePlayer.PlaySESound(hard_walk);
+
+				//발밑의 블럭의 BlockType을 불러온다.
+				BlockType under = world.blockTypes[
+					world.GetVoxelState(new Vector3(transform.position.x, transform.position.y - 0.5f, transform.position.z)).id];
+
+				//블럭에 맞는 SE의 이름을 받아온다.
+				string seName = under.GetSeName(BlockSESub.Step);
+
+				Debug.Log(seName);
+
+				//예외 처리
+				if (seName == null || seName.Equals(""))
+					return;
+
+				//SE 재생
+				sePlayer.PlaySESound(seName);
+            }
+			else
+            {
+				walkDelta -= Time.fixedDeltaTime;
+            }
+
+        }
+
 		/// <summary>
 		/// 바라보는 방향을 구한 후 플레이어의 Rotation과 카메라의 피치를 조정한다.
 		/// </summary>
@@ -792,8 +859,18 @@ namespace StarterAssets
 				//rotation을 고려해서 x축과 z축 방향을 정함, 즉 세계 기준으로 바꿈
 				// move
 				inputDirection = transform.right * _input.move.x + transform.forward * _input.move.y;
+
+				//이동 중이라면 속도를 _speed 설정한다.
+				playerSpeed = _speed;
 			}
+			else
+            {
+				//이동 중이 아니라면 속도를 0으로 설정한다.
+				playerSpeed = 0f;
+            }
 			
+			
+
 			//세계 기준 이동 좌표
 			Vector3 tempVector = inputDirection.normalized * (_speed * Time.fixedDeltaTime) + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.fixedDeltaTime;
 
@@ -815,7 +892,6 @@ namespace StarterAssets
 			{
 				tempVector.z = 0.0f;
 			}
-
 
 			//_controller.Move(inputDirection.normalized * (_speed * Time.deltaTime) + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
 			transform.Translate(tempVector, Space.World);

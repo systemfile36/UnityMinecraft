@@ -23,6 +23,21 @@ public class BlockType
 
     public byte MaxStackSize = 64;
 
+
+    //효과음 재생을 위해 각 블럭에서 상황마다 필요한 효과음 이름을 저장한다.
+    //이 이름들은 직렬화 될 것
+    //index는 각 효과음의 순회를 위한 변수로서 직렬화에서 제외된다.
+
+    public string[] se_step = new string[4];
+
+    public string[] se_placed = new string[4];
+
+    public string[] se_breaked = new string[4];
+
+    public string[] se_falled = new string[4];
+
+    private int se_index = 0;
+
     //인벤토리 등에서 사용될 아이콘
     public Sprite icon;
 
@@ -62,6 +77,48 @@ public class BlockType
                 return 0;
         }
 	}
+
+    /// <summary>
+    /// 전달된 인자에 맞는 해당 블럭의 효과음 이름을 반환한다.
+    /// </summary>
+    public string GetSeName(BlockSESub seSub)
+    {
+        string seName; 
+        
+        switch(seSub)
+        {
+            case BlockSESub.Step:
+                seName = se_step[se_index];
+                break;
+            case BlockSESub.Placed:
+                seName = se_placed[se_index];
+                break;
+            case BlockSESub.Breaked:
+                seName = se_breaked[se_index];
+                break;
+            case BlockSESub.Falled:
+                seName = se_falled[se_index];
+                break;
+            default:
+                seName = null;
+                break;
+        }
+
+        //인덱스 순회(4개를 순회하기 위함)
+        se_index++;
+        if (se_index > 3)
+            se_index = 0;
+
+        return seName;
+    }
+
+}
+/// <summary>
+/// SE의 이름을 받아올 때 사용할 열거형
+/// </summary>
+public enum BlockSESub
+{
+    Step, Placed, Breaked, Falled
 }
 
 /// <summary>
@@ -102,7 +159,7 @@ public class World : MonoBehaviour
 {
 
     //저장될 월드의 이름과 설정될 시드
-    public static string worldName = "";
+    public static string worldName = "Default";
     public static int seed = 65535;
 
 
@@ -133,6 +190,11 @@ public class World : MonoBehaviour
 
     public Material material;
     public Material TransparentMaterial;
+
+    /// <summary>
+    /// 각 블럭의 id에 해당하는 BlockType 저장,
+    /// id를 인덱스로 사용해서 접근
+    /// </summary>
     public BlockType[] blockTypes;
 
     //청크들의 배열

@@ -4,6 +4,7 @@ using System;
 using UnityEngine;
 using System.IO;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Text;
 using UnityEngine.SceneManagement;
 using UnityEngine.EventSystems;
@@ -34,6 +35,29 @@ public class GameManager : MonoBehaviour
 	private World _world = null;
 	public World World { get { return _world; } set { _world = value; } }
 
+	
+	/// <summary>
+	/// 오디오 클립을 저장하는 딕셔너리
+	/// 이름과 AudioClip에 대한 참조로 저장된다.
+	/// </summary>
+	private Dictionary<string, AudioClip> audios = new Dictionary<string, AudioClip>();
+
+	/// <summary>
+	/// 현재 씬의 UI의 AudioSource 참조
+	/// </summary>
+	private AudioSource UI_audioSource = null;
+
+	/// <summary>
+	/// 현재 씬의 UI의 AudioSource 참조
+	/// </summary>
+	public AudioSource UIAudioSource { get { return UI_audioSource; } set { UI_audioSource = value; } }
+	
+	/// <summary>
+	/// 임시 변수
+	/// </summary>
+	public AudioClip click;
+
+	//Awake는 GameManager 오브젝트가 생성되려 할때마다 실행
 	void Awake()
 	{
 		if (instance == null)
@@ -54,14 +78,19 @@ public class GameManager : MonoBehaviour
 		//설정 로드
 		LoadSettings();
 
+		LoadAudios();
+
 		//_settings = new Settings();
 	}
 
+	//싱글톤의 Start는 한번만 실행됨
 	void Start()
 	{
 		//SaveJsonFile(GamePaths.SettingsPath, GamePaths.SettingsFileName, ObjToJsonStringIndented(_settings));
 		//InfoMessage 오브젝트가 존재할때만 컴포넌트를 받는다.
+
 		Debug.Log("GameManager.cs Start()");
+		//LoadAudios();
 	}
 
 
@@ -99,6 +128,93 @@ public class GameManager : MonoBehaviour
 	public void PrintInfo(string str)
     {
 		_infoMessage.AddMessages(str);
+    }
+
+
+	
+	/// <summary>
+	/// audios 딕셔너리에 Resources/Sounds/ 아래의 모든 AudioClip들 추가
+	/// </summary>
+	void LoadAudios()
+    {
+
+		//Resources/Sounds/ 아래의 모든 AudioClip을 불러온다.
+		var temp = Resources.LoadAll("Sounds", typeof(AudioClip));
+
+		var alias = Resources.Load("SoundsAlias") as TextAsset;
+
+		//이명을 JObject로 받아온다.
+		JObject jAlias = JObject.Parse(alias.text);
+
+
+		//temp를 AudioClip에 대해 순회하여 딕셔너리에 추가한다.
+		foreach(AudioClip clip in temp)
+        {
+			//이름과 참조 쌍으로 추가
+
+			//이명이 있으면 이명으로 추가
+			if(jAlias.ContainsKey(clip.name))
+            {
+				audios.Add(jAlias[clip.name].ToString(), clip);
+			}
+			else
+            {
+				audios.Add(clip.name, clip);
+            }
+        }
+
+
+	}
+	
+	/// <summary>
+	/// AudioSource와 AudioClip 이믈을 받아서 재생함
+	/// </summary>
+	/// <param name="source"></param>
+	/// <param name="audioName"></param>
+	public void PlayAudio(AudioSource source, string audioName)
+    {
+		if (audios.ContainsKey(audioName) && source != null)
+		{
+			//AudioSource에 AudioClip을 넘겨서 재생한다.
+			source.PlayOneShot(audios[audioName]);
+		}
+		else
+        {
+			Debug.Log($"{audioName} is not exist!");
+        }
+    }
+
+	/// <summary>
+	/// audios 딕셔너리에서 AudioClip을 찾아 리턴한다.
+	/// </summary>
+	/// <param name="audioName">AudioClip의 이름</param>
+	/// <returns></returns>
+	public AudioClip GetAudioClip(string audioName)
+    {
+		if (audios.ContainsKey(audioName))
+			return audios[audioName];
+		else
+			return null;
+    }
+
+	/// <summary>
+	/// 여러개의 AudioClip 이름을 받아서 AudioClip 배열을 리턴한다.
+	/// </summary>
+	/// <param name="audioNames">AudioClip이름의 배열</param>
+	/// <returns></returns>
+	public AudioClip[] GetAudioClips(params string[] audioNames)
+    {
+		if (audioNames == null || audioNames.Length == 0)
+			return null;
+
+		AudioClip[] audioClips = new AudioClip[audioNames.Length];
+
+		for (int i = 0; i < audioNames.Length; i++)
+        {
+			audioClips[i] = GetAudioClip(audioNames[i]);
+        }
+
+		return audioClips;
     }
 
 	public void LoadSettings()
