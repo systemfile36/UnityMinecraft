@@ -11,8 +11,16 @@ public class MinecraftBtnController : MonoBehaviour
     {
         Button btn = GetComponent<Button>();
         if (btn != null)
-            btn.onClick.AddListener(() => GameManager.Mgr.PlayAudio(GameManager.Mgr.UIAudioSource, "click"));
+            btn.onClick.AddListener(PlayClickSE);
     }
 
-
+    /// <summary>
+    /// GameManager에 설정된 UIAudioSource에서 클릭 효과음을 
+    /// settings의 seVolume만큼으로 재생
+    /// </summary>
+    void PlayClickSE()
+    {
+        GameManager.Mgr.UIAudioSource.PlayOneShot(GameManager.Mgr.GetAudioClip("click"),
+            GameManager.Mgr.settings.seVolume);
+    }
 }

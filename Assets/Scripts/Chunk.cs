@@ -273,12 +273,12 @@ public class Chunk
     }
 
     /// <summary>
-    /// 지정된 좌표의 블럭을 id로 바꾼다.
+    /// 지정된 좌표의 블럭을 id로 바꾸고 수정되기 전의 id를 반환한다.
     /// </summary>
-    public void EditVoxel(Vector3 pos, byte id)
+    public byte EditVoxel(Vector3 pos, byte id)
 	{
         if (chunkObject == null)
-            return;
+            return 0;
       
         //chunksToRefresh_Edit에 추가할 청크들 묶음
         Queue<Chunk> temp = new Queue<Chunk>(4);
@@ -294,8 +294,14 @@ public class Chunk
         zP -= Mathf.FloorToInt(chunkObject.transform.position.z);
 
 
-        //맵에 저장된 id를 변경
-        chunkData.map[xP, yP, zP].id = id;
+        //지정된 위치의 VoxelState 받아옴
+        VoxelState edited = chunkData.map[xP, yP, zP];
+
+        //수정되기 전의 id 저장
+        byte beforeId = edited.id;
+
+        //블럭 id 수정
+        edited.id = id;
 
         //수정된 목록에 추가한다.
         GameManager.Mgr.World.worldData.AddToChanged(chunkData);
@@ -309,7 +315,7 @@ public class Chunk
         //수정된 청크들 묶음을 실제 ConcurrentQueue에 추가한다.
         GameManager.Mgr.World.chunksToRefresh_Edit.Enqueue(temp);
 
-
+        return beforeId;
     }
 
     /// <summary>

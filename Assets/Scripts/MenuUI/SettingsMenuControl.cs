@@ -97,7 +97,9 @@ public class SettingsMenuControl : MonoBehaviour
         //각 세팅에 맞게 슬라이더 세팅
         slidercontrols["TargetFrameRate"].slider.value = set.targetFrameRate;
         slidercontrols["ViewDistance"].slider.value = set.ViewDistanceInChunks;
+
         slidercontrols["RotationSpeed"].slider.value = set.RotationSpeed;
+
         slidercontrols["MoveSpeed"].slider.value = set.MoveSpeed;
         slidercontrols["SprintSpeed"].slider.value = set.SprintSpeed;
         slidercontrols["JumpHeight"].slider.value = set.JumpHeight;
@@ -110,6 +112,19 @@ public class SettingsMenuControl : MonoBehaviour
         slidercontrols["EditDelay"].slider.value = set.EditDelay;
         slidercontrols["ColliderSideOffset"].slider.value = set.pWidthSideOffset;
         slidercontrols["InvalidRate"].slider.value = set.pInvalidRate;
+
+        //Sound, 퍼센티지로 나타내므로 100을 곱해준다.
+        slidercontrols["BGMVolume"].slider.value = set.bgmVolume * 100;
+        slidercontrols["SEVolume"].slider.value = set.seVolume * 100;
+        slidercontrols["StepVolume"].slider.value = set.stepVolume * 100;
+        slidercontrols["StepPitch"].slider.value = set.stepPitch * 100;
+        slidercontrols["PlaceVolume"].slider.value = set.placedVolume * 100;
+        slidercontrols["PlacePitch"].slider.value = set.placedPitch * 100;
+        slidercontrols["BreakVolume"].slider.value = set.breakedVolume * 100;
+        slidercontrols["BreakPitch"].slider.value = set.breakedPitch * 100;
+        slidercontrols["FalledVolume"].slider.value = set.falledVolume * 100;
+        slidercontrols["FalledPitch"].slider.value = set.falledPitch * 100;
+
     }
 
     /// <summary>
@@ -179,7 +194,9 @@ public class SettingsMenuControl : MonoBehaviour
         //각 설정에 맞게 설정값들을 반영함
         newSettings.targetFrameRate = Mathf.FloorToInt(slidercontrols["TargetFrameRate"].slider.value);
         newSettings.ViewDistanceInChunks = Mathf.FloorToInt(slidercontrols["ViewDistance"].slider.value);
+
         newSettings.RotationSpeed = RoundToFloat(slidercontrols["RotationSpeed"].slider.value, 1);
+
         newSettings.MoveSpeed = RoundToFloat(slidercontrols["MoveSpeed"].slider.value, 1);
         newSettings.SprintSpeed = RoundToFloat(slidercontrols["SprintSpeed"].slider.value, 1);
         newSettings.JumpHeight = RoundToFloat(slidercontrols["JumpHeight"].slider.value, 1);
@@ -192,6 +209,18 @@ public class SettingsMenuControl : MonoBehaviour
         newSettings.EditDelay = RoundToFloat(slidercontrols["EditDelay"].slider.value, 2);
         newSettings.pWidthSideOffset = RoundToFloat(slidercontrols["ColliderSideOffset"].slider.value, 2);
         newSettings.pInvalidRate = RoundToFloat(slidercontrols["InvalidRate"].slider.value, 2);
+
+        //Sound, 퍼센티지로 표시하므로 100으로 나누어준다.
+        newSettings.bgmVolume = Mathf.Clamp(RoundToFloat(slidercontrols["BGMVolume"].slider.value / 100, 1), 0, 1);
+        newSettings.seVolume = Mathf.Clamp(RoundToFloat(slidercontrols["SEVolume"].slider.value / 100, 1), 0, 1);
+        newSettings.stepVolume = Mathf.Clamp(RoundToFloat(slidercontrols["StepVolume"].slider.value / 100, 1), 0, 1);
+        newSettings.stepPitch = Mathf.Clamp(RoundToFloat(slidercontrols["StepPitch"].slider.value / 100, 1), 0, 1);
+        newSettings.placedVolume = Mathf.Clamp(RoundToFloat(slidercontrols["PlaceVolume"].slider.value / 100, 1), 0, 1);
+        newSettings.placedPitch = Mathf.Clamp(RoundToFloat(slidercontrols["PlacePitch"].slider.value / 100, 1), 0, 1);
+        newSettings.breakedVolume = Mathf.Clamp(RoundToFloat(slidercontrols["BreakVolume"].slider.value / 100, 1), 0, 1);
+        newSettings.breakedPitch = Mathf.Clamp(RoundToFloat(slidercontrols["BreakPitch"].slider.value / 100, 1), 0, 1);
+        newSettings.falledVolume = Mathf.Clamp(RoundToFloat(slidercontrols["FalledVolume"].slider.value / 100, 1), 0, 1);
+        newSettings.falledPitch = Mathf.Clamp(RoundToFloat(slidercontrols["FalledPitch"].slider.value / 100, 1), 0, 1);
 
         //로드되는 청크 범위를 시야 범위의 두배로 설정
         newSettings.LoadDistanceInChunks = newSettings.ViewDistanceInChunks * 2;

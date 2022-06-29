@@ -16,6 +16,11 @@ public class BGMController : MonoBehaviour
     private string currentBgm = "";
 
     /// <summary>
+    /// settings의 bgmVolume 값이 바뀌었는지 감시하기 위한 변수
+    /// </summary>
+    private float lastBgmVolume = 1.0f;
+
+    /// <summary>
     /// 현재 재생중인 BGM 이름
     /// </summary>
     public string CurrentBgm
@@ -30,7 +35,9 @@ public class BGMController : MonoBehaviour
         //AudioClip의 배열을 받아온다.
         bgms = GameManager.Mgr.GetAudioClips("bgm_1", "bgm_2", "bgm_3");
 
-
+        //초기화
+        lastBgmVolume = GameManager.Mgr.settings.bgmVolume;
+        audioSource.volume = lastBgmVolume;
     }
 
     void Start()
@@ -44,6 +51,8 @@ public class BGMController : MonoBehaviour
         audioSource.PlayOneShot(temp);
     }
 
+    
+
     void Update()
     {
         //음악이 재생 중이 아니라면
@@ -54,6 +63,13 @@ public class BGMController : MonoBehaviour
             
             //재생
             audioSource.PlayOneShot(temp);
+        }
+
+        //bgmVolume이 변경되었다면
+        if(lastBgmVolume != GameManager.Mgr.settings.bgmVolume)
+        {
+            //변경된 볼륨으로 변경
+            audioSource.volume = GameManager.Mgr.settings.bgmVolume;
         }
     }
 
@@ -75,5 +91,13 @@ public class BGMController : MonoBehaviour
         currentBgm = clip.name;
 
         return clip;
+    }
+
+    /// <summary>
+    /// bgm의 volume을 설정한다.
+    /// </summary>
+    public void SetBgmVolume(float volume)
+    {
+        audioSource.volume = volume;
     }
 }

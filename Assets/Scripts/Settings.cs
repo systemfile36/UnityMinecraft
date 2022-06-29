@@ -21,6 +21,25 @@ public class Settings
 	public Vector3_S spawnPosition = 
 		new Vector3_S(VoxelData.WorldSizeInVoxels/2, VoxelData.ChunkHeight, VoxelData.WorldSizeInVoxels / 2);
 
+	//사운드의 볼륨, 피치 관련 설정
+	[Header("Sounds")]
+	public float bgmVolume = 1.0f;
+
+	public float seVolume = 1.0f;
+
+	public float stepVolume = 0.3f;
+	public float stepPitch = 1.0f;
+
+	public float placedVolume = 1.0f;
+	public float placedPitch = 0.8f;
+
+	public float breakedVolume = 1.0f;
+	public float breakedPitch = 0.8f;
+
+	public float falledVolume = 0.6f;
+	public float falledPitch = 0.75f;
+	
+
 	//FirstPersonController.cs의 플레이어 행동 관련 변수들
 	#region Player Behaviour Variables
 	[Header("Player")]

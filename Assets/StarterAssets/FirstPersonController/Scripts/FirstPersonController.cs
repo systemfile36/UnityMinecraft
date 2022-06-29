@@ -9,7 +9,7 @@ using UnityEngine.InputSystem;
 /* Note: animations are called via the controller for both the character and capsule using animator null checks
  */
 
-/* StarterAssets을 변형하였다. 한국어 주석이 붙은 것은 주로 내가 수정한 부분
+/* StarterAssets의 스크립트에 내 프로젝트의 Player의 기능을 추가하였다.
  * 기존의 에셋 스크립트에 내가 정의한 Player 기능이 들어가 있다.
  * 
  * FirstPersonController.cs = Player의 기능을 추가한 파일
@@ -413,7 +413,15 @@ namespace StarterAssets
                     //즉 파괴한다.
                     try
                     {
-						world.GetChunkFromVector3(selectGuide.position).EditVoxel(selectGuide.position, 0);
+						//지정된 좌표의 블럭을 수정하고 수정되기 전의 id 를 받아온다. 즉, 파괴된 블럭을 받아온다.
+						byte beforeId = world.GetChunkFromVector3(selectGuide.position).EditVoxel(selectGuide.position, 0);
+
+						//파괴된 블럭의 BlockType을 받아온다.
+						BlockType breaked = world.blockTypes[beforeId];
+
+						//파괴된 블럭에 맞는 소리를 재생한다.
+						sePlayer.PlayBlockSESound(breaked.GetSeName(BlockSESub.Breaked), BlockSESub.Breaked);
+
 					}
 					catch(System.IndexOutOfRangeException e)
                     {
@@ -445,8 +453,14 @@ namespace StarterAssets
 						//아이템이 존재하는지 확인한다.
 						if (SelectedSlot != null && SelectedSlot.IsHasItem)
 						{
-							//슬롯의 아이템 스택 참조하여 블럭 설치
+							//슬롯의 아이템 스택 참조하여 블럭정보를 수정한다.
 							world.GetChunkFromVector3(placeGuide.position).EditVoxel(placeGuide.position, SelectedSlot.itemStack.id);
+
+							//설치된 아이템의 id를 통해 BlockType을 받아온다.
+							BlockType placed = world.blockTypes[SelectedSlot.itemStack.id];
+
+							//설치 효과음 재생
+							sePlayer.PlayBlockSESound(placed.GetSeName(BlockSESub.Placed), BlockSESub.Placed);
 
 							//블럭 개수 감소
 							SelectedSlot.TakeItem(1);
@@ -767,14 +781,10 @@ namespace StarterAssets
 				//블럭에 맞는 SE의 이름을 받아온다.
 				string seName = under.GetSeName(BlockSESub.Step);
 
-				Debug.Log(seName);
-
-				//예외 처리
-				if (seName == null || seName.Equals(""))
-					return;
+				//Debug.Log(seName);
 
 				//SE 재생
-				sePlayer.PlaySESound(seName);
+				sePlayer.PlayBlockSESound(seName, BlockSESub.Step);
             }
 			else
             {
