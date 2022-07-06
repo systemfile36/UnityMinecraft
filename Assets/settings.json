@@ -17,7 +17,12 @@
   "breakedVolume": 1.0,
   "breakedPitch": 0.8,
   "falledVolume": 0.6,
-  "falledPitch": 0.8,
+  "falledPitch": 0.75,
+  "resolution": {
+    "width": 1920,
+    "height": 1080
+  },
+  "fullScreen": false,
   "MoveSpeed": 4.0,
   "SprintSpeed": 6.0,
   "RotationSpeed": 2.0,

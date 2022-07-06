@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+using Newtonsoft.Json;
 
 /// <summary>
 /// 설정을 저장하는 클래스
@@ -38,7 +39,10 @@ public class Settings
 
 	public float falledVolume = 0.6f;
 	public float falledPitch = 0.75f;
-	
+
+	[Header("Display")]
+	public Resolution_S resolution = new Resolution_S(1920, 1080);
+	public bool fullScreen = true;
 
 	//FirstPersonController.cs의 플레이어 행동 관련 변수들
 	#region Player Behaviour Variables
@@ -125,6 +129,55 @@ public class Settings
 
 		return false;
     }
+}
+
+/// <summary>
+/// 직렬화 가능한 Resolution 클래스
+/// </summary>
+[System.Serializable]
+public class Resolution_S
+{
+	public int width;
+	public int height;
+
+	/// <summary>
+	/// UnityEngint.Resolution struct로 값을 반환
+	/// refreshRate는 사용하지 않음
+	/// </summary>
+	[JsonIgnore]
+	public Resolution Resolution
+    {
+		get
+        {
+			Resolution res = new Resolution();
+			res.width = width;
+			res.height = height;
+			return res;
+        }
+
+		set
+        {
+			width = value.width;
+			height = value.height;
+        }
+    }
+
+	public Resolution_S(int width, int height)
+    {
+		this.width = width; this.height = height;
+    }
+
+	public Resolution_S(Resolution resolution)
+    {
+		width = resolution.width;
+		height = resolution.height;
+    }
+
+    public override string ToString()
+    {
+        return string.Format("{0}x{1}", width, height);
+    }
+
 }
 
 /// <summary>

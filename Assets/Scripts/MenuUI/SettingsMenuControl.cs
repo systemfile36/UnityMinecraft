@@ -16,11 +16,6 @@ public class SettingsMenuControl : MonoBehaviour
     private Dictionary<string, Transform> menus = new Dictionary<string, Transform>();
 
     /// <summary>
-    /// 각 Slider의 SliderControl를 이름으로 저장한다.
-    /// </summary>
-    private Dictionary<string, SliderControl> slidercontrols = new Dictionary<string, SliderControl>();
-
-    /// <summary>
     /// 가져온 설정값
     /// </summary>
     private Settings settings;
@@ -28,13 +23,12 @@ public class SettingsMenuControl : MonoBehaviour
     [Tooltip("Controller of Loading Screen")]
     public LoadingControl loadingControl;
 
-    //인스펙터에서 각 SliderPrefab에 대한 참조 설정할 것
-    [Tooltip("SliderControl of Settings Slider")]
-    public SliderControl[] settingsSliders;
+    [Tooltip("Setting Control Array")]
+    public SettingControl[] settingControls;
 
     //메뉴간의 이동을 위한 MenuControl 객체
     public MenuControl menuControl;
- 
+
     void Awake()
     {
         //MenuTitle은 제외하기 위해 인덱스 1부터 시작해서
@@ -42,14 +36,7 @@ public class SettingsMenuControl : MonoBehaviour
         for (int i = 1; i < transform.childCount; i++)
         {
             menus.Add(transform.GetChild(i).name, transform.GetChild(i));
-        }
-
-        //배열을 참고로, 이름과 SliderControl을 짝지어 넣는다.
-        foreach(SliderControl control in settingsSliders)
-        {
-            slidercontrols.Add(control.transform.name, control);
-        }
- 
+        } 
     }
 
     private void Start()
@@ -90,41 +77,18 @@ public class SettingsMenuControl : MonoBehaviour
     }
 
     /// <summary>
-    /// Settings 오브젝트를 받아 각 슬라이더에 세팅함
+    /// Settings 오브젝트를 받아 각 설정 컨트롤에 세팅함
     /// </summary>
     public void SetSlidersValue(Settings set)
     {
-        //각 세팅에 맞게 슬라이더 세팅
-        slidercontrols["TargetFrameRate"].slider.value = set.targetFrameRate;
-        slidercontrols["ViewDistance"].slider.value = set.ViewDistanceInChunks;
-
-        slidercontrols["RotationSpeed"].slider.value = set.RotationSpeed;
-
-        slidercontrols["MoveSpeed"].slider.value = set.MoveSpeed;
-        slidercontrols["SprintSpeed"].slider.value = set.SprintSpeed;
-        slidercontrols["JumpHeight"].slider.value = set.JumpHeight;
-        slidercontrols["GroundOffset"].slider.value = set.GroundedOffset;
-        slidercontrols["GroundRadius"].slider.value = set.GroundedRadius;
-        slidercontrols["TopClamp"].slider.value = set.TopClamp;
-        slidercontrols["BottomClamp"].slider.value = set.BottomClamp;
-        slidercontrols["CheckInterval"].slider.value = set.checkInterval;
-        slidercontrols["Reach"].slider.value = set.reach;
-        slidercontrols["EditDelay"].slider.value = set.EditDelay;
-        slidercontrols["ColliderSideOffset"].slider.value = set.pWidthSideOffset;
-        slidercontrols["InvalidRate"].slider.value = set.pInvalidRate;
-
-        //Sound, 퍼센티지로 나타내므로 100을 곱해준다.
-        slidercontrols["BGMVolume"].slider.value = set.bgmVolume * 100;
-        slidercontrols["SEVolume"].slider.value = set.seVolume * 100;
-        slidercontrols["StepVolume"].slider.value = set.stepVolume * 100;
-        slidercontrols["StepPitch"].slider.value = set.stepPitch * 100;
-        slidercontrols["PlaceVolume"].slider.value = set.placedVolume * 100;
-        slidercontrols["PlacePitch"].slider.value = set.placedPitch * 100;
-        slidercontrols["BreakVolume"].slider.value = set.breakedVolume * 100;
-        slidercontrols["BreakPitch"].slider.value = set.breakedPitch * 100;
-        slidercontrols["FalledVolume"].slider.value = set.falledVolume * 100;
-        slidercontrols["FalledPitch"].slider.value = set.falledPitch * 100;
-
+        //각 settingControl에 set를 넘겨 값 설정
+        foreach(var settingControl in settingControls)
+        {
+            //컴포넌트를 받아오게 하기 위해 InitControl 호출
+            settingControl.InitControl();
+            settingControl.SetSettingValue(ref set);
+        }
+        
     }
 
     /// <summary>
@@ -191,36 +155,12 @@ public class SettingsMenuControl : MonoBehaviour
         //새로 설정될 Settings를 정함
         Settings newSettings = new Settings();
 
-        //각 설정에 맞게 설정값들을 반영함
-        newSettings.targetFrameRate = Mathf.FloorToInt(slidercontrols["TargetFrameRate"].slider.value);
-        newSettings.ViewDistanceInChunks = Mathf.FloorToInt(slidercontrols["ViewDistance"].slider.value);
-
-        newSettings.RotationSpeed = RoundToFloat(slidercontrols["RotationSpeed"].slider.value, 1);
-
-        newSettings.MoveSpeed = RoundToFloat(slidercontrols["MoveSpeed"].slider.value, 1);
-        newSettings.SprintSpeed = RoundToFloat(slidercontrols["SprintSpeed"].slider.value, 1);
-        newSettings.JumpHeight = RoundToFloat(slidercontrols["JumpHeight"].slider.value, 1);
-        newSettings.GroundedOffset = RoundToFloat(slidercontrols["GroundOffset"].slider.value, 2);
-        newSettings.GroundedRadius = RoundToFloat(slidercontrols["GroundRadius"].slider.value, 2);
-        newSettings.TopClamp = Mathf.FloorToInt(slidercontrols["TopClamp"].slider.value);
-        newSettings.BottomClamp = Mathf.FloorToInt(slidercontrols["BottomClamp"].slider.value);
-        newSettings.checkInterval = RoundToFloat(slidercontrols["CheckInterval"].slider.value, 2);
-        newSettings.reach = RoundToFloat(slidercontrols["Reach"].slider.value, 1);
-        newSettings.EditDelay = RoundToFloat(slidercontrols["EditDelay"].slider.value, 2);
-        newSettings.pWidthSideOffset = RoundToFloat(slidercontrols["ColliderSideOffset"].slider.value, 2);
-        newSettings.pInvalidRate = RoundToFloat(slidercontrols["InvalidRate"].slider.value, 2);
-
-        //Sound, 퍼센티지로 표시하므로 100으로 나누어준다.
-        newSettings.bgmVolume = Mathf.Clamp(RoundToFloat(slidercontrols["BGMVolume"].slider.value / 100, 1), 0, 1);
-        newSettings.seVolume = Mathf.Clamp(RoundToFloat(slidercontrols["SEVolume"].slider.value / 100, 1), 0, 1);
-        newSettings.stepVolume = Mathf.Clamp(RoundToFloat(slidercontrols["StepVolume"].slider.value / 100, 1), 0, 1);
-        newSettings.stepPitch = Mathf.Clamp(RoundToFloat(slidercontrols["StepPitch"].slider.value / 100, 1), 0, 1);
-        newSettings.placedVolume = Mathf.Clamp(RoundToFloat(slidercontrols["PlaceVolume"].slider.value / 100, 1), 0, 1);
-        newSettings.placedPitch = Mathf.Clamp(RoundToFloat(slidercontrols["PlacePitch"].slider.value / 100, 1), 0, 1);
-        newSettings.breakedVolume = Mathf.Clamp(RoundToFloat(slidercontrols["BreakVolume"].slider.value / 100, 1), 0, 1);
-        newSettings.breakedPitch = Mathf.Clamp(RoundToFloat(slidercontrols["BreakPitch"].slider.value / 100, 1), 0, 1);
-        newSettings.falledVolume = Mathf.Clamp(RoundToFloat(slidercontrols["FalledVolume"].slider.value / 100, 1), 0, 1);
-        newSettings.falledPitch = Mathf.Clamp(RoundToFloat(slidercontrols["FalledPitch"].slider.value / 100, 1), 0, 1);
+        
+        //각 settingControl에 newSettings를 넘겨서 newSettings에 반영
+        foreach(var settingControl in settingControls)
+        {
+            settingControl.ApplyToSettings(ref newSettings);
+        }
 
         //로드되는 청크 범위를 시야 범위의 두배로 설정
         newSettings.LoadDistanceInChunks = newSettings.ViewDistanceInChunks * 2;
@@ -229,10 +169,6 @@ public class SettingsMenuControl : MonoBehaviour
         //IAsyncResult를 LoadingControl 객체에 넘긴다.
         loadingControl.LoadingStart(GameManager.Mgr.SaveAndApplySettings(newSettings));
     }
-
-
-    
-
 
 
     /// <summary>

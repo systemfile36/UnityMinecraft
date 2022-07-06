@@ -60,6 +60,7 @@ public class GameManager : MonoBehaviour
 	//Awake는 GameManager 오브젝트가 생성되려 할때마다 실행
 	void Awake()
 	{
+		//instance == null 일 때, 즉 처음 생성 될때만
 		if (instance == null)
 		{
 			//처음 생성되면 static 변수에 자신 대입
@@ -68,17 +69,17 @@ public class GameManager : MonoBehaviour
 			//Scene이 바뀌어도 파괴되지 않는다.
 			DontDestroyOnLoad(this.gameObject);
 
+
+			//설정 로드
+			LoadSettings();
+
+			LoadAudios();
 		}
 		else
 		{
 			//이미 인스턴스가 존재하면 새로 생성된 오브젝트 삭제
 			Destroy(this.gameObject);
 		}
-
-		//설정 로드
-		LoadSettings();
-
-		LoadAudios();
 
 		//_settings = new Settings();
 	}

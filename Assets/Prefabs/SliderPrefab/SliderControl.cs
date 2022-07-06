@@ -6,7 +6,7 @@ using System.Text;
 using UnityEngine.UI;
 
 /// <summary>
-/// Slider의 값을 참조해 라벨에 표시
+/// Slider의 값을 참조해 라벨에 표시, 설정 컨트롤
 /// </summary>
 public class SliderControl : MonoBehaviour
 {
@@ -44,4 +44,6 @@ public class SliderControl : MonoBehaviour
         labelText.Append($" {string.Format(formatStr, value)}");
         label.text = labelText.ToString();
     }
+
+
 }
